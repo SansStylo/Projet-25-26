@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Squelette de Site</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Barre latérale gauche -->
+        <nav class="sidebar">
+            <button class="nav-btn active" data-page="1">Options 1</button>
+            <button class="nav-btn" data-page="2">Options 2</button>
+            <button class="nav-btn" data-page="3">Options 3</button>
+            <button class="nav-btn" data-page="4">Options 4</button>
+            <button class="nav-btn" data-page="5">Options 5</button>
+            <button class="nav-btn" data-page="6">Options 6</button>
+        </nav>
+
+        <!-- Zone de contenu principale (Blanche) -->
+        <main class="main-content">
+            <h1>Zone de contenu</h1>
+            <p>C'est ici que le reste de ton site va prendre vie.</p>
+        </main>
+
+    </div>
+
+    <script src="script.js">
+		document.addEventListener('DOMContentLoaded', () => {
+		const buttons = document.querySelectorAll('.nav-btn');
+
+		buttons.forEach(button => {
+			button.addEventListener('click', () => {
+				// Désactive le bouton actuellement actif
+				document.querySelector('.nav-btn.active')?.classList.remove('active');
+					
+				// Active le bouton sur lequel on a cliqué
+				button.classList.add('active');
+					
+				// Récupère l'identifiant pour tes futurs besoins (ex: changer de page)
+				const pageId = button.getAttribute('data-page');
+				console.log(`Bouton ${pageId} activé`);
+				});
+			});
+		});
+	</script>
+</body>
+</html>
