@@ -1,5 +1,13 @@
 "use client";
+
+import { useActionState } from "react";
+import { loginAction } from "./actions";
+
 export default function LoginPage() {
+  const [state, formAction, isPending] = useActionState(loginAction, {
+    error: null,
+  });
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-md border border-slate-200">
@@ -7,21 +15,29 @@ export default function LoginPage() {
         {/* En-tête de la carte */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-             ISEN Suivi
+            🎓 ISEN Suivi
           </h1>
           <p className="text-slate-500 text-sm mt-2">
             Plateforme de suivi pédagogique et d'aide à la décision
           </p>
         </div>
 
-        {/* Formulaire */}
-        <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+        {/* Message d'erreur s'il y en a une */}
+        {state.error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg text-center font-medium">
+            ⚠️ {state.error}
+          </div>
+        )}
+
+        {/* Formulaire connecté à l'action serveur */}
+        <form action={formAction} className="space-y-5">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">
               Adresse email
             </label>
             <input
               type="email"
+              name="email" // Indispensable pour récupérer la valeur côté serveur
               placeholder="prof@isen.fr"
               className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm"
               required
@@ -34,6 +50,7 @@ export default function LoginPage() {
             </label>
             <input
               type="password"
+              name="mot_de_passe"
               placeholder="••••••••"
               className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm"
               required
@@ -43,9 +60,10 @@ export default function LoginPage() {
           {/* Bouton Se connecter */}
           <button
             type="submit"
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition transform active:scale-[0.98] text-sm mt-2"
+            disabled={isPending}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-lg shadow-sm transition transform active:scale-[0.98] text-sm mt-2"
           >
-            Se connecter
+            {isPending ? "Connexion en cours..." : "Se connecter"}
           </button>
         </form>
 

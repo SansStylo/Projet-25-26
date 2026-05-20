@@ -1,0 +1,67 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+
+}
+
+enum RoleUtilisateur {
+  administrateur
+  enseignant
+  responsable_pedagogique
+
+  @@map("role_utilisateur")
+}
+
+model Utilisateur {
+  id                 String           @id @default(uuid()) @db.Uuid
+  nom                String           @db.VarChar(100)
+  prenom             String           @db.VarChar(100)
+  email              String           @unique @db.VarChar(255)
+  motDePasse         String           @map("mot_de_passe")
+  role               RoleUtilisateur
+  actif              Boolean          @default(true)
+  derniereConnexion  DateTime?        @map("derniere_connexion")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  sessions           Session[]
+  auditsConnexion    AuditConnexion[]
+
+  @@map("utilisateur")
+}
+
+model Session {
+  id             String      @id @default(uuid()) @db.Uuid
+  utilisateurId  String      @map("utilisateur_id") @db.Uuid
+  token          String      @unique
+  ipAdresse      String?     @map("ip_adresse")
+  userAgent      String?     @map("user_agent")
+  expiresAt      DateTime    @map("expires_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  utilisateur    Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([utilisateurId])
+  @@index([token])
+  @@map("session")
+}
+
+model AuditConnexion {
+  id             BigInt      @id @default(autoincrement())
+  utilisateurId  String?     @map("utilisateur_id") @db.Uuid
+  emailTente     String?     @map("email_tente") @db.VarChar(255)
+  succes         Boolean
+  ipAdresse      String?     @map("ip_adresse")
+  userAgent      String?     @map("user_agent")
+  raisonEchec    String?     @map("raison_echec") @db.VarChar(100)
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  utilisateur    Utilisateur? @relation(fields: [utilisateurId], references: [id])
+
+  @@index([utilisateurId])
+  @@map("audit_connexion")
+}
