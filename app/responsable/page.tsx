@@ -1,3 +1,19 @@
+/**
+ * app/responsable/page.tsx
+ * 
+ * Page responsable pédagogique
+ * 
+ * Rôle:
+ * - Affiche l'interface dédiée aux responsables pédagogiques
+ * - Protégée par le middleware (vérifie le token de session)
+ * - Accessible uniquement aux utilisateurs avec le rôle 'responsable_pedagogique'
+ * 
+ * Fonctionnement:
+ * - Interface réservée aux responsables pédagogiques
+ * - Page de bienvenue avec titre et description
+ * - Prête pour intégration de composants spécifiques aux responsables
+ */
+
 export default function ResponsablePage() {
   return (
     <div className="min-h-screen p-6 bg-slate-50">

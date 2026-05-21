@@ -1,3 +1,19 @@
+/**
+ * app/dashboard/page.tsx
+ * 
+ * Page tableau de bord des enseignants
+ * 
+ * Rôle:
+ * - Affiche le tableau de bord principal pour les enseignants
+ * - Protégée par le middleware (vérifie le token de session)
+ * - Accessible aux utilisateurs authentifiés avec rôle 'enseignant'
+ * 
+ * Fonctionnement:
+ * - Page d'accueil après connexion pour les enseignants
+ * - Interface de bienvenue avec section pour contenu futur
+ * - Design responsive utilisant Tailwind CSS
+ */
+
 export default function DashboardPage() {
   return (
     <div className="min-h-screen p-6 bg-slate-50">

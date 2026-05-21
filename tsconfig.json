@@ -1,3 +1,21 @@
+/**
+ * tsconfig.json
+ * 
+ * Configuration TypeScript
+ * 
+ * Rôle:
+ * - Configure le compilateur TypeScript pour le projet
+ * - Définit les options de compilation et résolution des modules
+ * - Configure les chemins d'imports alias (@/*)
+ * - Integre la configuration Next.js via le plugin next
+ * 
+ * Points clés:
+ * - strict: true - Mode strict pour plus de sécurité des types
+ * - paths: @/* pour les imports depuis la racine
+ * - jsx: react-jsx - Utilise React 19 JSX runtime
+ * - moduleResolution: bundler - Résolution moderne des modules
+ */
+
 {
   "compilerOptions": {
     "target": "ES2017",

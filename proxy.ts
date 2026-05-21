@@ -1,8 +1,26 @@
-// middleware.ts
+/**
+ * 
+ * FICHIER FAIT MAIS NON IMPLEMENTER
+ * middleware.ts
+ * 
+ * Middleware de sécurité et d'authentification pour Next.js
+ * 
+ * Rôle:
+ * - Protège les zones privées (dashboard, admin, responsable) en vérifiant la présence d'un token de session
+ * - Redirige les utilisateurs non authentifiés vers la page de connexion
+ * - Laisse passer les utilisateurs authentifiés vers leurs zones réservées
+ * 
+ * Fonctionnement:
+ * - Intercepte les requêtes vers /dashboard, /admin et /responsable
+ * - Vérifie le cookie 'session_token'
+ * - Redirige vers '/' si pas de token (non authentifié)
+ * - Permet l'accès si le token existe
+ */
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // 1. On récupère le token de session
   const token = request.cookies.get("session_token")?.value;
   

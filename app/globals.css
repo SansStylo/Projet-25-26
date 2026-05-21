@@ -1,3 +1,20 @@
+/**
+ * app/globals.css
+ * 
+ * Feuille de styles globale
+ * 
+ * Rôle:
+ * - Importe et configure Tailwind CSS v4
+ * - Définit les variables CSS personnalisées (couleurs, polices)
+ * - Applique les styles de base à toute l'application
+ * - Gère les thèmes clair et sombre (prefers-color-scheme)
+ * 
+ * Variables CSS:
+ * - --background et --foreground: couleurs principales
+ * - --color-background et --color-foreground: alias pour Tailwind
+ * - --font-sans et --font-mono: polices personnalisées Geist
+ */
+
 @import "tailwindcss";
 
 :root {

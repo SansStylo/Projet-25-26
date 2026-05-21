@@ -1,3 +1,24 @@
+/**
+ * app/actions.ts
+ * 
+ * Server Actions pour la gestion de l'authentification
+ * 
+ * Rôle:
+ * - Traite les soumissions du formulaire de connexion côté serveur
+ * - Valide les identifiants de l'utilisateur
+ * - Crée une session de sécurité dans la base de données
+ * - Stocke le token de session dans un cookie HTTP-only
+ * - Redirige l'utilisateur vers son espace selon son rôle
+ * 
+ * Fonctionnement:
+ * - Recherche l'utilisateur par email
+ * - Vérifie le mot de passe
+ * - Génère un UUID comme token de session
+ * - Crée un enregistrement Session en BDD (expire dans 24h)
+ * - Définit un cookie sécurisé (httpOnly, secure)
+ * - Redirige selon le rôle: admin → /admin, responsable → /responsable, enseignant → /dashboard
+ */
+
 "use server";
 
 import { prisma } from "./lib/db";

@@ -1,3 +1,27 @@
+/**
+ * prisma/seed.ts
+ * 
+ * Script d'initialisation et de peuplement de la base de données
+ * 
+ * Rôle:
+ * - Vide complètement la table Utilisateur
+ * - Crée 4 utilisateurs de test avec des rôles différents
+ * - Permet de tester rapidement l'application avec des données
+ * 
+ * Utilisateurs créés:
+ * 1. prof@isen.fr (enseignant) - password123
+ * 2. marie.martin@isen.fr (enseignant) - secure123
+ * 3. admin@isen.fr (administrateur) - admin123
+ * 4. responsable@isen.fr (responsable_pedagogique) - resp123
+ * 
+ * Fonctionnement:
+ * - Utilise l'adaptateur Prisma PostgreSQL (PrismaPg)
+ * - Crée un pool de connexions PostgreSQL
+ * - Supprime tous les utilisateurs existants
+ * - Crée les 4 utilisateurs de test
+ * - Ferme la connexion à la fin
+ */
+
 // prisma/seed.ts
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'

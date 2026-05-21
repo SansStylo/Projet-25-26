@@ -1,3 +1,19 @@
+/**
+ * app/admin/page.tsx
+ * 
+ * Page administrateur
+ * 
+ * Rôle:
+ * - Affiche l'interface d'administration réservée aux administrateurs
+ * - Protégée par le middleware (vérifie le token de session)
+ * - Accessible uniquement aux utilisateurs avec le rôle 'administrateur'
+ * 
+ * Fonctionnement:
+ * - Page simple avec titre et description
+ * - Prête à recevoir les composants d'administration
+ * - Design cohérent avec le reste de l'application (Tailwind CSS)
+ */
+
 export default function AdminPage() {
   return (
     <div className="min-h-screen p-6 bg-slate-50">

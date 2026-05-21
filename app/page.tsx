@@ -1,3 +1,22 @@
+/**
+ * app/page.tsx
+ * 
+ * Page de connexion (authentification)
+ * 
+ * Rôle:
+ * - Affiche le formulaire de connexion pour l'accès à l'application
+ * - Gère l'interaction avec l'utilisateur pour entrer email et mot de passe
+ * - Affiche les messages d'erreur en cas d'échec
+ * - Soumet les données via la Server Action loginAction
+ * 
+ * Fonctionnement:
+ * - Interface avec carte blanche et design épuré
+ * - Champs: email (prof@isen.fr) et mot de passe
+ * - Affiche un message d'erreur en rouge si les identifiants sont incorrects
+ * - Désactive le bouton et affiche "Connexion en cours..." pendant la soumission
+ * - Redirige automatiquement après connexion réussie
+ */
+
 "use client";
 
 import { useActionState } from "react";

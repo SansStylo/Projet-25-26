@@ -1,4 +1,23 @@
 
+/**
+ * prisma/schema.prisma
+ * 
+ * Schéma de base de données Prisma
+ * 
+ * Rôle:
+ * - Définit la structure complète de la base de données PostgreSQL
+ * - Décrit tous les modèles (tables) et leurs relations
+ * - Configure les énumérations (types définis)
+ * 
+ * Modèles:
+ * - Utilisateur: stocke les informations des utilisateurs (email, mot de passe, rôle)
+ * - Session: gère les tokens de session pour l'authentification (exp. 24h)
+ * - AuditConnexion: enregistre les tentatives de connexion (succès/échecs)
+ * 
+ * Énumérations:
+ * - RoleUtilisateur: administrateur, enseignant, responsable_pedagogique
+ */
+
 generator client {
   provider = "prisma-client-js"
 }
