@@ -33,7 +33,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
-      <body className={`${inter.className} bg-slate-50 min-h-screen`}suppressHydrationWarning>
+      <body className={`${inter.className} bg-slate-50 min-h-screen`} suppressHydrationWarning>
         {children}
       </body>
     </html>
