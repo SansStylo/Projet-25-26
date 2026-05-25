@@ -22,7 +22,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Edu-Dashboard - Connexion",
+  title: "Junia'lytics - Connexion",
   description: "Plateforme de suivi pédagogique",
 };
 
@@ -33,7 +33,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
-      <body className={`${inter.className} bg-slate-50 min-h-screen`}>
+      <body className={`${inter.className} bg-slate-50 min-h-screen`}suppressHydrationWarning>
         {children}
       </body>
     </html>
