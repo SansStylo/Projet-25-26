@@ -30,12 +30,12 @@ psql -U postgres -c "CREATE DATABASE suivi_pedago;"
 
 ---
 
-##  Installation après un pull (première fois)
+##  Installation après un pull (première fois, ne pas hésiter à refaire si problème)
 
 ### 1. Installer les dépendances npm
 ```bash
 npm install
-npm install -D ts-node
+npm install -D tsx
 ```
 
 ### 2. Créer le fichier `.env` (configuration locale)
