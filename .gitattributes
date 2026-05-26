@@ -1,0 +1,6 @@
+# Forcer Git à normaliser tous les fichiers texte en LF au moment du commit
+* text=auto eol=lf
+
+# Forcer les fichiers spécifiques à Windows (si vous en avez) à garder le CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
