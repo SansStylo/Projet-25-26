@@ -12,9 +12,9 @@
  * Fonctionnement:
  * - Interface avec carte blanche et design épuré
  * - Champs: email (prof@isen.fr) et mot de passe
- * - Affiche un message d'erreur en rouge si les identifiants sont incorrects
+ * - Affiche un message d'erreur si les identifiants sont incorrects
  * - Désactive le bouton et affiche "Connexion en cours..." pendant la soumission
- * - Redirige automatiquement après connexion réussie
+ * - Redirige automatiquement après connexion réussies
  */
 
 "use client";
@@ -31,7 +31,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col justify-between bg-[#F4F7F5] text-[#1E2E24] font-sans antialiased p-6 sm:p-12 selection:bg-emerald-700/10 relative overflow-hidden">
       
       {/* losange vert sapin au centre */}
-      <div className="absolute top-0 right-0 w-[55vw] translate-x-12 h-full bg-gradient-to-br from-[#12261E] to-[#1C4E35] pointer-events-none transform origin-top-right -skew-x-12 hidden lg:block z-0 border-l-4 border-emerald-800/10"/>
+      <div className="absolute top-0 right-0 w-[55vw] translate-x-12 h-full bg-gradient-to-br from-[#12261E] to-[#1C4E35] pointer-events-none transform origin-top-right -skew-x-12 hidden xl:block z-0 border-l-4 border-emerald-800/10"/>
         
       {/* En-tête avec nom de l'appli et num de version*/}
       <header className="w-full max-w-7xl mx-auto flex items-center justify-between z-10 relative">
@@ -41,16 +41,16 @@ export default function LoginPage() {
             Junia'lytics
           </h1>
         </div>
-        <span className="text-[11px] font-bold tracking-widest text-[#53665A] lg:text-emerald-100/60 uppercase">
+        <span className="text-[11px] font-bold tracking-widest text-[#53665A] lg:text-[#53665A] xl:text-emerald-100/60 uppercase">
           V1.0
         </span>
       </header>  
       
       {/* Zone centrale*/}
-      <main className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center my-auto z-10 relative py-12">
+      <main className="w-full max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-12 gap-12 xl:gap-8 items-center my-auto z-10 relative py-12">
         
         {/* Colonne de gauche : connexion */}
-        <div className="lg:col-span-4 lg:pr-8 space-y-6 max-w-md z-10">
+        <div className="text-center xl:text-left xl:col-span-4 xl:pr-4 space-y-6 max-w-md mx-auto xl:mx-0 z-10">
           <span className="text-xs font-bold tracking-widest text-emerald-800 uppercase block">
             Plateforme Pédagogique
           </span>
@@ -65,9 +65,9 @@ export default function LoginPage() {
 
 
         {/* Colonne de droite : formulaire de connexion */}
-        <div className="lg:col-span-5 lg:col-start-8 w-full max-w-md lg:bg-white lg:p-10 lg:rounded-2xl lg:shadow-[0_20px_50px_rgba(28,78,53,0.03)] lg:border lg:border-stone-200/60 z-10">
+        <div className="xl:col-span-5 xl:col-start-8 w-full max-w-md bg-white p-6 sm:p-10 rounded-2xl shadow-[0_20px_50px_rgba(28,78,53,0.03)] border border-stone-200/60 mx-auto xl:mx-0 z-10">
           
-          <div className="mb-8">
+          <div className="mb-8 text-center sm:text-left">
             <h3 className="text-xl font-bold tracking-tight text-[#1E2E24]">
               Espace de connexion
             </h3>
@@ -78,7 +78,7 @@ export default function LoginPage() {
 
           {/* Message d'erreur s'il y en a une */}
           {state.error && (
-            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 text-orange-900 text-xs rounded-xl font-semibold flex items-center gap-2.5 animate-shake">
+            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 text-orange-900 text-xs rounded-xl font-semibold flex items-center gap-3 animate-shake">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
                 <line x1="12" y1="9" x2="12" y2="13"></line>
@@ -148,7 +148,7 @@ export default function LoginPage() {
       </main>
     
       {/* Pied de page */}
-      <footer className="w-full max-w-7xl mx-auto flex justify-between items-center text-[10px] text-stone-400 font-bold tracking-widest pt-6 border-t border-stone-200/40 z-10 relative">
+      <footer className="w-full max-w-7xl mx-auto flex flex-col sm:flex-row gap-2 justify-between items-center text-[10px] text-stone-400 font-bold tracking-widest pt-6 border-t border-stone-200/40 z-10 relative">
         <span>JUNIA HEI-ISEN-ISA</span>
         <span>ANNÉE SCOLAIRE 2025-2026</span>
       </footer>
