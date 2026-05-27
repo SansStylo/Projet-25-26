@@ -1,0 +1,165 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import BlocDetails from './detail_teaching';
+import { getSubjects, getUsers, getStudents, addDebugSubject, addDebugUser, addDebugStudent } from '../actions'
+
+interface SubjectType {
+  subjectId: number;
+  label: string;
+}
+
+interface UsersType {
+  userId : bigint;
+  mail : string;
+  password : string;
+  firstname : string;
+  surname : string;
+  level : number;
+}
+
+interface StudentType {
+  studentId : bigint;
+  classId : string;
+  firstname : string;
+  surname : string;
+}
+
+export default function DashboardPage() {
+  const [activeBloc, setActiveBloc] = useState<SubjectType | null>(null);
+  const [subjects, setSubjects] = useState<SubjectType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [users, setUsers] = useState<UsersType[]>([]);
+  const [students, setStudents] = useState<StudentType[]>([]);
+
+  useEffect(() => {
+    async function loadInitialData() {
+      const data = await getSubjects();
+      setSubjects(data);
+      setIsLoading(false);
+
+      const data2 = await getUsers();
+      setUsers(data2);
+
+      const data3 = await getStudents();
+      setStudents(data3);
+    }
+    loadInitialData();
+  }, []);
+
+  const handleAddDebugSubject = async () => {
+    const listMock = ['Mathématiques', 'Physique', 'Algorithme', 'Base de données', 'Réseau', 'Anglais'];
+    const randomLabel = listMock[Math.floor(Math.random() * listMock.length)];
+    const uniqueLabel = `${randomLabel} #${subjects.length + 1}`;
+
+    // On envoie à PostgreSQL via notre action serveur
+    const newSubject = await addDebugSubject(uniqueLabel);
+    
+    setSubjects([...subjects, newSubject]);
+  };
+
+const handleAddDebugUser = async () => {
+    const listMock = ['a', 'b', 'c', 'd', 'e', 'f'];
+    const randomName = listMock[Math.floor(Math.random() * listMock.length)];
+    const uniqueName = `${randomName} #${users.length + 1}`;
+    const debugMail = `user.${Date.now()}@junia.com`;
+    const debugPwd = "pwd";
+    const dSn = "oui";
+
+    // On envoie à PostgreSQL via notre action serveur
+    const newUser = await addDebugUser(debugMail, debugPwd, uniqueName, dSn, 0);
+    
+    setUsers([...users, newUser]);
+  };
+
+const handleAddDebugStudent = async () => {
+    const uniqueName = `user.${Date.now()}`;
+    const dSn = "oui";
+
+    // On envoie à PostgreSQL via notre action serveur
+    const newStudent = await addDebugStudent(null,uniqueName, dSn);
+    
+    setStudents([...students, newStudent]);
+  };
+
+  return (
+    <div className="min-h-screen flex bg-b text-gray-800">
+
+      <nav className="w-64 min-h-screen bg-blue border-r border-gray-200 p-6 flex flex-col gap-3">
+        <div className="font-bold text-lg mb-4 text-gray-800">Junia'lytics</div>
+
+        <button className="w-full text-left px-4 py-3 border border-gray-300 rounded-lg bg-gray-900 text-white font-medium transition-colors">
+          Option 1 (Actif)
+        </button>
+        <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+          Option 2
+        </button>
+        <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+          Option 3
+        </button>
+        <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+          Option 4
+        </button>
+
+        <div className="mt-auto pt-4 border-t border-gray-200">
+          <button 
+            onClick={handleAddDebugSubject}
+            className="w-full text-center px-4 py-3 border border-dashed border-red-400 rounded-lg bg-red-50 text-red-700 font-bold hover:bg-red-100 transition-colors text-sm"
+          >
+            Debug : +1 Matière
+          </button>
+        </div>
+        <div className="mt-auto pt-4">
+          <button 
+            onClick={handleAddDebugUser}
+            className="w-full text-center px-4 py-3 border border-dashed border-red-400 rounded-lg bg-red-50 text-red-700 font-bold hover:bg-red-100 transition-colors text-sm"
+          >
+            Debug : +1 Utilisateur
+          </button>
+        </div>
+        <div className="mt-auto pt-4">
+          <button 
+            onClick={handleAddDebugStudent}
+            className="w-full text-center px-4 py-3 border border-dashed border-red-400 rounded-lg bg-red-50 text-red-700 font-bold hover:bg-red-100 transition-colors text-sm"
+          >
+            Debug : +1 Etudiant
+          </button>
+        </div>
+      </nav>
+
+      <main className="flex-1 p-10 bg-white overflow-y-auto">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Matières</h1>
+        
+        {isLoading ? (
+          <p className="text-gray-500 italic">Connexion à PostgreSQL en cours...</p>
+        ) : subjects.length === 0 ? (
+          <p className="text-gray-500 italic">Aucune matière en base de données. Utilisez le bouton de debug à gauche !</p>
+        ) : (
+          <div className="flex flex-row flex-wrap items-center justify-center flex-shrink-0 gap-1 border border-black-200 [&>*]:w-[150px] [&>*]:h-[150px] [&>*]:flex [&>*]:flex-shrink-0 [&>*]:items-center [&>*]:justify-center [&>*]:border [&>*]:border-black-200 [&>*]:mt-[2px] [&>*]:mb-[2px]">
+
+            {subjects.map((subject) => (
+              <div 
+                key={subject.subjectId} 
+                className="cursor-pointer bg-gray-50 hover:bg-blue-50 hover:border-blue-300 transition-all rounded-md p-4 text-center font-medium shadow-sm"
+                onClick={() => setActiveBloc(subject)}
+              >
+                {subject.label}
+              </div>
+            ))}
+
+          </div>
+        )}
+      </main>
+
+      {activeBloc && (
+        <BlocDetails 
+          currentSubject={activeBloc}
+          users={users}
+          students={students}
+          onClose={() => setActiveBloc(null)} 
+        />
+      )}
+
+    </div>
+  );
+}

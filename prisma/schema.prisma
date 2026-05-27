@@ -1,86 +1,142 @@
-
-/**
- * prisma/schema.prisma
- * 
- * Schéma de base de données Prisma
- * 
- * Rôle:
- * - Définit la structure complète de la base de données PostgreSQL
- * - Décrit tous les modèles (tables) et leurs relations
- * - Configure les énumérations (types définis)
- * 
- * Modèles:
- * - Utilisateur: stocke les informations des utilisateurs (email, mot de passe, rôle)
- * - Session: gère les tokens de session pour l'authentification (exp. 24h)
- * - AuditConnexion: enregistre les tentatives de connexion (succès/échecs)
- * 
- * Énumérations:
- * - RoleUtilisateur: administrateur, enseignant, responsable_pedagogique
- */
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-
 }
 
-enum RoleUtilisateur {
-  administrateur
-  enseignant
-  responsable_pedagogique
+model User {
+  userId    BigInt   @id @default(autoincrement()) @map("user_id")
+  mail      String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
+  firstname String   @db.VarChar(100)
+  surname   String   @db.VarChar(100)
+  level     Int      @db.SmallInt // Correspond au 'smallint' du schéma
 
-  @@map("role_utilisateur")
+  // Relations
+  subjectAddingCaches SubjectAddingCache[]
+  teacherAssignments   TeacherAssignments[]
+
+  @@map("user")
 }
 
-model Utilisateur {
-  id                 String           @id @default(uuid()) @db.Uuid
-  nom                String           @db.VarChar(100)
-  prenom             String           @db.VarChar(100)
-  email              String           @unique @db.VarChar(255)
-  motDePasse         String           @map("mot_de_passe")
-  role               RoleUtilisateur
-  actif              Boolean          @default(true)
-  derniereConnexion  DateTime?        @map("derniere_connexion")
-  createdAt          DateTime         @default(now()) @map("created_at")
-  updatedAt          DateTime         @updatedAt @map("updated_at")
+model Student {
+  studentId BigInt @id @default(autoincrement()) @map("student_id")
+  classId   Int?    @map("class_id") @db.SmallInt
+  firstname String @db.VarChar(100)
+  surname   String @db.VarChar(100)
 
-  sessions           Session[]
-  auditsConnexion    AuditConnexion[]
+  // Relations
+  class              Class?                @relation(fields: [classId], references: [classId], onDelete: Cascade)
+  studentAssignments StudentAssignments[]
+  subjectAssignments SubjectAssignments[]
+  grades             Grade[]
 
-  @@map("utilisateur")
+  @@map("student")
 }
 
-model Session {
-  id             String      @id @default(uuid()) @db.Uuid
-  utilisateurId  String      @map("utilisateur_id") @db.Uuid
-  token          String      @unique
-  ipAdresse      String?     @map("ip_adresse")
-  userAgent      String?     @map("user_agent")
-  expiresAt      DateTime    @map("expires_at")
-  createdAt      DateTime    @default(now()) @map("created_at")
+model Class {
+  classId Int    @id @default(autoincrement()) @map("class_id") @db.SmallInt
+  label   String @db.VarChar(100)
 
-  utilisateur    Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  // Relations
+  students Student[]
 
-  @@index([utilisateurId])
-  @@index([token])
-  @@map("session")
+  @@map("class")
 }
 
-model AuditConnexion {
-  id             BigInt      @id @default(autoincrement())
-  utilisateurId  String?     @map("utilisateur_id") @db.Uuid
-  emailTente     String?     @map("email_tente") @db.VarChar(255)
-  succes         Boolean
-  ipAdresse      String?     @map("ip_adresse")
-  userAgent      String?     @map("user_agent")
-  raisonEchec    String?     @map("raison_echec") @db.VarChar(100)
-  createdAt      DateTime    @default(now()) @map("created_at")
+model Subject {
+  subjectId Int    @id @default(autoincrement()) @map("subject_id") @db.SmallInt
+  label     String @db.VarChar(100)
 
-  utilisateur    Utilisateur? @relation(fields: [utilisateurId], references: [id])
+  // Relations
+  subjectAssignments  SubjectAssignments[]
+  subjectAddingCaches SubjectAddingCache[]
+  teacherAssignments   TeacherAssignments[]
 
-  @@index([utilisateurId])
-  @@map("audit_connexion")
+  @@map("subject")
+}
+
+model StudentAssignments {
+  studentId BigInt @map("student_id")
+  groupId   BigInt @map("group_id")
+
+  student Student @relation(fields: [studentId], references: [studentId], onDelete: Cascade)
+  group   Group   @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+
+  @@id([studentId, groupId])
+  @@map("student_assignments")
+}
+
+model Group {
+  groupId BigInt @id @default(autoincrement()) @map("group_id")
+  label   String @db.VarChar(100)
+
+  // Relations
+  studentAssignments StudentAssignments[]
+
+  @@map("group")
+}
+
+model SubjectAssignments {
+  studentId BigInt @map("student_id")
+  subjectId Int    @map("subject_id") @db.SmallInt
+
+  student   Student @relation(fields: [studentId], references: [studentId], onDelete: Cascade)
+  subject   Subject @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade)
+
+  @@id([studentId, subjectId])
+  @@map("subject_assignments")
+}
+
+model TeacherAssignments {
+  subjectId Int    @map("subject_id") @db.SmallInt
+  teacherId BigInt @map("teacher_id")
+
+  subject Subject @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade)
+  teacher User    @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
+
+  @@id([subjectId, teacherId])
+  @@map("teacher_assignments")
+}
+
+model SubjectAddingCache {
+  userId    BigInt @map("user_id")
+  subjectId Int    @map("subject_id") @db.SmallInt
+  students  String @db.Text // Zone de texte pour stocker le cache
+
+  user    User    @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade)
+
+  @@id([userId, subjectId])
+  @@map("subject_adding_cache")
+}
+
+model Assessment {
+  assessmentId BigInt   @id @default(autoincrement()) @map("assessment_id")
+  subjectId    Int      @map("subject_id") @db.SmallInt
+  date         DateTime @db.Date
+  maxGrade     Int      @map("max_grade") @db.SmallInt
+  weight       Int      @db.SmallInt
+  teacher      String   @db.VarChar(100)
+  label        String   @db.VarChar(255)
+
+  // Relations
+  grades Grade[]
+
+  @@map("assessment")
+}
+
+model Grade {
+  assessmentId BigInt @map("assessment_id")
+  studentId    BigInt @map("student_id")
+  value        Int    @db.SmallInt // Note de l'étudiant
+  feedback     String @db.Text
+
+  assessment Assessment @relation(fields: [assessmentId], references: [assessmentId], onDelete: Cascade)
+  student    Student    @relation(fields: [studentId], references: [studentId], onDelete: Cascade)
+
+  @@id([assessmentId, studentId])
+  @@map("grade")
 }
