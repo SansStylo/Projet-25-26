@@ -1,9 +1,7 @@
 import { prisma } from "@/app/lib/db"; //fichier db
 
 /**
- * =====================================================
- * EXPLICATION : Comment ça fonctionne avec Prisma
- * =====================================================
+http://localhost:3000/admin/test-data
  * 
  * Prisma est un ORM (Object-Relational Mapping) qui nous permet de :
  * 1. Accéder à la base de données de façon type-safe (pas d'erreurs SQL)

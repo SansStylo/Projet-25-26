@@ -5,7 +5,7 @@
  * 
  * Rôle:
  * - Affiche l'interface dédiée aux responsables pédagogiques
- * - Protégée par le middleware (vérifie le token de session)
+ * - Protégée par le proxy (vérifie le token de session)
  * - Accessible uniquement aux utilisateurs avec le rôle 'responsable_pedagogique'
  * 
  * Fonctionnement:

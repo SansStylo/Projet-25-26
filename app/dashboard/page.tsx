@@ -5,7 +5,7 @@
  * 
  * Rôle:
  * - Affiche le tableau de bord principal pour les enseignants
- * - Protégée par le middleware (vérifie le token de session)
+ * - Protégée par le proxy (vérifie le token de session)
  * - Accessible aux utilisateurs authentifiés avec rôle 'enseignant'
  * 
  * Fonctionnement:

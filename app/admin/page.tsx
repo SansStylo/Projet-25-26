@@ -5,7 +5,7 @@
  * 
  * Rôle:
  * - Affiche l'interface d'administration réservée aux administrateurs
- * - Protégée par le middleware (vérifie le token de session)
+ * - Protégée par le proxy (vérifie le token de session)
  * - Accessible uniquement aux utilisateurs avec le rôle 'administrateur'
  * 
  * Fonctionnement:

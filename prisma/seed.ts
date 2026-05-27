@@ -19,7 +19,7 @@ const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  console.log('⏳ Nettoyage complet de la base de données...')
+  console.log('Nettoyage complet de la base de données...')
   
   // 1. On supprime d'abord les tables dépendantes (tables enfants / pivots)
   await prisma.auditModification.deleteMany({})
@@ -39,7 +39,7 @@ async function main() {
   await prisma.auditConnexion.deleteMany({})
   await prisma.utilisateur.deleteMany({})
 
-  console.log('🌱 Injection des données de test...')
+  console.log('Injection des données de test...')
 
   // ═══════════════════════════════════════════════════════════════════
   // STEP 1 : CRÉATION DES UTILISATEURS (COMPTES APPLICATIFS)
@@ -145,7 +145,7 @@ async function main() {
     },
   })
 
-  console.log('  └─ Étudiants inscrits !')
+ 
 
   // ═══════════════════════════════════════════════════════════════════
   // STEP 4 : AFFECTATION DES ÉTUDIANTS DANS LES GROUPES (TABLE PIVOT)
@@ -171,7 +171,6 @@ async function main() {
     data: { Label: 'Bases de données relationnelles & SQL' },
   })
 
-  console.log('  └─ Matières ajoutées !')
 
   // ═══════════════════════════════════════════════════════════════════
   // STEP 6 : AFFECTATION DES PROFS AUX MATIÈRES (TABLE PIVOT)
@@ -221,7 +220,6 @@ async function main() {
     },
   })
 
-  console.log('  └─ Évaluations programmées !')
 
   // Insertion des notes des étudiants
   await prisma.grade.createMany({
@@ -247,9 +245,9 @@ async function main() {
     ],
   })
 
-  console.log('  └─ Notes de test injectées !')
-  console.log('✅ Base de données initialisée avec succès !')
-  console.log(`➡️ Re-connecte-toi sur l'application avec : ${profJean.email} / password123`)
+
+  console.log('Base de données initialisée avec succès !')
+  console.log(`Re-connecte-toi sur l'application avec : ${profJean.email} / password123`)
 }
 
 main()

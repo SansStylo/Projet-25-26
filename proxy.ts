@@ -1,9 +1,9 @@
 /**
  * 
  * FICHIER FAIT MAIS NON IMPLEMENTER
- * middleware.ts
+ * proxy.ts
  * 
- * Middleware de sécurité et d'authentification pour Next.js
+ * proxy de sécurité et d'authentification pour Next.js
  * 
  * Rôle:
  * - Protège les zones privées (dashboard, admin, responsable) en vérifiant la présence d'un token de session
@@ -47,7 +47,7 @@ export function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Configuration des routes cibles pour le middleware
+// Configuration des routes cibles pour le proxyy
 export const config = {
   matcher: ["/dashboard/:path*", "/admin/:path*", "/responsable/:path*"],
 };
