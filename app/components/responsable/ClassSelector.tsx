@@ -3,8 +3,8 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface ClassOption {
-  ClassID: number;
-  Label: string;
+  classId: number;
+  label: string;
 }
 
 interface ClassSelectorProps {
@@ -36,8 +36,8 @@ export default function ClassSelector({ classes }: ClassSelectorProps) {
       >
         <option value="" disabled>-- Sélectionner --</option>
         {classes.map((cls) => (
-          <option key={cls.ClassID} value={cls.ClassID}>
-            {cls.Label}
+          <option key={cls.classId} value={cls.classId}>
+            {cls.label}
           </option>
         ))}
       </select>

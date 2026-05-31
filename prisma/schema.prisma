@@ -67,6 +67,7 @@ model Subject {
   subjectAssignments  SubjectAssignments[]
   subjectAddingCaches SubjectAddingCache[]
   teacherAssignments   TeacherAssignments[]
+  assessments         Assessment[]
 
   @@map("subject")
 }
@@ -137,6 +138,7 @@ model Assessment {
 
   // Relations
   grades Grade[]
+  subject      Subject  @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade) 
 
   @@map("assessment")
 }

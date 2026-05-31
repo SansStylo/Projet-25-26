@@ -3,8 +3,9 @@ import { prisma } from '@/app/lib/db';
 export async function getStudentsAtRisk(classId: number) {
   try {
     // 1. Récupération de tous les étudiants de la classe avec leurs notes et coefficients
+    // 🔄 Adapté au nouveau schéma : classId en minuscules
     const students = await prisma.student.findMany({
-      where: { ClassID: classId },
+      where: { classId: classId },
       include: {
         grades: {
           include: {
@@ -30,27 +31,28 @@ export async function getStudentsAtRisk(classId: number) {
       student.grades.forEach((grade) => {
         const assessment = grade.assessment;
         const subject = assessment.subject;
-        const coefficient = assessment.Weight;
-
-        // Normalisation de la note sur 20
-        const gradeOn20 = (grade.Value / assessment.MaxGrade) * 20;
+        
+        // 🔄 Adapté au nouveau schéma : weight et maxGrade en minuscules
+        const coefficient = assessment.weight;
+        const gradeOn20 = (grade.value / assessment.maxGrade) * 20; // value en minuscules
 
         // Cumul pour la moyenne générale globale
         totalWeightedGrades += gradeOn20 * coefficient;
         totalWeights += coefficient;
 
         // Groupement par matière pour détecter les faiblesses ciblées
-        if (!subjectGradesMap[subject.SubjectID]) {
-          subjectGradesMap[subject.SubjectID] = {
-            name: subject.Label,
+        // 🔄 Adapté au nouveau schéma : subjectId et label en minuscules
+        if (!subjectGradesMap[subject.subjectId]) {
+          subjectGradesMap[subject.subjectId] = {
+            name: subject.label,
             total: 0,
             count: 0,
             weights: 0,
           };
         }
-        subjectGradesMap[subject.SubjectID].total += gradeOn20 * coefficient;
-        subjectGradesMap[subject.SubjectID].count += 1;
-        subjectGradesMap[subject.SubjectID].weights += coefficient;
+        subjectGradesMap[subject.subjectId].total += gradeOn20 * coefficient;
+        subjectGradesMap[subject.subjectId].count += 1;
+        subjectGradesMap[subject.subjectId].weights += coefficient;
 
         // Alerte : Note critique isolée (inférieure à 5/20)
         if (gradeOn20 < 5) {
@@ -104,10 +106,11 @@ export async function getStudentsAtRisk(classId: number) {
         riskLevel = 'MODERE';
       }
 
+      // 🔄 Adapté au nouveau schéma : studentId, firstname, surname en camelCase
       return {
-        studentId: student.StudentID.toString(),
-        firstname: student.Firstname,
-        surname: student.Surname,
+        studentId: student.studentId.toString(),
+        firstname: student.firstname,
+        surname: student.surname,
         globalAverage,
         riskScore,
         riskLevel,
