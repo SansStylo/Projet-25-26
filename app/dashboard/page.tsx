@@ -20,8 +20,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { $Enums } from '@prisma/client';
-
+import { requireAuth } from "@/app/lib/auth";
+import { LogoutButton } from "@/app/components/LogoutButton";
 
 export default function DashboardPage() {
   // États pour l'interactivité des menus et de la sidebar
@@ -214,15 +214,9 @@ export default function DashboardPage() {
                 <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-[0_10px_25px_-5px_rgba(18,38,30,0.05)] w-[180px] z-[1000] overflow-hidden">
                   <ul className="list-none p-0 m-0">
                     <li>
-                      <Link href="/" className="flex items-center gap-2.5 px-4 py-3 text-[#DC2626] hover:bg-[#FEF2F2] font-medium text-sm border-b border-[#EAEFEA] transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                          <polyline points="16 17 21 12 16 7"></polyline>
-                          <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                        Se déconnecter                
-                      </Link>
+                      <LogoutButton />
                     </li>
+
                     <li>
                       <Link 
                         href="/profil/switch" className="flex items-center gap-2.5 px-4 py-3 text-[#3B4B40] hover:bg-[#F4F7F5] font-medium text-sm transition-colors"
