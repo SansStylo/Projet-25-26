@@ -1,64 +1,199 @@
-/**
- * app/responsable/page.tsx
- * 
- * Page responsable pédagogique
- * 
- * Rôle:
- * - Affiche l'interface dédiée aux responsables pédagogiques
- * - Protégée par requireLevel(1) - les responsables (level≥1) et admins peuvent accéder
- * - Redirige les utilisateurs avec un niveau insuffisant
- * 
- * Fonctionnement:
- * - Vérifie que l'utilisateur est au moins responsable pédagogique (level≥1)
- * - Récupère les données de l'utilisateur connecté
- * - Affiche l'interface dédiée aux responsables
- * - Interface réservée aux responsables pédagogiques et admins
- * - Prête pour intégration de composants spécifiques aux responsables
- */
+import { prisma } from "@/app/lib/db";
+import {
+  getClassOverview,
+  getSubjectsPerformance,
+  getClassEvolution,
+} from "@/app/responsable/responsable-actions";
+import { getStudentsAtRisk } from "@/app/responsable/analytics";
+import ClassSelector from "../components/responsable/ClassSelector";
+import DashboardCharts from "../components/responsable/DashboardCharts";
+import KpiCards from "../components/responsable/KpiCards";
 
-import { requireLevel } from "@/app/lib/auth";
-import { ROLE_LABELS } from "@/app/lib/auth-constants";
-import { LogoutButton } from "@/app/components/LogoutButton";
+interface PageProps {
+  searchParams: Promise<{ classId?: string }>;
+}
 
-export default async function ResponsablePage() {
-  const user = await requireLevel(1);
+export default async function ResponsableDashboard({
+  searchParams,
+}: PageProps) {
+  // 🔄 Adapté au nouveau schéma : "label" et "classId" en minuscules
+  const allClasses = await prisma.class.findMany({
+    orderBy: { label: "asc" },
+    select: { classId: true, label: true },
+  });
 
-  return (
-    <div className="min-h-screen p-6 bg-slate-50">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-4xl font-bold text-slate-900 mb-2">Espace Responsable</h1>
-            <p className="text-slate-600">Interface réservée aux responsables pédagogiques.</p>
-            <p className="text-sm text-slate-500 mt-3">
-              Connecté en tant que: <span className="font-semibold text-slate-700">{user.firstname} {user.surname}</span> ({ROLE_LABELS[user.level as 0 | 1 | 2]})
-            </p>
-          </div>
-          <LogoutButton />
-        </div>
+  const resolvedParams = await searchParams;
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6 border border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800 mb-4">Suivi des classes</h2>
-            <p className="text-slate-600">Suivez les performances et l'engagement de vos classes.</p>
-          </div>
+  // 🔄 Adapté au nouveau schéma : allClasses[0]?.classId
+  const currentClassId = resolvedParams.classId
+    ? parseInt(resolvedParams.classId, 10)
+    : allClasses[0]?.classId || 1;
 
-          <div className="bg-white rounded-lg shadow p-6 border border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800 mb-4">Rapports pédagogiques</h2>
-            <p className="text-slate-600">Accédez aux rapports d'analyse pédagogique détaillés.</p>
-          </div>
+  const [overviewRes, riskRes, performanceRes, evolutionRes] =
+    await Promise.all([
+      getClassOverview(currentClassId),
+      getStudentsAtRisk(currentClassId),
+      getSubjectsPerformance(currentClassId),
+      getClassEvolution(currentClassId),
+    ]);
 
-          <div className="bg-white rounded-lg shadow p-6 border border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800 mb-4">Gestion des enseignants</h2>
-            <p className="text-slate-600">Supervisez les ressources pédagogiques et les enseignants.</p>
-          </div>
+  const overview = overviewRes.data;
+  const studentsRisk = riskRes.data || [];
+  const subjects = performanceRes.data || [];
+  const evolution = evolutionRes.data || [];
 
-          <div className="bg-white rounded-lg shadow p-6 border border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800 mb-4">Alertes et notifications</h2>
-            <p className="text-slate-600">Consultez les alertes relatives au suivi pédagogique.</p>
-          </div>
+  const alertStudents = studentsRisk.filter(
+    (s) => s.riskLevel === "MODERE" || s.riskLevel === "CRITIQUE",
+  );
+
+  if (allClasses.length === 0) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 text-center max-w-md">
+          <p className="text-gray-600 font-medium">
+            Aucune classe n'a été détectée dans la base de données.
+          </p>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="p-8 bg-gray-50 min-h-screen text-gray-800">
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+            Tableau de bord Pédagogique
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Analyse macroscopique et aide à la décision
+          </p>
+        </div>
+        <ClassSelector classes={allClasses} />
+      </header>
+
+      {!overviewRes.success ? (
+        <div className="bg-red-50 text-red-700 p-6 rounded-xl border border-red-100 shadow-sm">
+          <p className="text-sm font-medium">
+            Impossible de charger les données pour cette classe. Assurez-vous
+            qu'elle contient des étudiants inscrits et des notes.
+          </p>
+        </div>
+      ) : (
+        <>
+          <KpiCards
+            studentsRisk={studentsRisk}
+            className={overview?.className || ""}
+            globalAverage={overview?.globalAverage ?? null}
+          />
+
+<div className="w-full">
+  <DashboardCharts 
+    subjects={subjects} 
+    evolution={evolution
+      .filter(item => item.moyenne !== null)
+      .map(item => ({
+        ...item,
+        moyenne: item.moyenne as number 
+      }))
+    } 
+  />
+</div>
+
+          <section className="mb-8 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <span>⚠️</span> Alertes de décrochage en temps réel
+              </h2>
+            </div>
+            <div className="p-6">
+              {alertStudents.length === 0 ? (
+                <p className="text-green-600 font-semibold text-center py-4">
+                  Aucun signalement de décrochage détecté.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {alertStudents.map((student) => (
+                    <div
+                      key={student.studentId}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border rounded-xl border-gray-100 bg-white"
+                    >
+                      <div>
+                        <h4 className="font-bold text-lg text-gray-900">
+                          {student.firstname} {student.surname}
+                        </h4>
+                        <p className="text-sm font-medium text-gray-500">
+                          Moyenne : {student.globalAverage?.toFixed(2)} / 20
+                        </p>
+                        <ul className="list-disc pl-5 text-sm text-red-500 mt-2">
+                          {student.flags.map((flag, idx) => (
+                            <li key={idx}>{flag}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                          student.riskLevel === "CRITIQUE"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-orange-100 text-orange-700"
+                        }`}
+                      >
+                        Risque {student.riskLevel}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800">
+                📊 Synthèse statistique par matière
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase">
+                      Matière
+                    </th>
+                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase">
+                      Moyenne
+                    </th>
+                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase">
+                      Min
+                    </th>
+                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase">
+                      Max
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {subjects.map((subject) => (
+                    <tr key={subject.subjectId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        {subject.subjectName}
+                      </td>
+                      <td className="px-6 py-4 font-bold text-sm text-green-600">
+                        {subject.average.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 text-gray-500">
+                        {subject.minGrade.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 text-gray-500">
+                        {subject.maxGrade.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }
