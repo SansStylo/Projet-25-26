@@ -103,33 +103,36 @@ export async function loginAction(
   prevState: { error: string | null },
   formData: FormData
 ) {
-  const email = formData.get("email") as string;
+  const mail = formData.get("email") as string;
   const password = formData.get("mot_de_passe") as string;
 
   let redirectPath: string | null = null;
 
   try {
-    //Attention : 'utilisateur' n'existe plus dans ton nouveau schéma, à modifier en 'user' au prochain tour
-    const user = await prisma.utilisateur.findUnique({
-      where: { email },
+    // Cherche l'utilisateur par email (champ 'mail' dans le nouveau schéma)
+    const user = await prisma.user.findUnique({
+      where: { mail },
     });
 
-    if (!user || user.motDePasse !== password) {
+    // Vérifie que l'utilisateur existe et que le mot de passe est correct
+    if (!user || user.password !== password) {
       return { error: "Email ou mot de passe incorrect" };
     }
 
+    // Génère un token de session unique et fixe l'expiration à 24h
     const sessionToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
 
-    //Attention : 'session' n'existe plus dans ton nouveau schéma
+    // Crée l'enregistrement de session en base de données
     await prisma.session.create({
       data: {
         token: sessionToken,
-        utilisateurId: user.id,
+        userId: user.userId,
         expiresAt: expiresAt,
       },
     });
 
+    // Stocke le token dans un cookie sécurisé (httpOnly, secure en production)
     const cookieStore = await cookies();
     cookieStore.set("session_token", sessionToken, {
       httpOnly: true,
@@ -139,14 +142,16 @@ export async function loginAction(
       path: "/",
     });
 
-    switch (user.role) {
-      case 'administrateur':
+    // Redirige vers la page appropriée selon le niveau (level) de l'utilisateur
+    // 0 = enseignant, 1 = responsable, 2 = admin
+    switch (user.level) {
+      case 2: // admin
         redirectPath = '/admin';
         break;
-      case 'responsable_pedagogique':
+      case 1: // responsable
         redirectPath = '/responsable';
         break;
-      case 'enseignant':
+      case 0: // enseignant
       default:
         redirectPath = '/dashboard';
     }
@@ -160,4 +165,31 @@ export async function loginAction(
   }
   
   return prevState;
+}
+
+/**
+ * Action serveur pour la déconnexion
+ * 
+ * Supprime la session de la base de données et le cookie de session
+ * Redirige vers la page de connexion
+ */
+export async function logoutAction() {
+  try {
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("session_token")?.value;
+
+    if (sessionToken) {
+      // Supprime la session de la base de données
+      await prisma.session.deleteMany({
+        where: { token: sessionToken },
+      });
+    }
+
+    // Supprime le cookie
+    cookieStore.delete("session_token");
+  } catch (error) {
+    console.error("Erreur lors de la déconnexion:", error);
+  }
+
+  redirect("/");
 }

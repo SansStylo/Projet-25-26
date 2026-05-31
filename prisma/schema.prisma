@@ -12,13 +12,26 @@ model User {
   password  String   @db.VarChar(255)
   firstname String   @db.VarChar(100)
   surname   String   @db.VarChar(100)
-  level     Int      @db.SmallInt // Correspond au 'smallint' du schéma
+  level     Int      @db.SmallInt // 0 = enseignant, 1 = responsable, 2 = admin
 
   // Relations
   subjectAddingCaches SubjectAddingCache[]
   teacherAssignments   TeacherAssignments[]
+  sessions Session[]
 
   @@map("user")
+}
+
+model Session {
+  sessionId BigInt   @id @default(autoincrement()) @map("session_id")
+  userId    BigInt   @map("user_id")
+  token     String   @unique @db.VarChar(255)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("session")
 }
 
 model Student {
