@@ -8,6 +8,7 @@ import { getStudentsAtRisk } from "@/app/responsable/analytics";
 import ClassSelector from "../components/responsable/ClassSelector";
 import DashboardCharts from "../components/responsable/DashboardCharts";
 import KpiCards from "../components/responsable/KpiCards";
+import { LogoutButton } from "@/app/components/LogoutButton";
 
 interface PageProps {
   searchParams: Promise<{ classId?: string }>;
@@ -60,6 +61,8 @@ export default async function ResponsableDashboard({
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen text-gray-800">
+      
+      {/* En-tête avec titre à gauche, Sélecteur + Déconnexion à droite */}
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
@@ -69,7 +72,15 @@ export default async function ResponsableDashboard({
             Analyse macroscopique et aide à la décision
           </p>
         </div>
-        <ClassSelector classes={allClasses} />
+        
+        <div className="flex items-center gap-4 self-start md:self-auto">
+          <ClassSelector classes={allClasses} />
+          
+       
+          <ul className="list-none p-0 m-0">
+            <LogoutButton />
+          </ul>
+        </div>
       </header>
 
       {!overviewRes.success ? (
@@ -87,18 +98,18 @@ export default async function ResponsableDashboard({
             globalAverage={overview?.globalAverage ?? null}
           />
 
-<div className="w-full">
-  <DashboardCharts 
-    subjects={subjects} 
-    evolution={evolution
-      .filter(item => item.moyenne !== null)
-      .map(item => ({
-        ...item,
-        moyenne: item.moyenne as number 
-      }))
-    } 
-  />
-</div>
+          <div className="w-full">
+            <DashboardCharts 
+              subjects={subjects} 
+              evolution={evolution
+                .filter(item => item.moyenne !== null)
+                .map(item => ({
+                  ...item,
+                  moyenne: item.moyenne as number 
+                }))
+              } 
+            />
+          </div>
 
           <section className="mb-8 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
