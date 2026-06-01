@@ -59,6 +59,17 @@ export async function getStudents() {
   }
 }
 
+export async function getStudentAssignments() {
+  try {
+    return await prisma.studentAssignments.findMany({
+      orderBy: { studentId: 'asc' },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des assignements :", error);
+    return [];
+  }
+}
+
 export async function getTeacherAssignments() {
   try {
     return await prisma.teacherAssignments.findMany({
@@ -142,14 +153,29 @@ export async function addDebugStudent(classId : number | null, firstname : strin
   }
 }
 
-export async function addGroup(label : string) {
+export async function addGroup(label: string, studentIds: bigint[]) {
   try {
-    return await prisma.group.create({
-      data: { label },
+    // 1. On crée d'abord le groupe en BDD
+    const newGroup = await prisma.group.create({
+      data: {
+        label: label,
+      },
     });
+
+    // 2. Si on a des étudiants sélectionnés, on crée les liaisons dans StudentAssignments
+    if (studentIds.length > 0) {
+      await prisma.studentAssignments.createMany({
+        data: studentIds.map((id) => ({
+          groupId: newGroup.groupId, // ID du groupe fraîchement créé
+          studentId: id,
+        })),
+      });
+    }
+
+    return newGroup;
   } catch (error) {
-    console.error("Erreur lors de la création du Groupe :", error);
-    throw new Error("Impossible de créer le Groupe'");
+    console.error("Erreur lors de la création du groupe et de ses assignations :", error);
+    throw new Error("Impossible de créer le groupe.");
   }
 }
 
@@ -205,6 +231,28 @@ export async function updateSubjectAssignments(studentIds: bigint[], subjectId: 
   } catch (error) {
     console.error("Erreur lors de la mise à jour des assignements :", error);
     throw new Error("Impossible de mettre à jour les assignements des enseignants.");
+  }
+}
+
+export async function updateStudentAssignments(studentIds: bigint[], groupId: number) {
+  try {
+    // On utilise une transaction pour s'assurer que tout s'exécute ou que tout s'annule en cas d'erreur
+    return await prisma.$transaction([
+      // 1. On supprime TOUS les anciens assignements pour cette matière précise
+      prisma.studentAssignments.deleteMany({
+        where: { groupId: groupId },
+      }),
+      // 2. On ré-insère la nouvelle liste propre de profs sélectionnés
+      prisma.studentAssignments.createMany({
+        data: studentIds.map((id) => ({
+          groupId: groupId,
+          studentId: id,
+        })),
+      }),
+    ]);
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour des assignements :", error);
+    throw new Error("Impossible de mettre à jour les assignements des étudiants.");
   }
 }
 

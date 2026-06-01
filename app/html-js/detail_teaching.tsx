@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { updateTeacherAssignments, updateSubjectAssignments, addGroup, addClass } from '../actions';
+import { updateTeacherAssignments, updateSubjectAssignments, updateStudentAssignments, addGroup, addClass } from '../actions';
+import { Student } from '@prisma/client';
 
 interface SubjectType {
   subjectId: number;
@@ -24,6 +25,11 @@ interface TeacherAssignmentsType {
 interface SubjectAssignmentsType {
   studentId : bigint;
   subjectId : number;
+}
+
+interface StudentAssignmentsType {
+  studentId : bigint;
+  groupId : bigint;
 }
 
 interface StudentType {
@@ -51,17 +57,21 @@ interface BlocDetailsProps {
   classes : ClassesType[];
   teacherAssignments: TeacherAssignmentsType[];
   subjectAssignments : SubjectAssignmentsType[];
+  studentAssignments : StudentAssignmentsType[];
   onClose: () => void;
   onRefreshAssignments: () => Promise<void>;
 }
 
-export default function BlocDetails({ currentSubject, users, students, groups, classes, teacherAssignments, subjectAssignments, onClose, onRefreshAssignments }: BlocDetailsProps) {
+export default function BlocDetails({ currentSubject, users, students, groups, classes, teacherAssignments, subjectAssignments, studentAssignments, onClose, onRefreshAssignments }: BlocDetailsProps) {
   const [showStudentSelector, setShowStudentSelector] = useState(false);
   const [showTeacherSelector, setShowTeacherSelector] = useState(false);
   const [showGroupCreator, setShowGroupCreator] = useState(false);
   const [showClassCreator, setShowClassCreator] = useState(false);
+  
+  // NOUVEAU : États pour la modal de sélection par groupe
+  const [showGroupSelector, setShowGroupSelector] = useState(false);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
-  // Nouvel état pour le nom du groupe à créer
   const [newGroupName, setNewGroupName] = useState('');
   const [newClassName, setNewClassName] = useState('');
 
@@ -69,11 +79,9 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
   const assignedTeacherIds = teacherAssignments
     .filter(ta => Number(ta.subjectId) === Number(currentSubject.subjectId))
     .map(ta => ta.teacherId);
-
   const alreadyAssignedTeachers = users.filter(user => 
     assignedTeacherIds.includes(user.userId)
   );
-
   const nonAssignedTeachers = users.filter(user => 
     user.level === 0 && !assignedTeacherIds.includes(user.userId)
   );
@@ -82,9 +90,7 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
   const assignedStudentIds = (subjectAssignments || [])
     .filter(sa => Number(sa.subjectId) === Number(currentSubject.subjectId))
     .map(sa => sa.studentId.toString());
-
   const alreadyAssignedStudents = students.filter(student => assignedStudentIds.includes(student.studentId.toString()));
-
   const nonAssignedStudents = students.filter(student => !assignedStudentIds.includes(student.studentId.toString()));
 
   // États pour les sélecteurs (modals)
@@ -111,17 +117,14 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
     student.firstname.toLowerCase().includes(searchAvailable.toLowerCase()) ||
     student.surname.toLowerCase().includes(searchAvailable.toLowerCase())
   );
-
   const filteredAvailableTeachers = availableTeachers.filter(teacher =>
     teacher.firstname.toLowerCase().includes(searchAvailable.toLowerCase()) ||
     teacher.surname.toLowerCase().includes(searchAvailable.toLowerCase())
   );
-
   const filteredSelectedStudents = selectedStudents.filter(student =>
     student.firstname.toLowerCase().includes(searchSelected.toLowerCase()) ||
     student.surname.toLowerCase().includes(searchSelected.toLowerCase())
   );
-
   const filteredSelectedTeachers = selectedTeachers.filter(teacher =>
     teacher.firstname.toLowerCase().includes(searchSelected.toLowerCase()) ||
     teacher.surname.toLowerCase().includes(searchSelected.toLowerCase())
@@ -146,6 +149,41 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
   const handleRemoveTeacher = (teacher: UsersType) => {
     setSelectedTeachers(selectedTeachers.filter(s => s.userId !== teacher.userId));
     setAvailableTeachers([...availableTeachers, teacher]);
+  };
+
+  // NOUVEAU : Fonction pour ajouter tous les étudiants des groupes sélectionnés (sans doublons)
+  const handleAddGroupsStudents = () => {
+    // 1. Trouver tous les étudiants appartenant aux groupes cochés/sélectionnés
+    const studentsInGroups = students.filter(student => 
+      studentAssignments.some(sa => 
+        sa.studentId.toString() === student.studentId.toString() && 
+        selectedGroupIds.includes(sa.groupId.toString())
+      )
+    );
+
+    // 2. Filtrer pour ne garder que ceux qui ne sont pas DÉJÀ dans selectedStudents (évite les doublons)
+    const currentSelectedIds = selectedStudents.map(s => s.studentId.toString());
+    const uniqueStudentsToAdd = studentsInGroups.filter(
+      student => !currentSelectedIds.includes(student.studentId.toString())
+    );
+
+    if (uniqueStudentsToAdd.length === 0) {
+      alert("Tous les étudiants de ces groupes sont déjà inscrits ou sélectionnés !");
+      setShowGroupSelector(false);
+      setSelectedGroupIds([]);
+      return;
+    }
+
+    // 3. Mettre à jour la liste des sélectionnés globales
+    setSelectedStudents([...selectedStudents, ...uniqueStudentsToAdd]);
+
+    // 4. Les retirer de la liste des étudiants individuels "Disponibles" pour garder la cohérence globale
+    const addedIds = uniqueStudentsToAdd.map(s => s.studentId.toString());
+    setAvailableStudents(availableStudents.filter(s => !addedIds.includes(s.studentId.toString())));
+
+    // 5. Reset et fermeture de la modal
+    setShowGroupSelector(false);
+    setSelectedGroupIds([]);
   };
 
   // Validation Enseignants BDD
@@ -174,30 +212,33 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
   };
 
   const handleCreateGroup = async () => {
-    const trimmedName = newGroupName.trim();
-
-    const groupAlreadyExists = groups?.some(group => group.label.toLowerCase() === trimmedName.toLocaleLowerCase());
-    if (groupAlreadyExists){
-      alert("Nom de groupe déjà existant");
-      return;
-    }
-    else{
-      try{
-        await addGroup(trimmedName);
-        await onRefreshAssignments();
-
-        setShowGroupCreator(false);
-        setNewGroupName('');
-      }catch (error){
-        console.error(error);
-        alert("Une erreur est survenue lors de la création du groupe");
-      }
-    }
+  const trimmedName = newGroupName.trim();
+  const groupAlreadyExists = groups?.some(group => group.label.toLowerCase() === trimmedName.toLocaleLowerCase());
+  
+  if (groupAlreadyExists){
+    alert("Nom de groupe déjà existant");
+    return;
   }
+  
+  try {
+    const studentIds = selectedStudents.map(s => s.studentId);
+
+    await addGroup(trimmedName, studentIds);
+    await onRefreshAssignments();
+
+    // On ferme la modal et on reset le champ
+    setShowGroupCreator(false);
+    setNewGroupName('');
+    
+    alert(`Le groupe "${trimmedName}" a bien été créé avec ses ${studentIds.length} étudiant(s) !`);
+  } catch (error) {
+    console.error(error);
+    alert("Une erreur est survenue lors de la création du groupe");
+  }
+}
 
   const handleCreateClass = async () => {
     const trimmedName = newClassName.trim();
-
     const classAlreadyExists = classes?.some(classes => classes.label.toLowerCase() === trimmedName.toLocaleLowerCase());
     if (classAlreadyExists){
       alert("Nom de classe déjà existant");
@@ -264,7 +305,14 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
             >
               Add Student
             </button>
-            <button className="px-4 py-2 cursor-pointer bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded transition-colors shadow">Add Group</button>
+            
+            {/* BRANCHEMENT DU BOUTON ADD GROUP */}
+            <button 
+              onClick={() => setShowGroupSelector(true)}
+              className="px-4 py-2 cursor-pointer bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded transition-colors shadow"
+            >
+              Add Group
+            </button>
             <button className="px-4 py-2 cursor-pointer bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded transition-colors shadow">Add Prom</button>
           </div>
         </div>
@@ -287,6 +335,18 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
             ))
           )}
         </div>
+        
+        {/* BOUTON GLOBAL DE VALIDATION DES ETUDIANTS DE LA SECTION (AJOUT INDIVIDUEL + AJOUT GROUPES) */}
+        {selectedStudents.length !== alreadyAssignedStudents.length && (
+          <div className="flex justify-center mt-3">
+            <button 
+              onClick={handleValidateStudents}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow transition-colors"
+            >
+              Enregistrer les modifications d'inscriptions ({selectedStudents.length} élèves)
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Section Création Groupes et Classes */}
@@ -295,7 +355,7 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
           <div className="flex justify-end gap-2">
             <button 
               onClick={() => {
-                setNewGroupName(''); // Reset le champ à l'ouverture
+                setNewGroupName('');
                 setShowGroupCreator(true);
               }}
               className="px-4 py-2 cursor-pointer bg-pink-600 hover:bg-pink-700 text-white text-sm font-medium rounded transition-colors shadow"
@@ -311,15 +371,136 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
           </div>
         </div>
       </div>
+      
       {/* Bouton de fermeture global */}
       <button className="cursor-pointer px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium absolute right-[2%] top-[2%] transition-colors" onClick={onClose}>
         ✕
       </button>
 
       {/* ========================================================================= */}
-      {/* MODAL : LISTE DE SELECTION ETUDIANTS                                      */}
+      {/* NOUVELLE MODAL : DOUBLE LISTE DE SELECTION PAR GROUPE                     */}
       {/* ========================================================================= */}
-      {/* ... (gardé intact pour la clarté) ... */}
+      {showGroupSelector && (
+        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6 rounded-xl">
+          <div className="bg-white w-full max-w-4xl rounded-xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
+            
+            {/* Header Modal */}
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
+              <h3 className="text-xl font-bold text-slate-800">Sélection d'étudiants par Groupe</h3>
+              <button onClick={() => { setShowGroupSelector(false); setSelectedGroupIds([]); }} className="text-gray-400 hover:text-gray-600 font-bold text-lg p-1">✕</button>
+            </div>
+
+            {/* Corps Modal : Grille Double Colonne */}
+            <div className="p-6 grid grid-cols-2 gap-6 overflow-hidden min-h-[400px]">
+              
+              {/* COLONNE GAUCHE : LISTE DES GROUPES */}
+              <div className="flex flex-col border border-slate-200 rounded-lg bg-slate-50 p-4">
+                <span className="font-bold text-slate-700 text-sm mb-2">Groupes disponibles ({groups?.length || 0})</span>
+                <div className="flex-1 overflow-y-auto space-y-2 bg-white border border-slate-200 rounded p-2 max-h-[320px]">
+                  {!groups || groups.length === 0 ? (
+                    <p className="text-xs text-gray-400 italic p-2 text-center">Aucun groupe disponible</p>
+                  ) : (
+                    groups.map(group => {
+                      const isSelected = selectedGroupIds.includes(group.groupId.toString());
+                      return (
+                        <div 
+                          key={group.groupId.toString()} 
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedGroupIds(selectedGroupIds.filter(id => id !== group.groupId.toString()));
+                            } else {
+                              setSelectedGroupIds([...selectedGroupIds, group.groupId.toString()]);
+                            }
+                          }}
+                          className={`p-3 rounded-lg border text-sm font-medium cursor-pointer transition-all flex items-center justify-between ${
+                            isSelected 
+                              ? 'bg-blue-50 border-blue-400 text-blue-700 shadow-sm' 
+                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <span>{group.label}</span>
+                          {isSelected && (
+                            <span className="text-xs font-bold bg-blue-600 text-white px-2 py-0.5 rounded">Sélectionné</span>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* COLONNE DROITE : ÉTUDIANTS DU/DES GROUPE(S) CLIQUE(S) */}
+              <div className="flex flex-col border border-slate-200 rounded-lg bg-slate-50 p-4">
+                <span className="font-bold text-slate-700 text-sm mb-2">
+                  Membres des groupes sélectionnés ({
+                    students.filter(student => 
+                      studentAssignments.some(sa => 
+                        sa.studentId.toString() === student.studentId.toString() && 
+                        selectedGroupIds.includes(sa.groupId.toString())
+                      )
+                    ).length
+                  })
+                </span>
+                
+                <div className="flex-1 overflow-y-auto space-y-1 bg-white border border-slate-200 rounded p-2 max-h-[320px]">
+                  {selectedGroupIds.length === 0 ? (
+                    <p className="text-xs text-gray-400 italic p-2 text-center mt-10">Cliquez sur un ou plusieurs groupes à gauche pour afficher et sélectionner leurs étudiants.</p>
+                  ) : (
+                    (() => {
+                      // Récupération dynamique des étudiants liés aux groupes sélectionnés
+                      const displayedStudents = students.filter(student => 
+                        studentAssignments.some(sa => 
+                          sa.studentId.toString() === student.studentId.toString() && 
+                          selectedGroupIds.includes(sa.groupId.toString())
+                        )
+                      );
+                      
+                      if (displayedStudents.length === 0) {
+                        return <p className="text-xs text-gray-400 italic p-2 text-center mt-4">Aucun étudiant n'est affecté à ce(s) groupe(s).</p>;
+                      }
+
+                      return displayedStudents.map((student, index) => (
+                        <div 
+                          key={student.studentId.toString()} 
+                          className={`p-2 flex justify-between items-center text-sm rounded ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}
+                        >
+                          <span className="text-slate-700 font-medium">{student.firstname} {student.surname}</span>
+                          <span className="text-xs text-gray-400 font-bold bg-slate-100 px-1.5 py-0.5 rounded">
+                            {student.classId || 'Sans classe'}
+                          </span>
+                        </div>
+                      ));
+                    })()
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Modal avec Bouton du Bas */}
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-center rounded-b-xl">
+              <button 
+                onClick={handleAddGroupsStudents}
+                disabled={selectedGroupIds.length === 0}
+                className="px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg shadow-md transition-colors"
+              >
+                Ajouter les membres au cours ({
+                  students.filter(student => 
+                    studentAssignments.some(sa => 
+                      sa.studentId.toString() === student.studentId.toString() && 
+                      selectedGroupIds.includes(sa.groupId.toString())
+                    )
+                  ).length
+                } étudiants)
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL : LISTE DE SELECTION ETUDIANTS INDIVIDUELS                          */}
+      {/* ========================================================================= */}
       {showStudentSelector && (
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6 rounded-xl">
           <div className="bg-white w-full max-w-4xl rounded-xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
@@ -480,7 +661,6 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
 
             {/* Corps de la modal */}
             <div className="p-6 flex flex-col gap-4 overflow-y-auto">
-              
               {/* Champ texte de saisie du nom */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-slate-700">Nom du nouveau groupe</label>
@@ -519,7 +699,6 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
                   )}
                 </div>
               </div>
-
             </div>
 
             {/* Footer avec bouton de validation */}
@@ -537,6 +716,7 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
         </div>
       )}
       
+      {/* MODAL : CRÉATION DE CLASSE */}
       {showClassCreator && (
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6 rounded-xl">
           <div className="bg-white w-full max-w-md rounded-xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
@@ -549,7 +729,6 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
 
             {/* Corps de la modal */}
             <div className="p-6 flex flex-col gap-4 overflow-y-auto">
-              
               {/* Champ texte de saisie du nom */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-slate-700">Nom de la nouvelle classe</label>
@@ -588,7 +767,6 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
                   )}
                 </div>
               </div>
-
             </div>
 
             {/* Footer avec bouton de validation */}
@@ -608,4 +786,4 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
 
     </div>
   );
-}
+} 

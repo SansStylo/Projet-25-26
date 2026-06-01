@@ -12,10 +12,9 @@ import { getSubjects,
   addDebugSubject, 
   addDebugUser, 
   addDebugStudent,
-  addGroup,
-  addClass
+  getStudentAssignments
  } from '../actions'
-import { Group } from '@prisma/client';
+import { Group, Student } from '@prisma/client';
 
 interface SubjectType {
   subjectId: number;
@@ -48,6 +47,11 @@ interface SubjectAssignmentsType {
   subjectId : number;
 }
 
+interface StudentAssignmentsType {
+  studentId : bigint;
+  groupId : bigint;
+}
+
 interface GroupType{
   groupId : bigint;
   label : string;
@@ -66,18 +70,21 @@ export default function DashboardPage() {
   const [students, setStudents] = useState<StudentType[]>([]);
   const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignmentsType[]>([]);
   const [subjectAssignments, setSubjectAssignments] = useState<SubjectAssignmentsType[]>([]);
+  const [studentAssignments, setStudentAssignments] = useState<StudentAssignmentsType[]>([]);
   const [groups, setGroups] = useState<GroupType[]>([]);
   const [classes, setClasses] = useState<ClassesType[]>([]);
 
   const refreshAssignments = async () => {
-    const [teachersData, studentsData, groupsData, classesData] = await Promise.all([
+    const [teachersData, studentsData, studentData, groupsData, classesData] = await Promise.all([
       getTeacherAssignments(),
       getSubjectAssignments(),
+      getStudentAssignments(),
       getGroups(),
       getClass()
     ]);
     setTeacherAssignments(teachersData);
     setSubjectAssignments(studentsData);
+    setStudentAssignments(studentData);
     setGroups(groupsData);
     setClasses(classesData);
   }
@@ -105,6 +112,9 @@ export default function DashboardPage() {
 
       const data7 = await getGroups();
       setGroups(data7);
+
+      const data8 = await getStudentAssignments();
+      setStudentAssignments(data8);
     }
     loadInitialData();
   }, []);
@@ -223,6 +233,7 @@ const handleAddDebugStudent = async () => {
           classes={classes}
           teacherAssignments={teacherAssignments}
           subjectAssignments={subjectAssignments}
+          studentAssignments={studentAssignments}
           onClose={() => setActiveBloc(null)} 
           onRefreshAssignments={refreshAssignments}
         />
