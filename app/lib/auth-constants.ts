@@ -3,7 +3,7 @@
  * 
  * Types et constantes d'authentification
  * 
- * Ce fichier sert à ccause de nextjs qui ne gère pas les types dans les fonctions server,
+ * Ce fichier sert à cause de nextjs qui ne gère pas les types dans les fonctions server,
  *  on doit définir les types d'utilisateur et les labels de rôle dans un fichier séparé pour 
  * pouvoir les utiliser à la fois dans auth.ts et dans les pages protégées. 
  */
