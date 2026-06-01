@@ -1,23 +1,3 @@
-<<<<<<< HEAD
-import { getAllClassesOverview, getAllSubjectsPerformance, getClassesComparisonBySubject } from '@/app/responsable/responsable-actions';
-import ResponsableDashboardClient from './components/ResponsableDashboardClient';
-
-export default async function ResponsableDashboard() {
-  const [allClassesRes, allSubjectsRes, comparisonRes] = await Promise.all([
-    getAllClassesOverview(),
-    getAllSubjectsPerformance(),
-    getClassesComparisonBySubject(),
-  ]);
-
-  const allClasses = (allClassesRes.data || []).map(c => ({
-    classId: c.classId,
-    className: c.className,
-    totalStudents: c.totalStudents,
-    globalAverage: c.globalAverage
-  }));
-  const allSubjects = allSubjectsRes.data || [];
-  const comparison = comparisonRes.data || [];
-=======
 import { prisma } from "@/app/lib/db";
 import {
   getClassOverview,
@@ -66,7 +46,6 @@ export default async function ResponsableDashboard({
   const alertStudents = studentsRisk.filter(
     (s) => s.riskLevel === "MODERE" || s.riskLevel === "CRITIQUE",
   );
->>>>>>> main
 
   if (allClasses.length === 0) {
     return (
@@ -83,21 +62,6 @@ export default async function ResponsableDashboard({
   return (
     <div className="p-8 bg-gray-50 min-h-screen text-gray-800">
       
-<<<<<<< HEAD
-      <header className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
-          Responsable Pédagogique
-        </h1>
-        <p className="text-gray-500 mt-2">Vue globale multi-groupes / multi-matières</p>
-      </header>
-
-      <ResponsableDashboardClient 
-        initialClasses={allClasses}
-        initialSubjects={allSubjects}
-        initialComparison={comparison}
-      />
-
-=======
       {/* En-tête avec titre à gauche, Sélecteur + Déconnexion à droite */}
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
@@ -241,7 +205,6 @@ export default async function ResponsableDashboard({
           </section>
         </>
       )}
->>>>>>> main
     </div>
   );
 }
