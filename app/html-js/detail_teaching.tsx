@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { updateTeacherAssignments, updateSubjectAssignments } from '../actions';
+import { updateTeacherAssignments, updateSubjectAssignments, addGroup, addClass } from '../actions';
 
 interface SubjectType {
   subjectId: number;
@@ -33,19 +33,37 @@ interface StudentType {
   surname: string;
 }
 
+interface GroupType{
+  groupId : bigint;
+  label : string;
+}
+
+interface ClassesType{
+  classId: number;
+  label: string;
+}
+
 interface BlocDetailsProps {
   currentSubject: SubjectType;
   users: UsersType[];
   students: StudentType[];
+  groups : GroupType[];
+  classes : ClassesType[];
   teacherAssignments: TeacherAssignmentsType[];
   subjectAssignments : SubjectAssignmentsType[];
   onClose: () => void;
   onRefreshAssignments: () => Promise<void>;
 }
 
-export default function BlocDetails({ currentSubject, users, students, teacherAssignments, subjectAssignments, onClose, onRefreshAssignments }: BlocDetailsProps) {
+export default function BlocDetails({ currentSubject, users, students, groups, classes, teacherAssignments, subjectAssignments, onClose, onRefreshAssignments }: BlocDetailsProps) {
   const [showStudentSelector, setShowStudentSelector] = useState(false);
   const [showTeacherSelector, setShowTeacherSelector] = useState(false);
+  const [showGroupCreator, setShowGroupCreator] = useState(false);
+  const [showClassCreator, setShowClassCreator] = useState(false);
+
+  // Nouvel état pour le nom du groupe à créer
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newClassName, setNewClassName] = useState('');
 
   // Filtrer les enseignants rattachés à cette matière précise
   const assignedTeacherIds = teacherAssignments
@@ -155,6 +173,50 @@ export default function BlocDetails({ currentSubject, users, students, teacherAs
     }
   };
 
+  const handleCreateGroup = async () => {
+    const trimmedName = newGroupName.trim();
+
+    const groupAlreadyExists = groups?.some(group => group.label.toLowerCase() === trimmedName.toLocaleLowerCase());
+    if (groupAlreadyExists){
+      alert("Nom de groupe déjà existant");
+      return;
+    }
+    else{
+      try{
+        await addGroup(trimmedName);
+        await onRefreshAssignments();
+
+        setShowGroupCreator(false);
+        setNewGroupName('');
+      }catch (error){
+        console.error(error);
+        alert("Une erreur est survenue lors de la création du groupe");
+      }
+    }
+  }
+
+  const handleCreateClass = async () => {
+    const trimmedName = newClassName.trim();
+
+    const classAlreadyExists = classes?.some(classes => classes.label.toLowerCase() === trimmedName.toLocaleLowerCase());
+    if (classAlreadyExists){
+      alert("Nom de classe déjà existant");
+      return;
+    }
+    else{
+      try{
+        await addClass(trimmedName);
+        await onRefreshAssignments();
+
+        setShowClassCreator(false);
+        setNewClassName('');
+      }catch (error){
+        console.error(error);
+        alert("Une erreur est survenue lors de la création de la classe");
+      }
+    }
+  }
+
   return (
     <div className="center absolute w-[95%] h-[95%] inset-0 m-auto bg-slate-100 backdrop-blur-sm z-40 p-10 flex flex-col justify-start items-center rounded-xl shadow-2xl border border-slate-300 overflow-y-auto">
       
@@ -227,6 +289,28 @@ export default function BlocDetails({ currentSubject, users, students, teacherAs
         </div>
       </div>
 
+      {/* Section Création Groupes et Classes */}
+      <div className="mt-6 text-lg font-semibold w-[95%] bg-slate-200 p-4 rounded-lg flex flex-col gap-2 shadow-sm">
+        <div className="flex justify-between items-center w-full">
+          <div className="flex justify-end gap-2">
+            <button 
+              onClick={() => {
+                setNewGroupName(''); // Reset le champ à l'ouverture
+                setShowGroupCreator(true);
+              }}
+              className="px-4 py-2 cursor-pointer bg-pink-600 hover:bg-pink-700 text-white text-sm font-medium rounded transition-colors shadow"
+            >
+              Create Group
+            </button>
+            <button 
+              onClick={() => setShowClassCreator(true)}
+              className="px-4 py-2 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded transition-colors shadow"
+            >
+              Create Class
+            </button>
+          </div>
+        </div>
+      </div>
       {/* Bouton de fermeture global */}
       <button className="cursor-pointer px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium absolute right-[2%] top-[2%] transition-colors" onClick={onClose}>
         ✕
@@ -235,6 +319,7 @@ export default function BlocDetails({ currentSubject, users, students, teacherAs
       {/* ========================================================================= */}
       {/* MODAL : LISTE DE SELECTION ETUDIANTS                                      */}
       {/* ========================================================================= */}
+      {/* ... (gardé intact pour la clarté) ... */}
       {showStudentSelector && (
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6 rounded-xl">
           <div className="bg-white w-full max-w-4xl rounded-xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
@@ -376,6 +461,147 @@ export default function BlocDetails({ currentSubject, users, students, teacherAs
                 Valider l'ajout des intervenants ({selectedTeachers.length})
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL : CRÉATION DE GROUPE                                               */}
+      {/* ========================================================================= */}
+      {showGroupCreator && (
+        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6 rounded-xl">
+          <div className="bg-white w-full max-w-md rounded-xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
+            
+            {/* Header */}
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
+              <h3 className="text-xl font-bold text-slate-800">Créer un groupe</h3>
+              <button onClick={() => setShowGroupCreator(false)} className="text-gray-400 hover:text-gray-600 font-bold text-lg p-1">✕</button>
+            </div>
+
+            {/* Corps de la modal */}
+            <div className="p-6 flex flex-col gap-4 overflow-y-auto">
+              
+              {/* Champ texte de saisie du nom */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-slate-700">Nom du nouveau groupe</label>
+                <input 
+                  type="text" 
+                  placeholder="Ex: Groupe TD 1, Projet Web..." 
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+                <p className="text-xs text-slate-500 italic mt-1">
+                  Ce groupe inclura automatiquement les <span className="font-bold text-pink-600">{selectedStudents.length}</span> élève(s) actuellement sélectionné(s).
+                </p>
+              </div>
+
+              <hr className="border-slate-200 my-2" />
+
+              {/* Liste scrollable des groupes existants */}
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Groupes existants ({groups?.length || 0})
+                </span>
+                
+                <div className="border border-slate-200 rounded-md bg-slate-50 p-2 max-h-[160px] overflow-y-auto space-y-1.5">
+                  {!groups || groups.length === 0 ? (
+                    <p className="text-xs text-gray-400 italic p-2 text-center">Aucun groupe en base de données.</p>
+                  ) : (
+                    groups.map((group) => (
+                      <div 
+                        key={group.groupId.toString()} 
+                        className="bg-white p-2 text-sm rounded border border-slate-200 text-slate-700 shadow-sm font-medium"
+                      >
+                        {group.label}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer avec bouton de validation */}
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-center rounded-b-xl">
+              <button 
+                onClick={() => handleCreateGroup()}
+                disabled={!newGroupName.trim()}
+                className="w-full px-6 py-2.5 bg-pink-600 hover:bg-pink-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg shadow-md transition-colors"
+              >
+                Créer le Groupe
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+      
+      {showClassCreator && (
+        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6 rounded-xl">
+          <div className="bg-white w-full max-w-md rounded-xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
+            
+            {/* Header */}
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
+              <h3 className="text-xl font-bold text-slate-800">Créer une classe</h3>
+              <button onClick={() => setShowClassCreator(false)} className="text-gray-400 hover:text-gray-600 font-bold text-lg p-1">✕</button>
+            </div>
+
+            {/* Corps de la modal */}
+            <div className="p-6 flex flex-col gap-4 overflow-y-auto">
+              
+              {/* Champ texte de saisie du nom */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-slate-700">Nom de la nouvelle classe</label>
+                <input 
+                  type="text" 
+                  placeholder="Ex: Promo 69, Adimaker..." 
+                  value={newClassName}
+                  onChange={(e) => setNewClassName(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <p className="text-xs text-slate-500 italic mt-1">
+                  Cette classe inclura automatiquement les <span className="font-bold text-purple-600">{selectedStudents.length}</span> élève(s) actuellement sélectionné(s).
+                </p>
+              </div>
+
+              <hr className="border-slate-200 my-2" />
+
+              {/* Liste scrollable des classes existants */}
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Classes existants ({classes?.length || 0})
+                </span>
+                
+                <div className="border border-slate-200 rounded-md bg-slate-50 p-2 max-h-[160px] overflow-y-auto space-y-1.5">
+                  {!classes || classes.length === 0 ? (
+                    <p className="text-xs text-gray-400 italic p-2 text-center">Aucune classe dans la base de données.</p>
+                  ) : (
+                    classes.map((classe) => (
+                      <div 
+                        key={classe.classId.toString()} 
+                        className="bg-white p-2 text-sm rounded border border-slate-200 text-slate-700 shadow-sm font-medium"
+                      >
+                        {classe.label}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer avec bouton de validation */}
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-center rounded-b-xl">
+              <button 
+                onClick={() => handleCreateClass()}
+                disabled={!newClassName.trim()}
+                className="w-full px-6 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg shadow-md transition-colors"
+              >
+                Créer la Classe
+              </button>
+            </div>
+
           </div>
         </div>
       )}

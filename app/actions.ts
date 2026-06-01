@@ -81,6 +81,28 @@ export async function getSubjectAssignments() {
   }
 }
 
+export async function getGroups() {
+  try {
+    return await prisma.group.findMany({
+      orderBy: { groupId: 'asc' },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des groupes :", error);
+    return [];
+  }
+}
+
+export async function getClass() {
+  try {
+    return await prisma.class.findMany({
+      orderBy: { classId: 'asc' },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des classes :", error);
+    return [];
+  }
+}
+
 export async function addDebugSubject(label: string) {
   try {
     return await prisma.subject.create({
@@ -117,6 +139,28 @@ export async function addDebugStudent(classId : number | null, firstname : strin
   } catch (error: any) {
     console.error("Détails du blocage Prisma :", error); 
     throw new Error(`Erreur Prisma brute : ${error.message || error}`);
+  }
+}
+
+export async function addGroup(label : string) {
+  try {
+    return await prisma.group.create({
+      data: { label },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la création du Groupe :", error);
+    throw new Error("Impossible de créer le Groupe'");
+  }
+}
+
+export async function addClass(label : string) {
+  try {
+    return await prisma.class.create({
+      data: { label },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la création de la Classe :", error);
+    throw new Error("Impossible de créer la Classe'");
   }
 }
 

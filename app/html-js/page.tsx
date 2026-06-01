@@ -7,10 +7,15 @@ import { getSubjects,
   getStudents, 
   getTeacherAssignments, 
   getSubjectAssignments,
+  getGroups,
+  getClass,
   addDebugSubject, 
   addDebugUser, 
   addDebugStudent,
+  addGroup,
+  addClass
  } from '../actions'
+import { Group } from '@prisma/client';
 
 interface SubjectType {
   subjectId: number;
@@ -43,6 +48,16 @@ interface SubjectAssignmentsType {
   subjectId : number;
 }
 
+interface GroupType{
+  groupId : bigint;
+  label : string;
+}
+
+interface ClassesType{
+  classId : number;
+  label : string;
+}
+
 export default function DashboardPage() {
   const [activeBloc, setActiveBloc] = useState<SubjectType | null>(null);
   const [subjects, setSubjects] = useState<SubjectType[]>([]);
@@ -51,14 +66,20 @@ export default function DashboardPage() {
   const [students, setStudents] = useState<StudentType[]>([]);
   const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignmentsType[]>([]);
   const [subjectAssignments, setSubjectAssignments] = useState<SubjectAssignmentsType[]>([]);
+  const [groups, setGroups] = useState<GroupType[]>([]);
+  const [classes, setClasses] = useState<ClassesType[]>([]);
 
   const refreshAssignments = async () => {
-    const [teachersData, studentsData] = await Promise.all([
+    const [teachersData, studentsData, groupsData, classesData] = await Promise.all([
       getTeacherAssignments(),
-      getSubjectAssignments()
+      getSubjectAssignments(),
+      getGroups(),
+      getClass()
     ]);
     setTeacherAssignments(teachersData);
     setSubjectAssignments(studentsData);
+    setGroups(groupsData);
+    setClasses(classesData);
   }
 
   useEffect(() => {
@@ -78,6 +99,12 @@ export default function DashboardPage() {
 
       const data5 = await getSubjectAssignments();
       setSubjectAssignments(data5);
+
+      const data6 = await getGroups();
+      setGroups(data6);
+
+      const data7 = await getGroups();
+      setGroups(data7);
     }
     loadInitialData();
   }, []);
@@ -192,6 +219,8 @@ const handleAddDebugStudent = async () => {
           currentSubject={activeBloc}
           users={users}
           students={students}
+          groups={groups}
+          classes={classes}
           teacherAssignments={teacherAssignments}
           subjectAssignments={subjectAssignments}
           onClose={() => setActiveBloc(null)} 
