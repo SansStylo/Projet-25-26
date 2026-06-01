@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { updateTeacherAssignments } from '../actions';
+import { updateTeacherAssignments, updateSubjectAssignments } from '../actions';
 
 interface SubjectType {
   subjectId: number;
@@ -21,9 +21,14 @@ interface TeacherAssignmentsType {
   teacherId: bigint;
 }
 
+interface SubjectAssignmentsType {
+  studentId : bigint;
+  subjectId : number;
+}
+
 interface StudentType {
   studentId: bigint;
-  classId: string;
+  classId: number | null;
   firstname: string;
   surname: string;
 }
@@ -33,40 +38,51 @@ interface BlocDetailsProps {
   users: UsersType[];
   students: StudentType[];
   teacherAssignments: TeacherAssignmentsType[];
+  subjectAssignments : SubjectAssignmentsType[];
   onClose: () => void;
   onRefreshAssignments: () => Promise<void>;
 }
 
-export default function BlocDetails({ currentSubject, users, students, teacherAssignments, onClose, onRefreshAssignments }: BlocDetailsProps) {
+export default function BlocDetails({ currentSubject, users, students, teacherAssignments, subjectAssignments, onClose, onRefreshAssignments }: BlocDetailsProps) {
   const [showStudentSelector, setShowStudentSelector] = useState(false);
   const [showTeacherSelector, setShowTeacherSelector] = useState(false);
 
-  // LOGIQUE : Filtrer les enseignants rattachés à cette matière précise
-  const assignedIds = teacherAssignments
+  // Filtrer les enseignants rattachés à cette matière précise
+  const assignedTeacherIds = teacherAssignments
     .filter(ta => Number(ta.subjectId) === Number(currentSubject.subjectId))
     .map(ta => ta.teacherId);
 
   const alreadyAssignedTeachers = users.filter(user => 
-    assignedIds.includes(user.userId)
+    assignedTeacherIds.includes(user.userId)
   );
 
   const nonAssignedTeachers = users.filter(user => 
-    user.level === 0 && !assignedIds.includes(user.userId)
+    user.level === 0 && !assignedTeacherIds.includes(user.userId)
   );
 
+  // Filtrer les étudiants rattachés à cette matière précise
+  const assignedStudentIds = (subjectAssignments || [])
+    .filter(sa => Number(sa.subjectId) === Number(currentSubject.subjectId))
+    .map(sa => sa.studentId.toString());
+
+  const alreadyAssignedStudents = students.filter(student => assignedStudentIds.includes(student.studentId.toString()));
+
+  const nonAssignedStudents = students.filter(student => !assignedStudentIds.includes(student.studentId.toString()));
+
   // États pour les sélecteurs (modals)
-  const [availableStudents, setAvailableStudents] = useState<StudentType[]>(students || []);
+  const [availableStudents, setAvailableStudents] = useState<StudentType[]>(nonAssignedStudents || []);
   const [availableTeachers, setAvailableTeachers] = useState<UsersType[]>(nonAssignedTeachers || []);
   
-  const [selectedStudents, setSelectedStudents] = useState<StudentType[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<StudentType[]>(alreadyAssignedStudents || []);
   const [selectedTeachers, setSelectedTeachers] = useState<UsersType[]>(alreadyAssignedTeachers || []);
 
-  // 💡 SYNCHRONISATION : À l'initialisation et après chaque "Valider" (onRefreshAssignments), 
   // on remet à jour les listes locales par rapport aux nouvelles données reçues du parent
   useEffect(() => {
     setSelectedTeachers(alreadyAssignedTeachers);
-    setAvailableTeachers(users.filter(user => user.level === 0 && !assignedIds.includes(user.userId)));
-  }, [teacherAssignments, users]);
+    setAvailableTeachers(users.filter(user => user.level === 0 && !assignedTeacherIds.includes(user.userId)));
+    setSelectedStudents(alreadyAssignedStudents);
+    setAvailableStudents(students.filter(student => !assignedStudentIds.includes(student.studentId.toString())));
+  }, [teacherAssignments, subjectAssignments, users, students]);
 
   // États pour les barres de recherche
   const [searchAvailable, setSearchAvailable] = useState('');
@@ -127,6 +143,18 @@ export default function BlocDetails({ currentSubject, users, students, teacherAs
     }
   };
 
+  const handleValidateStudents = async () => {
+    try {
+      const studentIds = selectedStudents.map(s => s.studentId);
+      await updateSubjectAssignments(studentIds, currentSubject.subjectId);
+      await onRefreshAssignments(); // Met à jour le parent page.tsx
+      setShowStudentSelector(false);
+    } catch (error) {
+      console.error(error);
+      alert("Une erreur est survenue lors de l'enregistrement des intervenants.");
+    }
+  };
+
   return (
     <div className="center absolute w-[95%] h-[95%] inset-0 m-auto bg-slate-100 backdrop-blur-sm z-40 p-10 flex flex-col justify-start items-center rounded-xl shadow-2xl border border-slate-300 overflow-y-auto">
       
@@ -145,7 +173,7 @@ export default function BlocDetails({ currentSubject, users, students, teacherAs
           </button>
         </div>
 
-        {/* 💡 LISTE DYNAMIQUE DES INTERVENANTS DEJA AJOUTES */}
+        {/*LISTE DYNAMIQUE DES INTERVENANTS DEJA AJOUTES */}
         <div className="bg-white rounded-md border border-slate-300 overflow-hidden text-sm font-normal mt-2">
           {alreadyAssignedTeachers.length === 0 ? (
             <p className="text-gray-400 italic p-3 text-center">Aucun intervenant pour le moment.</p>
@@ -268,7 +296,7 @@ export default function BlocDetails({ currentSubject, users, students, teacherAs
 
             <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-center rounded-b-xl">
               <button 
-                onClick={() => setShowStudentSelector(false)}
+                onClick={handleValidateStudents}
                 className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-lg shadow-md transition-colors"
               >
                 Valider l'ajout des étudiants ({selectedStudents.length})
@@ -320,7 +348,7 @@ export default function BlocDetails({ currentSubject, users, students, teacherAs
                 <span className="font-bold text-slate-700 text-sm mb-2">Sélectionnés ({filteredSelectedTeachers.length})</span>
                 <input 
                   type="text" 
-                  placeholder="🔍 Filtrer les sélectionnés..." 
+                  placeholder="Filtrer les sélectionnés..." 
                   value={searchSelected}
                   onChange={(e) => setSearchSelected(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white mb-3"

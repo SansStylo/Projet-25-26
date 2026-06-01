@@ -6,10 +6,10 @@ import { getSubjects,
   getUsers, 
   getStudents, 
   getTeacherAssignments, 
+  getSubjectAssignments,
   addDebugSubject, 
   addDebugUser, 
   addDebugStudent,
-  updateTeacherAssignments,
  } from '../actions'
 
 interface SubjectType {
@@ -28,7 +28,7 @@ interface UsersType {
 
 interface StudentType {
   studentId : bigint;
-  classId : string;
+  classId : number | null;
   firstname : string;
   surname : string;
 }
@@ -38,6 +38,11 @@ interface TeacherAssignmentsType {
   teacherId : bigint;
 }
 
+interface SubjectAssignmentsType {
+  studentId : bigint;
+  subjectId : number;
+}
+
 export default function DashboardPage() {
   const [activeBloc, setActiveBloc] = useState<SubjectType | null>(null);
   const [subjects, setSubjects] = useState<SubjectType[]>([]);
@@ -45,11 +50,16 @@ export default function DashboardPage() {
   const [users, setUsers] = useState<UsersType[]>([]);
   const [students, setStudents] = useState<StudentType[]>([]);
   const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignmentsType[]>([]);
+  const [subjectAssignments, setSubjectAssignments] = useState<SubjectAssignmentsType[]>([]);
 
   const refreshAssignments = async () => {
-    const data = await getTeacherAssignments();
-    setTeacherAssignments(data);
-  };
+    const [teachersData, studentsData] = await Promise.all([
+      getTeacherAssignments(),
+      getSubjectAssignments()
+    ]);
+    setTeacherAssignments(teachersData);
+    setSubjectAssignments(studentsData);
+  }
 
   useEffect(() => {
     async function loadInitialData() {
@@ -65,6 +75,9 @@ export default function DashboardPage() {
 
       const data4 = await getTeacherAssignments();
       setTeacherAssignments(data4);
+
+      const data5 = await getSubjectAssignments();
+      setSubjectAssignments(data5);
     }
     loadInitialData();
   }, []);
@@ -180,6 +193,7 @@ const handleAddDebugStudent = async () => {
           users={users}
           students={students}
           teacherAssignments={teacherAssignments}
+          subjectAssignments={subjectAssignments}
           onClose={() => setActiveBloc(null)} 
           onRefreshAssignments={refreshAssignments}
         />

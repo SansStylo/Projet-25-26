@@ -70,6 +70,17 @@ export async function getTeacherAssignments() {
   }
 }
 
+export async function getSubjectAssignments() {
+  try {
+    return await prisma.subjectAssignments.findMany({
+      orderBy: { studentId: 'asc' },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des assignements :", error);
+    return [];
+  }
+}
+
 export async function addDebugSubject(label: string) {
   try {
     return await prisma.subject.create({
@@ -92,7 +103,7 @@ export async function addDebugUser(mail : string, password : string, firstname :
   }
 }
 
-export async function addDebugStudent(classId : number, firstname : string, surname : string) {
+export async function addDebugStudent(classId : number | null, firstname : string, surname : string) {
   try {
     const finalClassId = classId && classId !== 0 ? classId : null;
 
@@ -105,19 +116,7 @@ export async function addDebugStudent(classId : number, firstname : string, surn
     });
   } catch (error: any) {
     console.error("Détails du blocage Prisma :", error); 
-    // 💡 HACK : On renvoie l'erreur brute de Prisma à l'écran !
     throw new Error(`Erreur Prisma brute : ${error.message || error}`);
-  }
-}
-
-export async function addTeacherAssignments(subjectId : number, teacherId : bigint) {
-  try {
-    return await prisma.teacherAssignments.create({
-      data: { subjectId, teacherId },
-    });
-  } catch (error) {
-    console.error("Erreur lors de la création de l'utilisateur de debug :", error);
-    throw new Error("Impossible de créer l'assignement'");
   }
 }
 
@@ -143,6 +142,28 @@ export async function updateTeacherAssignments(subjectId: number, teacherIds: bi
   }
 }
 
+export async function updateSubjectAssignments(studentIds: bigint[], subjectId: number) {
+  try {
+    // On utilise une transaction pour s'assurer que tout s'exécute ou que tout s'annule en cas d'erreur
+    return await prisma.$transaction([
+      // 1. On supprime TOUS les anciens assignements pour cette matière précise
+      prisma.subjectAssignments.deleteMany({
+        where: { subjectId: subjectId },
+      }),
+      // 2. On ré-insère la nouvelle liste propre de profs sélectionnés
+      prisma.subjectAssignments.createMany({
+        data: studentIds.map((id) => ({
+          subjectId: subjectId,
+          studentId: id,
+        })),
+      }),
+    ]);
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour des assignements :", error);
+    throw new Error("Impossible de mettre à jour les assignements des enseignants.");
+  }
+}
+
 export async function loginAction(
   prevState: { error: string | null },
   formData: FormData
@@ -153,44 +174,22 @@ export async function loginAction(
   let redirectPath: string | null = null;
 
   try {
-    //Attention : 'utilisateur' n'existe plus dans ton nouveau schéma, à modifier en 'user' au prochain tour
-    const user = await prisma.utilisateur.findUnique({
-      where: { email },
+    const user = await prisma.user.findUnique({
+      where: { mail : email },
     });
 
-    if (!user || user.motDePasse !== password) {
+    if (!user || user.password !== password) {
       return { error: "Email ou mot de passe incorrect" };
     }
 
-    const sessionToken = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
-
-    //Attention : 'session' n'existe plus dans ton nouveau schéma
-    await prisma.session.create({
-      data: {
-        token: sessionToken,
-        utilisateurId: user.id,
-        expiresAt: expiresAt,
-      },
-    });
-
-    const cookieStore = await cookies();
-    cookieStore.set("session_token", sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      expires: expiresAt,
-      sameSite: "lax",
-      path: "/",
-    });
-
-    switch (user.role) {
-      case 'administrateur':
+    switch (user.level) {
+      case 2:
         redirectPath = '/admin';
         break;
-      case 'responsable_pedagogique':
+      case 1:
         redirectPath = '/responsable';
         break;
-      case 'enseignant':
+      case 0:
       default:
         redirectPath = '/dashboard';
     }
