@@ -278,7 +278,7 @@ export async function getClassesComparisonBySubject() {
 export async function getClassOverview(classId: number) {
   try {
     const classData = await prisma.class.findUnique({
-      where: { ClassID: classId },
+      where: { classId: classId },
       include: {
         students: {
           include: {
@@ -303,9 +303,10 @@ export async function getClassOverview(classId: number) {
     classData.students.forEach(student => {
       student.grades.forEach(grade => {
         const assessment = grade.assessment;
-        const gradeOn20 = (grade.Value / assessment.MaxGrade) * 20;
-        totalWeightedGrades += gradeOn20 * assessment.Weight;
-        totalWeights += assessment.Weight;
+        // 🔄 Adapté au nouveau schéma : value, maxGrade et weight en minuscules
+        const gradeOn20 = (grade.value / assessment.maxGrade) * 20;
+        totalWeightedGrades += gradeOn20 * assessment.weight;
+        totalWeights += assessment.weight;
       });
     });
 
@@ -314,7 +315,8 @@ export async function getClassOverview(classId: number) {
     return {
       success: true,
       data: {
-        className: classData.Label,
+        
+        className: classData.label,
         totalStudents,
         globalAverage: globalAverage ? parseFloat(globalAverage.toFixed(2)) : null
       }
@@ -332,10 +334,10 @@ export async function getSubjectsPerformance(classId: number) {
       include: {
         assessments: {
           where: {
-            grades: { some: { student: { ClassID: classId } } }
+            grades: { some: { student: { classId: classId } } }
           },
           include: {
-            grades: { where: { student: { ClassID: classId } } }
+            grades: { where: { student: { classId: classId } } }
           }
         }
       }
@@ -350,9 +352,10 @@ export async function getSubjectsPerformance(classId: number) {
 
       subject.assessments.forEach(assessment => {
         assessment.grades.forEach(grade => {
-          const gradeOn20 = (grade.Value / assessment.MaxGrade) * 20;
-          totalWeightedGrades += gradeOn20 * assessment.Weight;
-          totalWeights += assessment.Weight;
+          // 🔄 Adapté au nouveau schéma : value, maxGrade et weight en minuscules
+          const gradeOn20 = (grade.value / assessment.maxGrade) * 20;
+          totalWeightedGrades += gradeOn20 * assessment.weight;
+          totalWeights += assessment.weight;
           
           if (gradeOn20 < minGrade) minGrade = gradeOn20;
           if (gradeOn20 > maxGrade) maxGrade = gradeOn20;
@@ -363,8 +366,9 @@ export async function getSubjectsPerformance(classId: number) {
       if (!hasGrades) return null;
 
       return {
-        subjectId: subject.SubjectID,
-        subjectName: subject.Label,
+        // 🔄 Adapté au nouveau schéma : subjectId et label en minuscules
+        subjectId: subject.subjectId,
+        subjectName: subject.label,
         average: totalWeightedGrades / totalWeights,
         minGrade,
         maxGrade
@@ -382,20 +386,26 @@ export async function getSubjectsPerformance(classId: number) {
 export async function getClassEvolution(classId: number) {
   try {
     const assessments = await prisma.assessment.findMany({
-      where: { grades: { some: { student: { ClassID: classId } } } },
-      include: { subject: true, grades: { where: { student: { ClassID: classId } } } },
-      orderBy: { Date: 'asc' }
+      where: { grades: { some: { student: { classId: classId } } } },
+      include: { subject: true, grades: { where: { student: { classId: classId } } } },
+      orderBy: { date: 'asc' } // 🔄 Adapté au nouveau schéma : date en minuscules
     });
 
     const evolutionData = assessments.map(assessment => {
       let totalValue = 0;
-      assessment.grades.forEach(grade => { totalValue += (grade.Value / assessment.MaxGrade) * 20; });
+      
+      // 🔄 Adapté au nouveau schéma : value et maxGrade en minuscules
+      assessment.grades.forEach(grade => { 
+        totalValue += (grade.value / assessment.maxGrade) * 20; 
+      });
+      
       const average = assessment.grades.length > 0 ? (totalValue / assessment.grades.length) : null;
       
       return {
-        date: new Date(assessment.Date).toLocaleDateString('fr-FR'),
-        evaluation: assessment.Label,
-        matiere: assessment.subject.Label,
+        // 🔄 Adapté au nouveau schéma : date, label et subject.label en minuscules
+        date: new Date(assessment.date).toLocaleDateString('fr-FR'),
+        evaluation: assessment.label,
+        matiere: assessment.subject.label,
         moyenne: average ? parseFloat(average.toFixed(2)) : null
       };
     }).filter(item => item.moyenne !== null);

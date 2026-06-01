@@ -55,12 +55,12 @@ DATABASE_URL="postgresql://postgres:root@localhost:5432/suivi_pedago?schema=publ
 npx prisma generate
 ```
 
-### 4. Créer les tables dans la BDD
+### 4. Créer les tables dans la BDD ( ne pas hésiter a reset si demandé puis refaire la commande push)
 ```bash
 npx prisma db push
 ```
 
-### 5. Peupler la BDD avec des données de test
+### 5. metttre des données dans  la BDD (à refaire si vous avez reset avant !)
 ```bash
 npx prisma db seed
 ```

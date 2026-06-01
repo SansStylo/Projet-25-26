@@ -22,8 +22,10 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Junia'lytics - Connexion",
+  title: "Junia'lytics",
   description: "Plateforme de suivi pédagogique",
+  icons: {
+    icon:"/logo.png?v=2"},
 };
 
 export default function RootLayout({
