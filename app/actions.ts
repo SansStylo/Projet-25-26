@@ -59,6 +59,17 @@ export async function getStudents() {
   }
 }
 
+export async function getTeacherAssignments() {
+  try {
+    return await prisma.teacherAssignments.findMany({
+      orderBy: { teacherId: 'asc' },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des assignements :", error);
+    return [];
+  }
+}
+
 export async function addDebugSubject(label: string) {
   try {
     return await prisma.subject.create({
@@ -96,6 +107,39 @@ export async function addDebugStudent(classId : number, firstname : string, surn
     console.error("Détails du blocage Prisma :", error); 
     // 💡 HACK : On renvoie l'erreur brute de Prisma à l'écran !
     throw new Error(`Erreur Prisma brute : ${error.message || error}`);
+  }
+}
+
+export async function addTeacherAssignments(subjectId : number, teacherId : bigint) {
+  try {
+    return await prisma.teacherAssignments.create({
+      data: { subjectId, teacherId },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la création de l'utilisateur de debug :", error);
+    throw new Error("Impossible de créer l'assignement'");
+  }
+}
+
+export async function updateTeacherAssignments(subjectId: number, teacherIds: bigint[]) {
+  try {
+    // On utilise une transaction pour s'assurer que tout s'exécute ou que tout s'annule en cas d'erreur
+    return await prisma.$transaction([
+      // 1. On supprime TOUS les anciens assignements pour cette matière précise
+      prisma.teacherAssignments.deleteMany({
+        where: { subjectId: subjectId },
+      }),
+      // 2. On ré-insère la nouvelle liste propre de profs sélectionnés
+      prisma.teacherAssignments.createMany({
+        data: teacherIds.map((id) => ({
+          subjectId: subjectId,
+          teacherId: id,
+        })),
+      }),
+    ]);
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour des assignements :", error);
+    throw new Error("Impossible de mettre à jour les assignements des enseignants.");
   }
 }
 

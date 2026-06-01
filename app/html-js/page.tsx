@@ -2,7 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import BlocDetails from './detail_teaching';
-import { getSubjects, getUsers, getStudents, addDebugSubject, addDebugUser, addDebugStudent } from '../actions'
+import { getSubjects, 
+  getUsers, 
+  getStudents, 
+  getTeacherAssignments, 
+  addDebugSubject, 
+  addDebugUser, 
+  addDebugStudent,
+  updateTeacherAssignments,
+ } from '../actions'
 
 interface SubjectType {
   subjectId: number;
@@ -25,12 +33,23 @@ interface StudentType {
   surname : string;
 }
 
+interface TeacherAssignmentsType {
+  subjectId : number;
+  teacherId : bigint;
+}
+
 export default function DashboardPage() {
   const [activeBloc, setActiveBloc] = useState<SubjectType | null>(null);
   const [subjects, setSubjects] = useState<SubjectType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [users, setUsers] = useState<UsersType[]>([]);
   const [students, setStudents] = useState<StudentType[]>([]);
+  const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignmentsType[]>([]);
+
+  const refreshAssignments = async () => {
+    const data = await getTeacherAssignments();
+    setTeacherAssignments(data);
+  };
 
   useEffect(() => {
     async function loadInitialData() {
@@ -43,6 +62,9 @@ export default function DashboardPage() {
 
       const data3 = await getStudents();
       setStudents(data3);
+
+      const data4 = await getTeacherAssignments();
+      setTeacherAssignments(data4);
     }
     loadInitialData();
   }, []);
@@ -77,7 +99,7 @@ const handleAddDebugStudent = async () => {
     const dSn = "oui";
 
     // On envoie à PostgreSQL via notre action serveur
-    const newStudent = await addDebugStudent(null,uniqueName, dSn);
+    const newStudent = await addDebugStudent(null, uniqueName, dSn);
     
     setStudents([...students, newStudent]);
   };
@@ -153,10 +175,13 @@ const handleAddDebugStudent = async () => {
 
       {activeBloc && (
         <BlocDetails 
+          key={activeBloc.subjectId}
           currentSubject={activeBloc}
           users={users}
           students={students}
+          teacherAssignments={teacherAssignments}
           onClose={() => setActiveBloc(null)} 
+          onRefreshAssignments={refreshAssignments}
         />
       )}
 
