@@ -19,13 +19,14 @@
 
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { loginAction } from "./actions";
 
 export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(loginAction, {
     error: null,
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-[#F4F7F5] text-[#1E2E24] font-sans antialiased p-6 sm:p-12 selection:bg-emerald-700/10 relative overflow-hidden">
@@ -116,14 +117,39 @@ export default function LoginPage() {
                 Mot de passe oublié?
               </a>
             </div>
-            <input
-              id="password"
-              type="password"
-              name="mot_de_passe"
-              placeholder="••••••••"
-              className="w-full px-4 py-3 rounded-xl bg-stone-50/50 border border-stone-200 text-stone-900 placeholder-stone-400 focus:bg-white focus:ring-4 focus:ring-emerald-700/5 focus:border-emerald-700 outline-none transition text-sm font-medium"
-              required
-            />
+            <div className="relative w-full">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}  /* pour savoir si le mdp est affiché ou masqué */
+                name="mot_de_passe"
+                placeholder="••••••••"
+                className="w-full px-4 py-3 rounded-xl bg-stone-50/50 border border-stone-200 text-stone-900 placeholder-stone-400 focus:bg-white focus:ring-4 focus:ring-emerald-700/5 focus:border-emerald-700 outline-none transition text-sm font-medium"
+                required
+              />
+
+              {/* bouton pour afficher ou cacher le mdp */}
+              <button 
+                type="button" onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-emerald-700 p-1 bg-transparent border-none cursor-pointer flex items-center justify-center transition-colors rounded-md hover:bg-stone-50"
+                title={showPassword? "Masquer le mot de passe" : "Afficher le mot de passe"}>
+                  {showPassword ? (
+                    /* Masquer */
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 8a10.64 10.64 0 0 0 20 0" />
+                      <path d="m5 13-1.5 2" />
+                      <path d="m20 13 1.5 2" />
+                      <path d="m9 16-1 2.5" />
+                      <path d="m15 16 1 2.5" />
+                    </svg>
+                  ) : (
+                    /* Afficher */
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+              </button>
+            </div>
           </div>
 
           {/* Bouton Se connecter */}
@@ -133,13 +159,13 @@ export default function LoginPage() {
               disabled={isPending}
               className="w-full py-4 bg-emerald-700 hover:bg-emerald-800 disabled:bg-stone-100 disabled:text-stone-400 text-white font-bold rounded-xl shadow-md shadow-emerald-700/5 transition duration-150 active:scale-[0.99] text-sm flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed">
               {isPending ? (
-                <>
-                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              "Connexion en cours..."
-              </>
+                <span className="flex items-center justify-center gap-2 animate-[fadeIn_0.2s_ease-out_0.15s_both]">
+                  <svg className="animate-spin h-4 w-4 text-stone-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Connexion en cours...
+                </span>
             ) : ("Se connecter")}
             </button>
           </div>
