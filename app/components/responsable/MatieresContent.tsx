@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { LogoutButton } from "@/app/components/LogoutButton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { getStudentsBySubject } from '@/app/actions';
 
 interface MatiereStats {
   subjectId: number;
@@ -370,10 +371,9 @@ function StudentsModal({ subjectId, onClose, subjectName }: { subjectId: number;
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc' | null>(null);
 
   React.useEffect(() => {
-    fetch(`/api/responsable/students-by-subject?subjectId=${subjectId}`)
-      .then(res => res.json())
+    getStudentsBySubject(subjectId)
       .then(data => {
-        setStudents(data.students || []);
+        setStudents(data);
         setLoading(false);
       })
       .catch(err => {

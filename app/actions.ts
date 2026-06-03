@@ -59,6 +59,63 @@ export async function getStudents() {
   }
 }
 
+export async function getStudentsByClass(classId: number) {
+  const students = await prisma.student.findMany({
+    where: { classId },
+    select: {
+      studentId: true,
+      firstname: true,
+      surname: true,
+      grades: { select: { value: true } },
+    },
+    orderBy: { surname: 'asc' },
+  });
+
+  return students.map(student => {
+    const values = student.grades.map(g => g.value);
+    const globalAverage = values.length > 0
+      ? values.reduce((a, b) => a + b, 0) / values.length
+      : null;
+    return {
+      studentId: Number(student.studentId),
+      firstname: student.firstname,
+      surname: student.surname,
+      globalAverage,
+    };
+  });
+}
+
+export async function getStudentsBySubject(subjectId: number) {
+  const students = await prisma.student.findMany({
+    where: {
+      grades: { some: { assessment: { subjectId } } },
+    },
+    select: {
+      studentId: true,
+      firstname: true,
+      surname: true,
+      grades: {
+        where: { assessment: { subjectId } },
+        select: { value: true },
+      },
+    },
+    orderBy: { surname: 'asc' },
+  });
+
+  return students.map(student => {
+    const values = student.grades.map(g => g.value);
+    const grade = values.length > 0
+      ? values.reduce((a, b) => a + b, 0) / values.length
+      : null;
+    return {
+      studentId: Number(student.studentId),
+      firstname: student.firstname,
+      surname: student.surname,
+      grade,
+    };
+  });
+}
+
 export async function addDebugSubject(label: string) {
   try {
     return await prisma.subject.create({

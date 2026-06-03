@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { LogoutButton } from "@/app/components/LogoutButton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { getStudentsByClass } from '@/app/actions';
 
 interface GroupStats {
   classId: number;
@@ -362,10 +363,9 @@ function StudentsModal({ classId, onClose, groupLabel }: { classId: number; onCl
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc' | null>(null);
 
   React.useEffect(() => {
-    fetch(`/api/responsable/students?classId=${classId}`)
-      .then(res => res.json())
+    getStudentsByClass(classId)
       .then(data => {
-        setStudents(data.students || []);
+        setStudents(data);
         setLoading(false);
       })
       .catch(err => {
