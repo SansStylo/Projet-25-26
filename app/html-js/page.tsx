@@ -18,7 +18,19 @@
 
 import { useState, useEffect } from 'react';
 import BlocDetails from './detail_teaching';
-import { getSubjects, getUsers, getStudents, addDebugSubject, addDebugUser, addDebugStudent } from '../actions'
+import { getSubjects, 
+  getUsers, 
+  getStudents, 
+  getTeacherAssignments, 
+  getSubjectAssignments,
+  getGroups,
+  getClass,
+  addDebugSubject, 
+  addDebugUser, 
+  addDebugStudent,
+  getStudentAssignments
+ } from '../actions'
+import { Group, Student } from '@prisma/client';
 
 interface SubjectType {
   subjectId: number;
@@ -36,9 +48,34 @@ interface UsersType {
 
 interface StudentType {
   studentId : bigint;
-  classId : string;
+  classId : number | null;
   firstname : string;
   surname : string;
+}
+
+interface TeacherAssignmentsType {
+  subjectId : number;
+  teacherId : bigint;
+}
+
+interface SubjectAssignmentsType {
+  studentId : bigint;
+  subjectId : number;
+}
+
+interface StudentAssignmentsType {
+  studentId : bigint;
+  groupId : bigint;
+}
+
+interface GroupType{
+  groupId : bigint;
+  label : string;
+}
+
+interface ClassesType{
+  classId : number;
+  label : string;
 }
 
 export default function DashboardPage() {
@@ -47,6 +84,26 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [users, setUsers] = useState<UsersType[]>([]);
   const [students, setStudents] = useState<StudentType[]>([]);
+  const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignmentsType[]>([]);
+  const [subjectAssignments, setSubjectAssignments] = useState<SubjectAssignmentsType[]>([]);
+  const [studentAssignments, setStudentAssignments] = useState<StudentAssignmentsType[]>([]);
+  const [groups, setGroups] = useState<GroupType[]>([]);
+  const [classes, setClasses] = useState<ClassesType[]>([]);
+
+  const refreshAssignments = async () => {
+    const [teachersData, studentsData, studentData, groupsData, classesData] = await Promise.all([
+      getTeacherAssignments(),
+      getSubjectAssignments(),
+      getStudentAssignments(),
+      getGroups(),
+      getClass()
+    ]);
+    setTeacherAssignments(teachersData);
+    setSubjectAssignments(studentsData);
+    setStudentAssignments(studentData);
+    setGroups(groupsData);
+    setClasses(classesData);
+  }
 
   useEffect(() => {
     async function loadInitialData() {
@@ -59,6 +116,21 @@ export default function DashboardPage() {
 
       const data3 = await getStudents();
       setStudents(data3);
+
+      const data4 = await getTeacherAssignments();
+      setTeacherAssignments(data4);
+
+      const data5 = await getSubjectAssignments();
+      setSubjectAssignments(data5);
+
+      const data6 = await getGroups();
+      setGroups(data6);
+
+      const data7 = await getGroups();
+      setGroups(data7);
+
+      const data8 = await getStudentAssignments();
+      setStudentAssignments(data8);
     }
     loadInitialData();
   }, []);
@@ -93,7 +165,7 @@ const handleAddDebugStudent = async () => {
     const dSn = "oui";
 
     // On envoie à PostgreSQL via notre action serveur
-    const newStudent = await addDebugStudent(null,uniqueName, dSn);
+    const newStudent = await addDebugStudent(null, uniqueName, dSn);
     
     setStudents([...students, newStudent]);
   };
@@ -169,10 +241,17 @@ const handleAddDebugStudent = async () => {
 
       {activeBloc && (
         <BlocDetails 
+          key={activeBloc.subjectId}
           currentSubject={activeBloc}
           users={users}
           students={students}
+          groups={groups}
+          classes={classes}
+          teacherAssignments={teacherAssignments}
+          subjectAssignments={subjectAssignments}
+          studentAssignments={studentAssignments}
           onClose={() => setActiveBloc(null)} 
+          onRefreshAssignments={refreshAssignments}
         />
       )}
 

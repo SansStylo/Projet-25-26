@@ -114,7 +114,60 @@ export async function getStudentsBySubject(subjectId: number) {
       surname: student.surname,
       grade,
     };
-  });
+  });}
+export async function getStudentAssignments() {
+  try {
+    return await prisma.studentAssignments.findMany({
+      orderBy: { studentId: 'asc' },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des assignements :", error);
+    return [];
+  }
+}
+
+export async function getTeacherAssignments() {
+  try {
+    return await prisma.teacherAssignments.findMany({
+      orderBy: { teacherId: 'asc' },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des assignements :", error);
+    return [];
+  }
+}
+
+export async function getSubjectAssignments() {
+  try {
+    return await prisma.subjectAssignments.findMany({
+      orderBy: { studentId: 'asc' },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des assignements :", error);
+    return [];
+  }
+}
+
+export async function getGroups() {
+  try {
+    return await prisma.group.findMany({
+      orderBy: { groupId: 'asc' },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des groupes :", error);
+    return [];
+  }
+}
+
+export async function getClass() {
+  try {
+    return await prisma.class.findMany({
+      orderBy: { classId: 'asc' },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des classes :", error);
+    return [];
+  }
 }
 
 export async function addDebugSubject(label: string) {
@@ -139,7 +192,7 @@ export async function addDebugUser(mail : string, password : string, firstname :
   }
 }
 
-export async function addDebugStudent(classId : number, firstname : string, surname : string) {
+export async function addDebugStudent(classId : number | null, firstname : string, surname : string) {
   try {
     const finalClassId = classId && classId !== 0 ? classId : null;
 
@@ -152,7 +205,6 @@ export async function addDebugStudent(classId : number, firstname : string, surn
     });
   } catch (error: any) {
     console.error("Détails du blocage Prisma :", error); 
-    // 💡 HACK : On renvoie l'erreur brute de Prisma à l'écran !
     throw new Error(`Erreur Prisma brute : ${error.message || error}`);
   }
 }
@@ -215,7 +267,107 @@ export async function getStudentDetail(studentId: bigint) {
     });
   } catch (error) {
     console.error("Erreur lors de la récupération des détails de l'étudiant :", error);
-    return null;
+    return null;}}
+export async function addGroup(label: string, studentIds: bigint[]) {
+  try {
+    // 1. On crée d'abord le groupe en BDD
+    const newGroup = await prisma.group.create({
+      data: {
+        label: label,
+      },
+    });
+
+    // 2. Si on a des étudiants sélectionnés, on crée les liaisons dans StudentAssignments
+    if (studentIds.length > 0) {
+      await prisma.studentAssignments.createMany({
+        data: studentIds.map((id) => ({
+          groupId: newGroup.groupId, // ID du groupe fraîchement créé
+          studentId: id,
+        })),
+      });
+    }
+
+    return newGroup;
+  } catch (error) {
+    console.error("Erreur lors de la création du groupe et de ses assignations :", error);
+    throw new Error("Impossible de créer le groupe.");
+  }
+}
+
+export async function addClass(label : string) {
+  try {
+    return await prisma.class.create({
+      data: { label },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la création de la Classe :", error);
+    throw new Error("Impossible de créer la Classe'");
+  }
+}
+
+export async function updateTeacherAssignments(subjectId: number, teacherIds: bigint[]) {
+  try {
+    // On utilise une transaction pour s'assurer que tout s'exécute ou que tout s'annule en cas d'erreur
+    return await prisma.$transaction([
+      // 1. On supprime TOUS les anciens assignements pour cette matière précise
+      prisma.teacherAssignments.deleteMany({
+        where: { subjectId: subjectId },
+      }),
+      // 2. On ré-insère la nouvelle liste propre de profs sélectionnés
+      prisma.teacherAssignments.createMany({
+        data: teacherIds.map((id) => ({
+          subjectId: subjectId,
+          teacherId: id,
+        })),
+      }),
+    ]);
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour des assignements :", error);
+    throw new Error("Impossible de mettre à jour les assignements des enseignants.");
+  }
+}
+
+export async function updateSubjectAssignments(studentIds: bigint[], subjectId: number) {
+  try {
+    // On utilise une transaction pour s'assurer que tout s'exécute ou que tout s'annule en cas d'erreur
+    return await prisma.$transaction([
+      // 1. On supprime TOUS les anciens assignements pour cette matière précise
+      prisma.subjectAssignments.deleteMany({
+        where: { subjectId: subjectId },
+      }),
+      // 2. On ré-insère la nouvelle liste propre de profs sélectionnés
+      prisma.subjectAssignments.createMany({
+        data: studentIds.map((id) => ({
+          subjectId: subjectId,
+          studentId: id,
+        })),
+      }),
+    ]);
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour des assignements :", error);
+    throw new Error("Impossible de mettre à jour les assignements des enseignants.");
+  }
+}
+
+export async function updateStudentAssignments(studentIds: bigint[], groupId: number) {
+  try {
+    // On utilise une transaction pour s'assurer que tout s'exécute ou que tout s'annule en cas d'erreur
+    return await prisma.$transaction([
+      // 1. On supprime TOUS les anciens assignements pour cette matière précise
+      prisma.studentAssignments.deleteMany({
+        where: { groupId: groupId },
+      }),
+      // 2. On ré-insère la nouvelle liste propre de profs sélectionnés
+      prisma.studentAssignments.createMany({
+        data: studentIds.map((id) => ({
+          groupId: groupId,
+          studentId: id,
+        })),
+      }),
+    ]);
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour des assignements :", error);
+    throw new Error("Impossible de mettre à jour les assignements des étudiants.");
   }
 }
 
@@ -235,6 +387,8 @@ export async function loginAction(
     });
 
     // Vérifie que l'utilisateur existe et que le mot de passe est correct
+
+
     if (!user || user.password !== password) {
       return { error: "Email ou mot de passe incorrect" };
     }
