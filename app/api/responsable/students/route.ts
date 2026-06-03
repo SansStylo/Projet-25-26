@@ -1,8 +1,3 @@
-/**
- * app/api/responsable/students/route.ts
- * API pour récupérer les étudiants d'une classe
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/db';
 
@@ -12,25 +7,15 @@ export async function GET(request: NextRequest) {
     const classId = searchParams.get('classId');
 
     if (!classId) {
-      return NextResponse.json(
-        { error: 'classId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'classId is required' }, { status: 400 });
     }
 
     const students = await prisma.student.findMany({
-      where: {
-        enrollments: {
-          some: {
-            classId: parseInt(classId, 10),
-          },
-        },
-      },
+      where: { classId: parseInt(classId, 10) },
       select: {
         studentId: true,
         firstname: true,
         surname: true,
-        email: true,
         grades: {
           select: { value: true },
         },
@@ -38,26 +23,22 @@ export async function GET(request: NextRequest) {
       orderBy: { surname: 'asc' },
     });
 
-    // Calculer la moyenne globale pour chaque étudiant
-    const studentsWithAverage = students.map(student => {
-      const grades = student.grades.map(g => g.value).filter(v => v !== null) as number[];
-      const average = grades.length > 0 ? grades.reduce((a, b) => a + b, 0) / grades.length : 0;
-      
+    const result = students.map(student => {
+      const values = student.grades.map(g => g.value);
+      const globalAverage = values.length > 0
+        ? values.reduce((a, b) => a + b, 0) / values.length
+        : null;
       return {
-        studentId: student.studentId,
+        studentId: Number(student.studentId),
         firstname: student.firstname,
         surname: student.surname,
-        email: student.email,
-        globalAverage: average,
+        globalAverage,
       };
     });
 
-    return NextResponse.json({ students: studentsWithAverage });
+    return NextResponse.json({ students: result });
   } catch (error) {
     console.error('Error fetching students:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

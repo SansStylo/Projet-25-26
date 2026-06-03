@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { LogoutButton } from "@/app/components/LogoutButton";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface MatiereStats {
   subjectId: number;
@@ -301,29 +302,30 @@ export default function MatieresContent({ matieresStats }: MatieresContentProps)
                   </div>
                   
                   <div className="p-6">
-                    <div className="mb-4 space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-[#53665A]">Moyenne</span>
-                        <span className="font-bold text-lg text-[#0F5E3D]">{matiere.average.toFixed(2)}/20</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-[#53665A]">Min</span>
-                        <span className="font-semibold text-[#1E2E24]">{matiere.minGrade.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-[#53665A]">Max</span>
-                        <span className="font-semibold text-[#1E2E24]">{matiere.maxGrade.toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    {/* Barre de progression */}
-                    <div className="mb-4">
-                      <div className="w-full bg-[#E2EAE5] rounded-full h-2">
-                        <div 
-                          className="bg-[#0F5E3D] h-2 rounded-full transition-all"
-                          style={{ width: `${(matiere.average / 20) * 100}%` }}
-                        ></div>
-                      </div>
+                    <div className="h-28 mb-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={[
+                            { name: 'Min', value: matiere.minGrade },
+                            { name: 'Moy.', value: matiere.average },
+                            { name: 'Max', value: matiere.maxGrade },
+                          ]}
+                          margin={{ top: 5, right: 5, left: -30, bottom: 0 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2EAE5" />
+                          <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                          <YAxis domain={[0, 20]} tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
+                          <Tooltip
+                            formatter={(value: number) => [`${value.toFixed(2)}/20`]}
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                          />
+                          <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                            <Cell fill="#F97316" />
+                            <Cell fill="#0F5E3D" />
+                            <Cell fill="#3B82F6" />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
 
                     <button
@@ -365,41 +367,70 @@ export default function MatieresContent({ matieresStats }: MatieresContentProps)
 function StudentsModal({ subjectId, onClose, subjectName }: { subjectId: number; onClose: () => void; subjectName: string }) {
   const [students, setStudents] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc' | null>(null);
 
   React.useEffect(() => {
-    // Récupérer les étudiants ayant des notes dans cette matière
     fetch(`/api/responsable/students-by-subject?subjectId=${subjectId}`)
       .then(res => res.json())
       .then(data => {
         setStudents(data.students || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(err => {
+        console.error('Erreur chargement étudiants:', err);
+        setLoading(false);
+      });
   }, [subjectId]);
+
+  const sortedStudents = React.useMemo(() => {
+    if (!sortOrder) return students;
+    return [...students].sort((a, b) => {
+      const aVal = a.grade ?? -1;
+      const bVal = b.grade ?? -1;
+      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+  }, [students, sortOrder]);
+
+  const cycleSortOrder = () => {
+    setSortOrder(prev => prev === null ? 'desc' : prev === 'desc' ? 'asc' : null);
+  };
+
+  const sortLabel = sortOrder === 'desc' ? '↓ Note' : sortOrder === 'asc' ? '↑ Note' : 'Trier';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000] p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-auto">
-        <div className="sticky top-0 bg-[#F4F7F5] px-6 py-4 border-b border-[#E2EAE5] flex justify-between items-center">
-          <h2 className="font-bold text-[#1E2E24] text-lg">Étudiants - <span className="text-[#0F5E3D]">{subjectName}</span></h2>
-          <button
-            onClick={onClose}
-            className="text-[#53665A] hover:text-[#1E2E24] text-2xl leading-none"
-          >
-            ×
-          </button>
+        <div className="sticky top-0 bg-[#F4F7F5] px-6 py-4 border-b border-[#E2EAE5] flex justify-between items-center gap-3">
+          <h2 className="font-bold text-[#1E2E24] text-lg truncate">Étudiants — <span className="text-[#0F5E3D]">{subjectName}</span></h2>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={cycleSortOrder}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                sortOrder
+                  ? 'bg-[#0F5E3D] text-white border-[#0F5E3D]'
+                  : 'bg-white text-[#53665A] border-[#E2EAE5] hover:border-[#0F5E3D] hover:text-[#0F5E3D]'
+              }`}
+            >
+              {sortLabel}
+            </button>
+            <button onClick={onClose} className="text-[#53665A] hover:text-[#1E2E24] text-2xl leading-none">×</button>
+          </div>
         </div>
-        
+
         <div className="p-6">
           {loading ? (
             <p className="text-center text-[#53665A]">Chargement...</p>
-          ) : students.length > 0 ? (
+          ) : sortedStudents.length > 0 ? (
             <div className="space-y-2">
-              {students.map((student, idx) => (
+              {sortedStudents.map((student, idx) => (
                 <div key={idx} className="p-3 bg-[#F4F7F5] rounded-lg flex justify-between items-center">
                   <span className="font-medium text-[#1E2E24]">{student.firstname} {student.surname}</span>
-                  {student.grade !== null && (
-                    <span className="text-sm font-semibold text-[#0F5E3D]">Note: {student.grade.toFixed(2)}</span>
+                  {student.grade != null && (
+                    <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+                      student.grade >= 10 ? 'text-[#0F5E3D] bg-green-50' : 'text-red-600 bg-red-50'
+                    }`}>
+                      {student.grade.toFixed(2)}/20
+                    </span>
                   )}
                 </div>
               ))}

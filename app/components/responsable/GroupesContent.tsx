@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { LogoutButton } from "@/app/components/LogoutButton";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface GroupStats {
   classId: number;
@@ -303,21 +304,20 @@ export default function GroupesContent({ groupsStats }: GroupesContentProps) {
                   </div>
                   
                   <div className="p-6">
-                    <div className="mb-4">
-                      <h4 className="text-xs font-bold text-[#1E2E24] uppercase mb-3">Moyennes par matière</h4>
-                      <div className="space-y-2">
-                        {group.averageBySubject.slice(0, 3).map((subject) => (
-                          <div key={subject.subjectId} className="flex justify-between items-center text-sm">
-                            <span className="text-[#53665A] truncate">{subject.subjectName}</span>
-                            <span className="font-semibold text-[#0F5E3D]">{subject.average.toFixed(2)}</span>
-                          </div>
-                        ))}
-                        {group.averageBySubject.length > 3 && (
-                          <p className="text-xs text-[#718579] pt-2">
-                            +{group.averageBySubject.length - 3} matière(s)
-                          </p>
-                        )}
-                      </div>
+                    <h4 className="text-xs font-bold text-[#1E2E24] uppercase mb-2">Moyennes par matière</h4>
+                    <div className="h-32 mb-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={group.averageBySubject} margin={{ top: 5, right: 5, left: -30, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2EAE5" />
+                          <XAxis dataKey="subjectName" tick={false} axisLine={false} tickLine={false} />
+                          <YAxis domain={[0, 20]} tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
+                          <Tooltip
+                            formatter={(value: number) => [`${value.toFixed(2)}/20`, 'Moyenne']}
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                          />
+                          <Bar dataKey="average" fill="#0F5E3D" radius={[3, 3, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
 
                     <button
@@ -359,41 +359,70 @@ export default function GroupesContent({ groupsStats }: GroupesContentProps) {
 function StudentsModal({ classId, onClose, groupLabel }: { classId: number; onClose: () => void; groupLabel: string }) {
   const [students, setStudents] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc' | null>(null);
 
   React.useEffect(() => {
-    // Récupérer les étudiants du groupe
     fetch(`/api/responsable/students?classId=${classId}`)
       .then(res => res.json())
       .then(data => {
         setStudents(data.students || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(err => {
+        console.error('Erreur chargement étudiants:', err);
+        setLoading(false);
+      });
   }, [classId]);
+
+  const sortedStudents = React.useMemo(() => {
+    if (!sortOrder) return students;
+    return [...students].sort((a, b) => {
+      const aVal = a.globalAverage ?? -1;
+      const bVal = b.globalAverage ?? -1;
+      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+  }, [students, sortOrder]);
+
+  const cycleSortOrder = () => {
+    setSortOrder(prev => prev === null ? 'desc' : prev === 'desc' ? 'asc' : null);
+  };
+
+  const sortLabel = sortOrder === 'desc' ? '↓ Note' : sortOrder === 'asc' ? '↑ Note' : 'Trier';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000] p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-auto">
-        <div className="sticky top-0 bg-[#F4F7F5] px-6 py-4 border-b border-[#E2EAE5] flex justify-between items-center">
-          <h2 className="font-bold text-[#1E2E24] text-lg">Étudiants du groupe <span className="text-[#0F5E3D]">{groupLabel}</span></h2>
-          <button
-            onClick={onClose}
-            className="text-[#53665A] hover:text-[#1E2E24] text-2xl leading-none"
-          >
-            ×
-          </button>
+        <div className="sticky top-0 bg-[#F4F7F5] px-6 py-4 border-b border-[#E2EAE5] flex justify-between items-center gap-3">
+          <h2 className="font-bold text-[#1E2E24] text-lg truncate">Étudiants — <span className="text-[#0F5E3D]">{groupLabel}</span></h2>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={cycleSortOrder}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                sortOrder
+                  ? 'bg-[#0F5E3D] text-white border-[#0F5E3D]'
+                  : 'bg-white text-[#53665A] border-[#E2EAE5] hover:border-[#0F5E3D] hover:text-[#0F5E3D]'
+              }`}
+            >
+              {sortLabel}
+            </button>
+            <button onClick={onClose} className="text-[#53665A] hover:text-[#1E2E24] text-2xl leading-none">×</button>
+          </div>
         </div>
-        
+
         <div className="p-6">
           {loading ? (
             <p className="text-center text-[#53665A]">Chargement...</p>
-          ) : students.length > 0 ? (
+          ) : sortedStudents.length > 0 ? (
             <div className="space-y-2">
-              {students.map((student, idx) => (
+              {sortedStudents.map((student, idx) => (
                 <div key={idx} className="p-3 bg-[#F4F7F5] rounded-lg flex justify-between items-center">
                   <span className="font-medium text-[#1E2E24]">{student.firstname} {student.surname}</span>
-                  {student.globalAverage && (
-                    <span className="text-sm font-semibold text-[#0F5E3D]">Moy: {student.globalAverage.toFixed(2)}</span>
+                  {student.globalAverage != null && (
+                    <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+                      student.globalAverage >= 10 ? 'text-[#0F5E3D] bg-green-50' : 'text-red-600 bg-red-50'
+                    }`}>
+                      {student.globalAverage.toFixed(2)}/20
+                    </span>
                   )}
                 </div>
               ))}

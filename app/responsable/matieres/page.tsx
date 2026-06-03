@@ -1,10 +1,3 @@
-/**
- * app/responsable/matieres/page.tsx
- * 
- * Page d'analyse des matières
- * Affiche toutes les matières avec statistiques, graphes et filtrage
- */
-
 import { prisma } from "@/app/lib/db";
 import MatieresContent from "../../components/responsable/MatieresContent";
 
@@ -20,25 +13,22 @@ interface MatiereStats {
 
 async function getSubjectsStats(): Promise<MatiereStats[]> {
   const subjects = await prisma.subject.findMany({
-    orderBy: { name: 'asc' },
+    orderBy: { label: 'asc' },
   });
 
   const matieresStats: MatiereStats[] = await Promise.all(
     subjects.map(async (subject) => {
-      // Récupérer les grades pour cette matière
       const grades = await prisma.grade.findMany({
-        where: { subjectId: subject.subjectId },
+        where: { assessment: { subjectId: subject.subjectId } },
         select: { value: true },
       });
 
-      // Récupérer le nombre de classes enseignant cette matière
-      const classes = await prisma.enrollment.findMany({
+      const classesWithSubject = await prisma.student.findMany({
         where: {
-          student: {
-            grades: {
-              some: { subjectId: subject.subjectId },
-            },
+          grades: {
+            some: { assessment: { subjectId: subject.subjectId } },
           },
+          classId: { not: null },
         },
         distinct: ['classId'],
         select: { classId: true },
@@ -51,12 +41,12 @@ async function getSubjectsStats(): Promise<MatiereStats[]> {
 
       return {
         subjectId: subject.subjectId,
-        name: subject.name,
+        name: subject.label,
         totalGrades: grades.length,
         average,
         minGrade,
         maxGrade,
-        classCount: classes.length,
+        classCount: classesWithSubject.length,
       };
     })
   );
@@ -66,6 +56,5 @@ async function getSubjectsStats(): Promise<MatiereStats[]> {
 
 export default async function MatieresPage() {
   const matieresStats = await getSubjectsStats();
-
   return <MatieresContent matieresStats={matieresStats} />;
 }

@@ -1,8 +1,3 @@
-/**
- * app/api/responsable/students-by-subject/route.ts
- * API pour récupérer les étudiants ayant des notes dans une matière
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/db';
 
@@ -12,47 +7,49 @@ export async function GET(request: NextRequest) {
     const subjectId = searchParams.get('subjectId');
 
     if (!subjectId) {
-      return NextResponse.json(
-        { error: 'subjectId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'subjectId is required' }, { status: 400 });
     }
 
-    const grades = await prisma.grade.findMany({
+    const parsedSubjectId = parseInt(subjectId, 10);
+
+    const students = await prisma.student.findMany({
       where: {
-        subjectId: parseInt(subjectId, 10),
-      },
-      select: {
-        student: {
-          select: {
-            studentId: true,
-            firstname: true,
-            surname: true,
-            email: true,
+        grades: {
+          some: {
+            assessment: { subjectId: parsedSubjectId },
           },
         },
-        value: true,
       },
-      orderBy: {
-        student: { surname: 'asc' },
+      select: {
+        studentId: true,
+        firstname: true,
+        surname: true,
+        grades: {
+          where: {
+            assessment: { subjectId: parsedSubjectId },
+          },
+          select: { value: true },
+        },
       },
-      distinct: ['studentId'],
+      orderBy: { surname: 'asc' },
     });
 
-    const students = grades.map(grade => ({
-      studentId: grade.student.studentId,
-      firstname: grade.student.firstname,
-      surname: grade.student.surname,
-      email: grade.student.email,
-      grade: grade.value,
-    }));
+    const result = students.map(student => {
+      const values = student.grades.map(g => g.value);
+      const grade = values.length > 0
+        ? values.reduce((a, b) => a + b, 0) / values.length
+        : null;
+      return {
+        studentId: Number(student.studentId),
+        firstname: student.firstname,
+        surname: student.surname,
+        grade,
+      };
+    });
 
-    return NextResponse.json({ students });
+    return NextResponse.json({ students: result });
   } catch (error) {
     console.error('Error fetching students by subject:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
