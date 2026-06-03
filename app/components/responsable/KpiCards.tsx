@@ -1,3 +1,19 @@
+/**
+ * app/components/responsable/KpiCards.tsx
+ * 
+ * Composant d'affichage des KPIs (indicateurs clés de performance)
+ * 
+ * Rôle:
+ * - Affiche des cartes avec les indicateurs clés pour une classe (moyennes, moyennes par matière)
+ * - Permet d'identifier rapidement les performances et les problèmes
+ * - Inclut des actions pour voir les listes d'étudiants détaillées
+ * 
+ * Fonctionnement:
+ * - Reçoit les statistiques d'une classe via les props
+ * - Affiche les KPIs en cartes colorées avec codes de couleur (vert/orange/rouge)
+ * - Permet d'ouvrir un modal pour voir les listes d'étudiants par niveau de risque
+ */
+
 'use client';
 
 import { useState } from 'react';

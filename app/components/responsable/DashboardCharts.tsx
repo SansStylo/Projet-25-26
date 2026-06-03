@@ -1,3 +1,18 @@
+/**
+ * app/components/responsable/DashboardCharts.tsx
+ * 
+ * Composant d'affichage des graphiques du dashboard responsable
+ * 
+ * Rôle:
+ * - Affiche les graphiques de synthèse des performances (moyennes par matière et évolution)
+ * - Permet une visualisation rapide des trends et des performances
+ * 
+ * Fonctionnement:
+ * - Reçoit les données de matières et d'évolution via les props
+ * - Affiche un graphique en barres pour les moyennes par matière
+ * - Affiche un graphique en courbes pour l'évolution temporelle des moyennes
+ */
+
 'use client';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';

@@ -1,3 +1,19 @@
+/**
+ * app/components/responsable/StudentListsModal.tsx
+ * 
+ * Composant modal d'affichage des listes d'étudiants par niveau de risque
+ * 
+ * Rôle:
+ * - Affiche un modal avec les listes d'étudiants catégorisés par niveau de risque (FAIBLE, MODERE, CRITIQUE)
+ * - Permet d'identifier rapidement les étudiants qui ont besoin d'aide
+ * - Intégré dans les KpiCards pour une exploration détaillée
+ * 
+ * Fonctionnement:
+ * - Reçoit les profils d'étudiants avec scores et drapeaux de risque
+ * - Affiche les étudiants triés par niveau de risque avec couleurs visuelles
+ * - Chaque étudiant affiche sa moyenne globale et son score de risque
+ */
+
 'use client';
 
 interface StudentProfile {

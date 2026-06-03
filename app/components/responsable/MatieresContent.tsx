@@ -1,3 +1,19 @@
+/**
+ * app/components/responsable/MatieresContent.tsx
+ * 
+ * Composant d'affichage des matières - Responsables
+ * 
+ * Rôle:
+ * - Affiche la liste des matières avec leurs statistiques de performance
+ * - Permet de voir les moyennes par matière et identifier les difficultés
+ * - Sidebar et header pour responsables avec navigation appropriée
+ * 
+ * Fonctionnement:
+ * - Récupère les statistiques des matières via les props
+ * - Affiche un graphique en barres des moyennes par matière (colorié par performance)
+ * - Permet de cliquer sur une matière pour voir les étudiants détaillés
+ */
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -92,7 +108,7 @@ export default function MatieresContent({ matieresStats }: MatieresContentProps)
         {/* liens de navigation */}
         <ul className="list-none p-0 m-0">
           {[
-            { name: 'Groupes', href: '/responsable/groupes', icon: (
+            { name: 'Groupes', href: '/responsable', icon: (
               <>
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                 <circle cx="9" cy="7" r="4"></circle>

@@ -1,3 +1,18 @@
+/**
+ * app/components/responsable/ClassSelector.tsx
+ * 
+ * Composant de sélection de classe pour les responsables
+ * 
+ * Rôle:
+ * - Permet de sélectionner une classe/groupe pour voir ses détails et statistiques
+ * - Intégré dans la page responsable pour filtrer les données affichées
+ * 
+ * Fonctionnement:
+ * - Affiche un dropdown de sélection des classes disponibles
+ * - Synchronise la sélection avec les paramètres d'URL (searchParams)
+ * - Recharge les données quand une classe est sélectionnée
+ */
+
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';

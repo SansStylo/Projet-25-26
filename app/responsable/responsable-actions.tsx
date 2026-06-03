@@ -1,7 +1,13 @@
-import { prisma } from '@/app/lib/db';
+/**
+ * app/responsable/responsable-actions.tsx
+ */
 
-// ====== 1. VUE GLOBALE DE LA CLASSE (KPIs) ======
-export async function getClassOverview(classId: number) {
+/**
+ * app/responsable/responsable-actions.ts
+ */
+"use server"; // Indique que ce fichier contient des Server Actions
+
+import { prisma } from '@/app/lib/db';
   try {
     const classData = await prisma.class.findUnique({
       where: { classId: classId },

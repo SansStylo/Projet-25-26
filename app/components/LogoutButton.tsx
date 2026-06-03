@@ -3,8 +3,14 @@
  * 
  * Composant bouton de déconnexion
  * 
- * Affiche un bouton permettant à l'utilisateur de se déconnecter
- * Utilise la Server Action logoutAction
+ * Rôle:
+ * - Fournit un bouton de déconnexion sécurisé pour tous les utilisateurs
+ * - Supprime la session et le cookie de l'utilisateur
+ * 
+ * Fonctionnement:
+ * - Utilise la Server Action logoutAction pour gérer la déconnexion
+ * - Affiche un bouton styled au design de l'application
+ * - Redirige vers la page de connexion après déconnexion
  */
 
 "use client";

@@ -1,6 +1,18 @@
 /**
  * prisma/seed.ts
- * Script d'initialisation et de peuplement de la base de données
+ * 
+ * Script de peuplement de la base de données
+ * 
+ * Rôle:
+ * - Initialise la base de données avec des données de test réalistes
+ * - Génére des utilisateurs (enseignants, responsables, admins), classes, matières, étudiants et notes
+ * - Utilise Faker.js pour générer des données aléatoires en français
+ * 
+ * Fonctionnement:
+ * - Se connecte à PostgreSQL via Prisma
+ * - Crée utilisateurs, classes, matières, étudiants avec assignations et notes
+ * - Génére des données réalistes pour tester l'application en développement
+ * - Exécute: npx prisma db seed
  */
 
 import { fakerFR as faker } from '@faker-js/faker';

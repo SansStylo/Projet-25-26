@@ -1,3 +1,19 @@
+/**
+ * app/html-js/detail_teaching.tsx
+ * 
+ * Composant d'affichage détaillé des données - Debug
+ * 
+ * Rôle:
+ * - Affiche les détails des données (sujets, utilisateurs, étudiants)
+ * - Permet de visualiser la structure des données stockées en BDD
+ * - Utile pour le débogage et le test en développement
+ * 
+ * Fonctionnement:
+ * - Reçoit les données des sujets, utilisateurs, et étudiants via props
+ * - Affiche chaque enregistrement avec ses propriétés
+ * - Interface pour visualiser et naviguer dans les données
+ */
+
 'use client';
 
 import { useState } from 'react';

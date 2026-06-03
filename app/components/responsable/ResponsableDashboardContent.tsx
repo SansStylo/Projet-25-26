@@ -1,3 +1,20 @@
+/**
+ * app/components/responsable/ResponsableDashboardContent.tsx
+ * 
+ * Composant du tableau de bord complet pour responsables pédagogiques
+ * 
+ * Rôle:
+ * - Affiche le tableau de bord complet avec sélecteur de classe, KPIs et graphiques
+ * - Intègre la sidebar, header et toute l'interface responsable
+ * - Permet une vue d'ensemble des performances d'une classe/groupe
+ * 
+ * Fonctionnement:
+ * - Reçoit les statistiques de groupes via les props
+ * - Gère la sélection de classe et l'état du dashboard
+ * - Affiche les KPIs, graphiques et sélecteurs pour la classe sélectionnée
+ * - Sidebar et header adapté aux responsables avec navigation appropriée
+ */
+
 "use client";
 
 import React, { useState } from 'react';
@@ -76,7 +93,7 @@ export default function ResponsableDashboardContent({
         {/* liens de navigation */}
         <ul className="list-none p-0 m-0">
           {[
-            { name: 'Groupes', href: '/responsable/groupes', icon: (
+            { name: 'Groupes', href: '/responsable', icon: (
               <>
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                 <circle cx="9" cy="7" r="4"></circle>

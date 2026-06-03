@@ -1,3 +1,20 @@
+/**
+ * app/responsable/analytics.tsx
+ * 
+ * Composant d'analytiques avancées pour responsables
+ * 
+ * Rôle:
+ * - Fournit des analyses avancées sur les étudiants à risque pour une classe
+ * - Identifie les étudiants en difficulté basé sur les notes et tendances
+ * - Génère des scores de risque pour chaque étudiant
+ * 
+ * Fonctionnement:
+ * - Récupère tous les étudiants d'une classe avec leurs notes et coefficients
+ * - Calcule les moyennes pondérées par matière
+ * - Génère des scores de risque (FAIBLE, MODERE, CRITIQUE) basé sur les performances
+ * - Retourne les données pour affichage dans les KPIs et modals
+ */
+
 import { prisma } from '@/app/lib/db';
 
 export async function getStudentsAtRisk(classId: number) {

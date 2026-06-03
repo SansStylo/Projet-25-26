@@ -1,3 +1,19 @@
+/**
+ * app/components/responsable/GroupesContent.tsx
+ * 
+ * Composant d'affichage des groupes/classes - Responsables
+ * 
+ * Rôle:
+ * - Affiche la liste des groupes/classes avec leurs statistiques et graphiques
+ * - Permet de voir les moyennes, les étudiants et les performances par classe
+ * - Sidebar et header pour responsables avec navigation appropriée
+ * 
+ * Fonctionnement:
+ * - Récupère les statistiques des classes via les props
+ * - Affiche un graphique en barres des moyennes par classe
+ * - Permet de cliquer sur une classe pour voir les étudiants détaillés
+ */
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -94,7 +110,7 @@ export default function GroupesContent({ groupsStats }: GroupesContentProps) {
         {/* liens de navigation */}
         <ul className="list-none p-0 m-0">
           {[
-            { name: 'Groupes', href: '/responsable/groupes', active: true, icon: (
+            { name: 'Groupes', href: '/responsable', active: true, icon: (
               <>
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                 <circle cx="9" cy="7" r="4"></circle>
