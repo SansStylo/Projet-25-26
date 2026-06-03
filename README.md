@@ -60,12 +60,28 @@ npx prisma generate
 npx prisma db push
 ```
 
-### 5. metttre des données dans  la BDD (à refaire si vous avez reset avant !)
+### 5. Mettre des données dans  la BDD (à refaire si vous avez reset avant !)
 ```bash
 npx prisma db seed
 ```
 *(optionnel, pour avoir des utilisateurs de test)*
 
+---
+Installations supplémentaires :
+Pour la gestion des mots de passe oubliés sur la page de connexion
+```bash
+npm install nodemailer
+```
+
+```bash
+npm install --save-dev @types/nodemailer
+```
+
+Rajouter dans votre .env cette ligne avec le mot de passe de l'adresse email correspondant
+pour configurer l'adresse qui enverra les mails automatiques de récupération de mots de passe
+```env
+GMAIL_PASS=dlbdzqwgpcdkweeh
+```
 ---
 
 ## 📊 Comprendre Prisma, SQL et PostgreSQL
