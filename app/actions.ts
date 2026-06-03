@@ -25,6 +25,7 @@ import { prisma } from "./lib/db";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 export async function getSubjects() {
   try {
@@ -192,4 +193,125 @@ export async function logoutAction() {
   }
 
   redirect("/");
+}
+
+
+/**
+ * Gestion de l'oubli de mot de passe/nouveau mot de passe
+ * avec envoi d'un code par e-mail automatique
+ */
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: "junialytics@gmail.com",
+    pass: process.env.GMAIL_PASS, // Mot de passe d'application Google à 16 caractères
+  },
+});
+
+export async function sendResetCodeEmail(targetEmail: string, code: string) {
+  const mailOptions = {
+    from: '"Junia\'lytics" <junialytics@gmail.com>',
+    to: targetEmail,                     
+    subject: "Votre code de récupération Junia'lytics",    
+    text: `Votre code de validation est : ${code}. Il expirera dans 15 minutes.`,                          
+    html:`
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Code de récupération Junia'lytics</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #F4F7F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+      
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #F4F7F5; padding: 40px 20px;">
+        <tr>
+          <td align="center">
+            
+            <!-- Conteneur Principal de la Carte -->
+            <table role="presentation" width="100%" max-width="480" cellspacing="0" cellpadding="0" border="0" style="max-width: 480px; width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #E2EAE5; box-shadow: 0 4px 20px rgba(18,38,30,0.02); overflow: hidden;">
+              
+              <!-- En-tête / Bannière Haute -->
+              <tr>
+                <td style="padding: 32px 32px 20px 32px; text-align: center;">
+                  <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #12261E; tracking-tight: -0.025em;">Junia'lytics</h1>
+                  <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: 500; color: #53665A; text-transform: uppercase; letter-spacing: 0.05em;">Sécurité & Authentification</p>
+                </td>
+              </tr>
+
+              <!-- Ligne de séparation discrète -->
+              <tr>
+                <td style="padding: 0 32px;">
+                  <div style="height: 1px; background-color: #F0F4F1; width: 100%;"></div>
+                </td>
+              </tr>
+
+              <!-- Corps du message -->
+              <tr>
+                <td style="padding: 32px;">
+                  <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #1E2E24;">
+                    Bonjour,
+                  </p>
+                  <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #53665A;">
+                    Nous avons reçu une demande de réinitialisation de mot de passe pour votre espace pédagogique. Utilisez le code secret temporaire ci-dessous pour valider votre identité :
+                  </p>
+
+                  <!-- Zone du Code Secret mis en valeur -->
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                    <tr>
+                      <td align="center" style="padding: 18px; background-color: #F4F7F5; border-radius: 12px; border: 1px dashed #047857;">
+                        <span style="font-size: 32px; font-weight: 800; letter-spacing: 0.25em; color: #047857; font-family: monospace, monospace; padding-left: 0.25em;">${code}</span>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Information d'expiration -->
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                    <tr>
+                      <td style="vertical-align: middle; padding-right: 8px;">
+                        <span style="font-size: 16px;">⏱️</span>
+                      </td>
+                      <td style="vertical-align: middle;">
+                        <p style="margin: 0; font-size: 12px; font-weight: 600; color: #B91C1C;">
+                          Ce code secret est strictement confidentiel et expirera dans 15 minutes.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <div style="height: 1px; background-color: #F0F4F1; width: 100%; margin-bottom: 24px;"></div>
+
+                  <p style="margin: 0; font-size: 11px; line-height: 1.5; color: #8A9A8E;">
+                    Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité. Votre mot de passe actuel restera inchangé.
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Pied de page -->
+              <tr>
+                <td style="padding: 0 32px 32px 32px; text-align: center;">
+                  <p style="margin: 0; font-size: 11px; color: #8A9A8E;">
+                    Junia'lytics — Plateforme d'analyse académique.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `, 
+  };
+
+  try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Email envoyé avec succès : ", info.messageId);
+      return { success: true };
+    } catch (error) {
+      console.error("Erreur lors de l'envoi de l'email : ", error);
+      return { success: false, error: "Impossible d'envoyer le mail." };
+    }
 }

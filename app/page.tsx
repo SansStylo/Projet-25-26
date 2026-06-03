@@ -113,8 +113,8 @@ export default function LoginPage() {
               <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wider text-stone-500">
                 Mot de passe
               </label>
-              <a href="#oublie" className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition-colors">
-                Mot de passe oublié?
+              <a href="/oublie" className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition-colors">
+                Mot de passe oublié ?
               </a>
             </div>
             <div className="relative w-full">
