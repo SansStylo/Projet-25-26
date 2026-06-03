@@ -99,6 +99,68 @@ export async function addDebugStudent(classId : number, firstname : string, surn
   }
 }
 
+export async function searchStudents(query: string) {
+  try {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+
+    const searchTerm = `%${query.toLowerCase()}%`;
+    
+    return await prisma.student.findMany({
+      where: {
+        OR: [
+          { firstname: { contains: query, mode: 'insensitive' } },
+          { surname: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      include: {
+        class: true,
+        subjectAssignments: {
+          include: {
+            subject: true,
+          },
+        },
+      },
+      orderBy: [
+        { surname: 'asc' },
+        { firstname: 'asc' },
+      ],
+    });
+  } catch (error) {
+    console.error("Erreur lors de la recherche d'étudiants :", error);
+    return [];
+  }
+}
+
+export async function getStudentDetail(studentId: bigint) {
+  try {
+    return await prisma.student.findUnique({
+      where: { studentId },
+      include: {
+        class: true,
+        subjectAssignments: {
+          include: {
+            subject: true,
+          },
+        },
+        grades: {
+          include: {
+            assessment: {
+              include: {
+                subject: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des détails de l'étudiant :", error);
+    return null;
+  }
+}
+
 export async function loginAction(
   prevState: { error: string | null },
   formData: FormData

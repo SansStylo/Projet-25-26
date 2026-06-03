@@ -1,33 +1,32 @@
 /**
- * app/dashboard/page.tsx
+ * app/dashboard/etudiants/page.tsx
  * 
- * Page tableau de bord des enseignants
+ * Page de gestion des étudiants
  * 
  * Rôle:
- * - Affiche le tableau de bord principal pour les enseignants et les utilisateurs authentifiés
- * - Protégée par requireAuth() - tous les utilisateurs authentifiés peuvent accéder
- * - Les responsables et admins peuvent aussi accéder à ce tableau de bord
+ * - Affiche une interface de recherche des étudiants
+ * - Permet de voir la fiche complète d'un étudiant
+ * - Affiche les matières suivies et les notes
  * 
  * Fonctionnement:
- * - Vérifie que l'utilisateur est authentifié (quel que soit son niveau)
- * - Récupère les données de l'utilisateur connecté
- * - Affiche le tableau de bord principal
- * - Interface de bienvenue personnalisée
+ * - Formulaire de recherche pour trouver un étudiant par nom ou prénom
+ * - Affichage des résultats dans une liste
+ * - Vue détaillée avec toutes les informations de l'étudiant
  * - Design responsive utilisant Tailwind CSS
  */
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { requireAuth } from "@/app/lib/auth";
+import { searchStudents, getStudentDetail } from "@/app/actions";
 import { LogoutButton } from "@/app/components/LogoutButton";
 
 export default function DashboardPage() {
   const pathname = usePathname();
   
-  // États pour l'interactivité des menus et de la sidebar
+  // États pour l'interactivité
   const [isSidebarReduced, setSidebarReduced] = useState(false);
   const [isHovered, setHoverState] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
@@ -36,8 +35,37 @@ export default function DashboardPage() {
     {id: 1, type : "Système", text: "Mise à jour terminée.", date: "Récent"},
     {id: 2, type : "Rapport", text: "Les notes de B3 sont disponibles.", date: "Récent"}
   ]);
+  
+  // États pour la recherche d'étudiants
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
   const deleteAlert = (id: number) => {
     setAlerts(alerts.filter(alert => alert.id !== id));
+  };
+
+  // Effectuer la recherche
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim().length === 0) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsLoading(true);
+    const results = await searchStudents(query);
+    setSearchResults(results);
+    setIsLoading(false);
+  };
+
+  // Afficher la fiche complète d'un étudiant
+  const handleSelectStudent = async (studentId: bigint) => {
+    setIsLoading(true);
+    const studentDetail = await getStudentDetail(studentId);
+    setSelectedStudent(studentDetail);
+    setIsLoading(false);
   };
   
   return (
@@ -255,39 +283,193 @@ export default function DashboardPage() {
           </div> 
         </header>
 
-        {/* Conteneur principal */}
-        <main className="p-10 flex-1">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            {/* colonne de gauche */}
-            <section className="lg:col-span-2 bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5]">
-            <h2 className="text-xl font-bold mb-[15px] text-[#0F5E3D]">
-              Bienvenue sur l'espace d'analyse.
-            </h2>
-            <p className="text-[#53665A] line-height-[1.6]">
-              Vous pouvez suivre ici la progression de vos classes et analyser les résultats en temps réel.
-            </p>
-            </section>
+        {/* contenu principal */}
+        <main className="flex-1 overflow-y-auto bg-[#F4F7F5]">
+          <div className="p-10">
+            <h2 className="text-2xl font-bold text-[#1E2E24] mb-8">Recherche d'Étudiants</h2>
 
-            {/* colonne alertes */}
-            <section className="bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5]">
-              <h2 className="text-xl font-bold mb-[15px] text-[#0F5E3D]">
-                Alertes récentes
-              </h2>
-              {alerts.length > 0 ? (
-                <div className="space-y-4">
-                  {alerts.map((alert) => (
-                    <div key={alert.id} className="text-sm p-3 bg-[#F4F7F5] rounded-xl border border-[#E2EAE5]">
-                      <span className="font-bold text-[#0F5E3D] block mb-0.5 text-xs uppercase tracking-wider">{alert.type}</span>
-                      <p className="text-[#1E2E24] font-medium leading-relaxed">{alert.text}</p>
+            {/* Barre de recherche */}
+            <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] p-6 mb-8">
+              <input
+                type="text"
+                placeholder="Rechercher un étudiant par nom ou prénom..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="w-full px-4 py-3 border border-[#E2EAE5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent text-[#1E2E24] placeholder-[#718579]"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-8">
+              {/* Colonne gauche : résultats de recherche */}
+              <div className="col-span-1">
+                <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] overflow-hidden">
+                  <div className="px-6 py-4 border-b border-[#EAEFEA] bg-[#F4F7F5]">
+                    <h3 className="text-sm font-semibold text-[#1E2E24]">
+                      Résultats ({searchResults.length})
+                    </h3>
+                  </div>
+
+                  {isLoading ? (
+                    <div className="p-6 text-center text-[#718579]">
+                      <p>Chargement...</p>
                     </div>
-                  ))}
+                  ) : searchResults.length === 0 && searchQuery.trim().length > 0 ? (
+                    <div className="p-6 text-center text-[#718579]">
+                      <p>Aucun étudiant trouvé pour "{searchQuery}"</p>
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <div className="p-6 text-center text-[#718579]">
+                      <p>Commencez à taper pour chercher un étudiant</p>
+                    </div>
+                  ) : (
+                    <ul className="list-none p-0 m-0 max-h-96 overflow-y-auto">
+                      {searchResults.map((student) => (
+                        <li
+                          key={student.studentId}
+                          onClick={() => handleSelectStudent(student.studentId)}
+                          className={`px-6 py-3 border-b border-[#EAEFEA] cursor-pointer transition-colors hover:bg-[#10B981]/10 ${
+                            selectedStudent?.studentId === student.studentId
+                              ? 'bg-[#10B981]/20 border-l-4 border-[#10B981]'
+                              : ''
+                          }`}
+                        >
+                          <p className="font-medium text-[#1E2E24]">
+                            {student.surname} {student.firstname}
+                          </p>
+                          <p className="text-xs text-[#718579] mt-1">
+                            {student.class?.label || 'Aucune classe'}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              ) : (
-                <p className="text-[#53665A] italic">
-                  Aucune nouvelle alerte pour le moment.
-                </p>
-              )}
-            </section>
+              </div>
+
+              {/* Colonne droite : fiche détaillée */}
+              <div className="col-span-2">
+                {selectedStudent ? (
+                  <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] overflow-hidden">
+                    {/* En-tête de la fiche */}
+                    <div className="bg-gradient-to-r from-[#10B981] to-[#0F5E3D] text-white px-6 py-8">
+                      <h2 className="text-3xl font-bold mb-2">
+                        {selectedStudent.surname} {selectedStudent.firstname}
+                      </h2>
+                      <p className="text-[#10B981]/20 text-sm">
+                        ID: {selectedStudent.studentId}
+                      </p>
+                    </div>
+
+                    {/* Contenu de la fiche */}
+                    <div className="p-6">
+                      {/* Infos principales */}
+                      <div className="mb-8">
+                        <h3 className="text-lg font-semibold text-[#1E2E24] mb-4 flex items-center gap-2">
+                          <span className="w-6 h-6 bg-[#10B981]/20 rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2">
+                              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            </svg>
+                          </span>
+                          Informations Générales
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-[#F4F7F5] rounded-lg p-4">
+                            <p className="text-xs text-[#718579] font-medium">Classe</p>
+                            <p className="text-[#1E2E24] font-semibold mt-1">
+                              {selectedStudent.class?.label || 'Non attribué'}
+                            </p>
+                          </div>
+                          <div className="bg-[#F4F7F5] rounded-lg p-4">
+                            <p className="text-xs text-[#718579] font-medium">Nombre de matières</p>
+                            <p className="text-[#1E2E24] font-semibold mt-1">
+                              {selectedStudent.subjectAssignments?.length || 0}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Matières suivies */}
+                      <div className="mb-8">
+                        <h3 className="text-lg font-semibold text-[#1E2E24] mb-4 flex items-center gap-2">
+                          <span className="w-6 h-6 bg-[#10B981]/20 rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2">
+                              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                          </span>
+                          Matières suivies
+                        </h3>
+                        {selectedStudent.subjectAssignments && selectedStudent.subjectAssignments.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-3">
+                            {selectedStudent.subjectAssignments.map((assignment: any) => (
+                              <div key={assignment.subjectId} className="bg-[#F4F7F5] rounded-lg p-3 border border-[#E2EAE5]">
+                                <p className="text-[#1E2E24] font-medium text-sm">
+                                  {assignment.subject.label}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[#718579] text-sm">Aucune matière assignée</p>
+                        )}
+                      </div>
+
+                      {/* Notes et évaluations */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-[#1E2E24] mb-4 flex items-center gap-2">
+                          <span className="w-6 h-6 bg-[#10B981]/20 rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2">
+                              <polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"></polyline>
+                            </svg>
+                          </span>
+                          Notes et Évaluations
+                        </h3>
+                        {selectedStudent.grades && selectedStudent.grades.length > 0 ? (
+                          <div className="space-y-3 max-h-48 overflow-y-auto">
+                            {selectedStudent.grades.map((grade: any) => (
+                              <div key={`${grade.assessmentId}-${grade.studentId}`} className="bg-[#F4F7F5] rounded-lg p-4 border border-[#E2EAE5]">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <p className="font-medium text-[#1E2E24]">
+                                      {grade.assessment.label}
+                                    </p>
+                                    <p className="text-xs text-[#718579] mt-1">
+                                      Matière: {grade.assessment.subject.label}
+                                    </p>
+                                  </div>
+                                  <span className="bg-[#10B981] text-white px-3 py-1 rounded-full text-sm font-semibold">
+                                    {grade.value}/{grade.assessment.maxGrade}
+                                  </span>
+                                </div>
+                                {grade.feedback && (
+                                  <p className="text-xs text-[#53665A] bg-white rounded p-2 mt-2">
+                                    {grade.feedback}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[#718579] text-sm">Aucune note enregistrée</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] h-96 flex items-center justify-center">
+                    <div className="text-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#A3B8AC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                      </svg>
+                      <p className="text-[#718579] font-medium">Sélectionnez un étudiant pour voir sa fiche complète</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </main>
       </div>
