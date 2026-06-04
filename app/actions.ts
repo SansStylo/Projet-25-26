@@ -179,14 +179,31 @@ export async function addGroup(label: string, studentIds: bigint[]) {
   }
 }
 
-export async function addClass(label : string) {
+export async function addClass(label: string, studentIds: bigint[]) {
   try {
-    return await prisma.class.create({
-      data: { label },
+    // 1. On crée d'abord la classe en BDD
+    const newClass = await prisma.class.create({
+      data: {
+        label: label,
+      },
     });
+
+    // 2. Si on a des étudiants sélectionnés, on met à jour leur classId direct
+    if (studentIds.length > 0) {
+      await prisma.student.updateMany({
+        where: {
+          studentId: { in: studentIds },
+        },
+        data: {
+          classId: newClass.classId, // ID de la classe fraîchement créée
+        },
+      });
+    }
+
+    return newClass;
   } catch (error) {
-    console.error("Erreur lors de la création de la Classe :", error);
-    throw new Error("Impossible de créer la Classe'");
+    console.error("Erreur lors de la création de la classe et de l'assignation des étudiants :", error);
+    throw new Error("Impossible de créer la classe.");
   }
 }
 
