@@ -158,7 +158,7 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
     setIsLoading(true);
     const studentDetail = await getStudentDetail(studentId);
     setSelectedStudent(studentDetail);
-    if (role === 'responsable' && studentDetail) {
+    if (studentDetail) {
       setRiskProfile(computeRiskProfile(studentDetail));
     } else {
       setRiskProfile(null);
@@ -446,7 +446,7 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                             ID: {selectedStudent.studentId}
                           </p>
                         </div>
-                        {role === 'responsable' && riskProfile && (
+                        {riskProfile && (
                           <div className="flex flex-col items-end gap-1">
                             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
                               riskProfile.riskLevel === 'CRITIQUE' ? 'bg-red-500 text-white' :
@@ -490,8 +490,8 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                         </div>
                       </div>
 
-                      {/* Score de risque - responsable uniquement */}
-                      {role === 'responsable' && riskProfile && (
+                      {/* Score de risque */}
+                      {riskProfile && (
                         <div className="mb-8">
                           <h3 className="text-lg font-semibold text-[#1E2E24] mb-4 flex items-center gap-2">
                             <span className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
