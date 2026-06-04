@@ -83,6 +83,8 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
   const [showTeacherSelector, setShowTeacherSelector] = useState(false);
   const [showGroupCreator, setShowGroupCreator] = useState(false);
   const [showClassCreator, setShowClassCreator] = useState(false);
+  const [showClassSelector, setShowClassSelector] = useState(false);
+  const [selectedClassIds, setSelectedClassIds] = useState<number[]>([]);
   
   // NOUVEAU : États pour la modal de sélection par groupe
   const [showGroupSelector, setShowGroupSelector] = useState(false);
@@ -202,6 +204,38 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
     setSelectedGroupIds([]);
   };
 
+  // Fonction pour ajouter tous les étudiants des classes sélectionnées (sans doublons)
+const handleAddClassesStudents = () => {
+  // 1. Trouver tous les étudiants appartenant aux classes cochées/sélectionnées
+  const studentsInClasses = students.filter(student => 
+    student.classId !== null && selectedClassIds.includes(student.classId)
+  );
+
+  // 2. Filtrer pour ne garder que ceux qui ne sont pas DÉJÀ dans selectedStudents (évite les doublons)
+  const currentSelectedIds = selectedStudents.map(s => s.studentId.toString());
+  const uniqueStudentsToAdd = studentsInClasses.filter(
+    student => !currentSelectedIds.includes(student.studentId.toString())
+  );
+
+  if (uniqueStudentsToAdd.length === 0) {
+    alert("Tous les étudiants de ces classes sont déjà inscrits ou sélectionnés !");
+    setShowClassSelector(false);
+    setSelectedClassIds([]);
+    return;
+  }
+
+  // 3. Mettre à jour la liste des sélectionnés globales
+  setSelectedStudents([...selectedStudents, ...uniqueStudentsToAdd]);
+
+  // 4. Les retirer de la liste des étudiants individuels "Disponibles" pour garder la cohérence globale
+  const addedIds = uniqueStudentsToAdd.map(s => s.studentId.toString());
+  setAvailableStudents(availableStudents.filter(s => !addedIds.includes(s.studentId.toString())));
+
+  // 5. Reset et fermeture de la modal
+  setShowClassSelector(false);
+  setSelectedClassIds([]);
+};
+
   // Validation Enseignants BDD
   const handleValidateTeachers = async () => {
     try {
@@ -227,8 +261,14 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
     }
   };
 
-  const handleCreateGroup = async () => {
+const handleCreateGroup = async () => {
   const trimmedName = newGroupName.trim();
+
+  if (selectedStudents.length === 0) {
+    alert("Impossible de créer un groupe vide. Veuillez sélectionner des étudiants dans le cours d'abord.");
+    return;
+  }
+
   const groupAlreadyExists = groups?.some(group => group.label.toLowerCase() === trimmedName.toLocaleLowerCase());
   
   if (groupAlreadyExists){
@@ -253,26 +293,37 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
   }
 }
 
-  const handleCreateClass = async () => {
-    const trimmedName = newClassName.trim();
-    const classAlreadyExists = classes?.some(classes => classes.label.toLowerCase() === trimmedName.toLocaleLowerCase());
-    if (classAlreadyExists){
-      alert("Nom de classe déjà existant");
-      return;
-    }
-    else{
-      try{
-        await addClass(trimmedName);
-        await onRefreshAssignments();
+const handleCreateClass = async () => {
+  const trimmedName = newClassName.trim();
 
-        setShowClassCreator(false);
-        setNewClassName('');
-      }catch (error){
-        console.error(error);
-        alert("Une erreur est survenue lors de la création de la classe");
-      }
-    }
+  if (selectedStudents.length === 0) {
+    alert("Impossible de créer une classe vide. Veuillez sélectionner des étudiants dans le cours d'abord.");
+    return;
   }
+
+  const classAlreadyExists = classes?.some(c => c.label.toLowerCase() === trimmedName.toLocaleLowerCase());
+  
+  if (classAlreadyExists){
+    alert("Nom de classe déjà existant");
+    return;
+  }
+  
+  try {
+    // ✨ ON RÉCUPÈRE LES IDs DES ÉTUDIANTS SÉLECTIONNÉS
+    const studentIds = selectedStudents.map(s => s.studentId);
+
+    // ✨ ON ENVOIE LE NOM ET LES IDs À L'ACTION SERVEUR
+    await addClass(trimmedName, studentIds);
+    await onRefreshAssignments();
+
+    setShowClassCreator(false);
+    setNewClassName('');
+    alert(`La classe "${trimmedName}" a bien été créée avec ses ${studentIds.length} étudiant(s) !`);
+  } catch (error) {
+    console.error(error);
+    alert("Une erreur est survenue lors de la création de la classe");
+  }
+}
 
   return (
     <div className="center absolute w-[95%] h-[95%] inset-0 m-auto bg-slate-100 backdrop-blur-sm z-40 p-10 flex flex-col justify-start items-center rounded-xl shadow-2xl border border-slate-300 overflow-y-auto">
@@ -329,7 +380,12 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
             >
               Add Group
             </button>
-            <button className="px-4 py-2 cursor-pointer bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded transition-colors shadow">Add Prom</button>
+            <button 
+              onClick={() => setShowClassSelector(true)}
+              className="px-4 py-2 cursor-pointer bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded transition-colors shadow"
+            >
+              Add Prom
+            </button>
           </div>
         </div>
 
@@ -505,6 +561,117 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
                       sa.studentId.toString() === student.studentId.toString() && 
                       selectedGroupIds.includes(sa.groupId.toString())
                     )
+                  ).length
+                } étudiants)
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* NOUVELLE MODAL : DOUBLE LISTE DE SELECTION PAR CLASSE / PROMO            */}
+      {/* ========================================================================= */}
+      {showClassSelector && (
+        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6 rounded-xl">
+          <div className="bg-white w-full max-w-4xl rounded-xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
+            
+            {/* Header Modal */}
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
+              <h3 className="text-xl font-bold text-slate-800">Sélection d'étudiants par Classe / Promo</h3>
+              <button onClick={() => { setShowClassSelector(false); setSelectedClassIds([]); }} className="text-gray-400 hover:text-gray-600 font-bold text-lg p-1">✕</button>
+            </div>
+
+            {/* Corps Modal : Grille Double Colonne */}
+            <div className="p-6 grid grid-cols-2 gap-6 overflow-hidden min-h-[400px]">
+              
+              {/* COLONNE GAUCHE : LISTE DES CLASSES */}
+              <div className="flex flex-col border border-slate-200 rounded-lg bg-slate-50 p-4">
+                <span className="font-bold text-slate-700 text-sm mb-2">Classes disponibles ({classes?.length || 0})</span>
+                <div className="flex-1 overflow-y-auto space-y-2 bg-white border border-slate-200 rounded p-2 max-h-[320px]">
+                  {!classes || classes.length === 0 ? (
+                    <p className="text-xs text-gray-400 italic p-2 text-center">Aucune classe disponible</p>
+                  ) : (
+                    classes.map(classe => {
+                      const isSelected = selectedClassIds.includes(classe.classId);
+                      return (
+                        <div 
+                          key={classe.classId.toString()} 
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedClassIds(selectedClassIds.filter(id => id !== classe.classId));
+                            } else {
+                              setSelectedClassIds([...selectedClassIds, classe.classId]);
+                            }
+                          }}
+                          className={`p-3 rounded-lg border text-sm font-medium cursor-pointer transition-all flex items-center justify-between ${
+                            isSelected 
+                              ? 'bg-blue-50 border-blue-400 text-blue-700 shadow-sm' 
+                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <span>{classe.label}</span>
+                          {isSelected && (
+                            <span className="text-xs font-bold bg-blue-600 text-white px-2 py-0.5 rounded">Sélectionnée</span>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* COLONNE DROITE : ÉTUDIANTS DE LA/DES CLASSE(S) SELECTIONNEE(S) */}
+              <div className="flex flex-col border border-slate-200 rounded-lg bg-slate-50 p-4">
+                <span className="font-bold text-slate-700 text-sm mb-2">
+                  Membres des classes sélectionnées ({
+                    students.filter(student => 
+                      student.classId !== null && selectedClassIds.includes(student.classId)
+                    ).length
+                  })
+                </span>
+                
+                <div className="flex-1 overflow-y-auto space-y-1 bg-white border border-slate-200 rounded p-2 max-h-[320px]">
+                  {selectedClassIds.length === 0 ? (
+                    <p className="text-xs text-gray-400 italic p-2 text-center mt-10">Cliquez sur une ou plusieurs classes à gauche pour afficher et sélectionner leurs étudiants.</p>
+                  ) : (
+                    (() => {
+                      const displayedStudents = students.filter(student => 
+                        student.classId !== null && selectedClassIds.includes(student.classId)
+                      );
+                      
+                      if (displayedStudents.length === 0) {
+                        return <p className="text-xs text-gray-400 italic p-2 text-center mt-4">Aucun étudiant n'est affecté à cette/ces classe(s).</p>;
+                      }
+
+                      return displayedStudents.map((student, index) => (
+                        <div 
+                          key={student.studentId.toString()} 
+                          className={`p-2 flex justify-between items-center text-sm rounded ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}
+                        >
+                          <span className="text-slate-700 font-medium">{student.firstname} {student.surname}</span>
+                          <span className="text-xs text-gray-400 font-bold bg-slate-100 px-1.5 py-0.5 rounded">
+                            {classes.find(c => c.classId === student.classId)?.label || 'Classe rattachée'}
+                          </span>
+                        </div>
+                      ));
+                    })()
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Modal avec Bouton du Bas */}
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-center rounded-b-xl">
+              <button 
+                onClick={handleAddClassesStudents}
+                disabled={selectedClassIds.length === 0}
+                className="px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg shadow-md transition-colors"
+              >
+                Ajouter les membres au cours ({
+                  students.filter(student => 
+                    student.classId !== null && selectedClassIds.includes(student.classId)
                   ).length
                 } étudiants)
               </button>
@@ -721,7 +888,7 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
             <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-center rounded-b-xl">
               <button 
                 onClick={() => handleCreateGroup()}
-                disabled={!newGroupName.trim()}
+                disabled={!newGroupName.trim() || selectedStudents.length === 0} // ✨ Ajout de la condition
                 className="w-full px-6 py-2.5 bg-pink-600 hover:bg-pink-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg shadow-md transition-colors"
               >
                 Créer le Groupe
@@ -789,7 +956,7 @@ export default function BlocDetails({ currentSubject, users, students, groups, c
             <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-center rounded-b-xl">
               <button 
                 onClick={() => handleCreateClass()}
-                disabled={!newClassName.trim()}
+                disabled={!newClassName.trim() || selectedStudents.length === 0} // ✨ Ajout de la condition
                 className="w-full px-6 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg shadow-md transition-colors"
               >
                 Créer la Classe

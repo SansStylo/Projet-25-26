@@ -91,18 +91,20 @@ export default function DashboardPage() {
   const [classes, setClasses] = useState<ClassesType[]>([]);
 
   const refreshAssignments = async () => {
-    const [teachersData, studentsData, studentData, groupsData, classesData] = await Promise.all([
+    const [teachersData, studentsData, studentData, groupsData, classesData, updatedStudents] = await Promise.all([
       getTeacherAssignments(),
       getSubjectAssignments(),
       getStudentAssignments(),
       getGroups(),
-      getClass()
+      getClass(),
+      getStudents()
     ]);
     setTeacherAssignments(teachersData);
     setSubjectAssignments(studentsData);
     setStudentAssignments(studentData);
     setGroups(groupsData);
     setClasses(classesData);
+    setStudents(updatedStudents);
   }
 
   useEffect(() => {
@@ -126,8 +128,8 @@ export default function DashboardPage() {
       const data6 = await getGroups();
       setGroups(data6);
 
-      const data7 = await getGroups();
-      setGroups(data7);
+      const data7 = await getClass();
+      setClasses(data7);
 
       const data8 = await getStudentAssignments();
       setStudentAssignments(data8);
