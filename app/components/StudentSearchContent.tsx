@@ -31,12 +31,75 @@ interface StudentSearchContentProps {
   role: UserRole;
 }
 
+type RiskLevel = 'FAIBLE' | 'MODERE' | 'CRITIQUE';
+
+interface RiskProfile {
+  riskScore: number;
+  riskLevel: RiskLevel;
+  flags: string[];
+  globalAverage: number | null;
+}
+
+// Calcule un score de risque pédagogique (0–100) à partir des notes d'un étudiant.
+// Trois règles s'additionnent, puis le niveau est déduit du score final.
+function computeRiskProfile(student: any): RiskProfile {
+  let totalWeightedGrades = 0;
+  let totalWeights = 0;
+  // Accumule les notes par matière pour détecter les faiblesses ciblées
+  const subjectMap: Record<number, { name: string; total: number; weights: number }> = {};
+  let lowGradesCount = 0; // notes < 5/20
+  const flags: string[] = []; // raisons lisibles affichées dans la fiche
+
+  // Première passe : ramener chaque note sur 20 et l'accumuler
+  (student.grades ?? []).forEach((grade: any) => {
+    const assessment = grade.assessment;
+    const gradeOn20 = (grade.value / assessment.maxGrade) * 20;
+
+    totalWeightedGrades += gradeOn20 * assessment.weight;
+    totalWeights += assessment.weight;
+
+    const sid = assessment.subject.subjectId;
+    if (!subjectMap[sid]) subjectMap[sid] = { name: assessment.subject.label, total: 0, weights: 0 };
+    subjectMap[sid].total += gradeOn20 * assessment.weight;
+    subjectMap[sid].weights += assessment.weight;
+
+    if (gradeOn20 < 5) lowGradesCount++;
+  });
+
+  const globalAverage = totalWeights > 0 ? totalWeightedGrades / totalWeights : null;
+  let riskScore = 0;
+
+  // Règle A – moyenne générale : principal indicateur de risque (+40 si < 10, +15 si < 12)
+  if (globalAverage !== null) {
+    if (globalAverage < 10) { riskScore += 40; flags.push(`Moyenne générale critique (${globalAverage.toFixed(2)}/20)`); }
+    else if (globalAverage < 12) { riskScore += 15; flags.push(`Moyenne générale fragile (${globalAverage.toFixed(2)}/20)`); }
+  }
+
+  // Règle B – matières non validées : +10 points par matière dont la moyenne est < 10
+  Object.values(subjectMap).forEach((data) => {
+    const avg = data.total / data.weights;
+    if (avg < 10) { riskScore += 10; flags.push(`En difficulté en ${data.name} (${avg.toFixed(2)}/20)`); }
+  });
+
+  // Règle C – notes catastrophiques : +5 par note < 5/20, plafonné à +20
+  if (lowGradesCount > 0) {
+    riskScore += Math.min(lowGradesCount * 5, 20);
+    flags.push(`${lowGradesCount} note(s) inférieure(s) à 5/20`);
+  }
+
+  // Plafonnement entre 0 et 100, puis attribution du niveau
+  riskScore = Math.min(Math.max(riskScore, 0), 100);
+  const riskLevel: RiskLevel = riskScore >= 60 ? 'CRITIQUE' : riskScore >= 25 ? 'MODERE' : 'FAIBLE';
+  return { riskScore, riskLevel, flags, globalAverage };
+}
+
 export function StudentSearchContent({ role }: StudentSearchContentProps) {
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [riskProfile, setRiskProfile] = useState<RiskProfile | null>(null);
 
   // États pour l'interactivité sidebar/header
   const [isSidebarReduced, setSidebarReduced] = useState(false);
@@ -61,10 +124,42 @@ export function StudentSearchContent({ role }: StudentSearchContentProps) {
     setIsLoading(false);
   };
 
+  // window.print() : le navigateur gère nativement les couleurs oklch de Tailwind v4,
+  // contrairement à html2canvas qui ne sait pas les parser.
+  const exportStudentPdf = () => {
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    const name = `rapport-${selectedStudent.surname}-${selectedStudent.firstname}-${ts}`.replace(/\s+/g, '_');
+    document.title = name;
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        body * { visibility: hidden !important; }
+        #student-report-card, #student-report-card * { visibility: visible !important; }
+        #student-report-card {
+          position: absolute !important;
+          top: 0 !important; left: 0 !important;
+          width: 100% !important;
+          overflow: visible !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    window.addEventListener('afterprint', () => {
+      document.head.removeChild(style);
+      document.title = "Junia'lytics";
+    }, { once: true });
+    window.print();
+  };
+
   const handleSelectStudent = async (studentId: bigint) => {
     setIsLoading(true);
     const studentDetail = await getStudentDetail(studentId);
     setSelectedStudent(studentDetail);
+    if (role === 'responsable' && studentDetail) {
+      setRiskProfile(computeRiskProfile(studentDetail));
+    } else {
+      setRiskProfile(null);
+    }
     setIsLoading(false);
   };
 
@@ -335,15 +430,33 @@ export function StudentSearchContent({ role }: StudentSearchContentProps) {
               {/* Colonne droite : fiche détaillée */}
               <div className="col-span-2">
                 {selectedStudent ? (
-                  <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] overflow-hidden">
+                  <div>
+                  <div id="student-report-card" className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] overflow-hidden">
                     {/* En-tête de la fiche */}
                     <div className="bg-gradient-to-r from-[#10B981] to-[#0F5E3D] text-white px-6 py-8">
-                      <h2 className="text-3xl font-bold mb-2">
-                        {selectedStudent.surname} {selectedStudent.firstname}
-                      </h2>
-                      <p className="text-[#10B981]/20 text-sm">
-                        ID: {selectedStudent.studentId}
-                      </p>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h2 className="text-3xl font-bold mb-2">
+                            {selectedStudent.surname} {selectedStudent.firstname}
+                          </h2>
+                          <p className="text-[#10B981]/20 text-sm">
+                            ID: {selectedStudent.studentId}
+                          </p>
+                        </div>
+                        {role === 'responsable' && riskProfile && (
+                          <div className="flex flex-col items-end gap-1">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
+                              riskProfile.riskLevel === 'CRITIQUE' ? 'bg-red-500 text-white' :
+                              riskProfile.riskLevel === 'MODERE' ? 'bg-orange-400 text-white' :
+                              'bg-emerald-400 text-white'
+                            }`}>
+                              {riskProfile.riskLevel === 'CRITIQUE' ? 'Risque critique' :
+                               riskProfile.riskLevel === 'MODERE' ? 'Risque modéré' : 'Risque faible'}
+                            </span>
+                            <span className="text-white/70 text-xs">Score : {riskProfile.riskScore}/100</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Contenu de la fiche */}
@@ -373,6 +486,62 @@ export function StudentSearchContent({ role }: StudentSearchContentProps) {
                           </div>
                         </div>
                       </div>
+
+                      {/* Score de risque - responsable uniquement */}
+                      {role === 'responsable' && riskProfile && (
+                        <div className="mb-8">
+                          <h3 className="text-lg font-semibold text-[#1E2E24] mb-4 flex items-center gap-2">
+                            <span className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                              </svg>
+                            </span>
+                            Analyse de risque
+                          </h3>
+                          <div className="bg-[#F4F7F5] rounded-lg p-4 border border-[#E2EAE5]">
+                            {/* Barre de progression */}
+                            <div className="flex items-center gap-3 mb-3">
+                              <span className="text-xs text-[#718579] font-medium w-20 shrink-0">Score risque</span>
+                              <div className="flex-1 bg-[#E2EAE5] rounded-full h-2.5">
+                                <div
+                                  className={`h-2.5 rounded-full transition-all ${
+                                    riskProfile.riskLevel === 'CRITIQUE' ? 'bg-red-500' :
+                                    riskProfile.riskLevel === 'MODERE' ? 'bg-orange-400' : 'bg-emerald-400'
+                                  }`}
+                                  style={{ width: `${riskProfile.riskScore}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-bold text-[#1E2E24] w-12 text-right shrink-0">
+                                {riskProfile.riskScore}/100
+                              </span>
+                            </div>
+                            {/* Moyenne générale */}
+                            {riskProfile.globalAverage !== null && (
+                              <p className="text-xs text-[#718579] mb-3">
+                                Moyenne générale pondérée : <span className="font-semibold text-[#1E2E24]">{riskProfile.globalAverage.toFixed(2)}/20</span>
+                              </p>
+                            )}
+                            {/* Flags */}
+                            {riskProfile.flags.length > 0 ? (
+                              <ul className="list-none p-0 m-0 space-y-1">
+                                {riskProfile.flags.map((flag, i) => (
+                                  <li key={i} className="flex items-center gap-2 text-xs text-[#53665A]">
+                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                      riskProfile.riskLevel === 'CRITIQUE' ? 'bg-red-500' :
+                                      riskProfile.riskLevel === 'MODERE' ? 'bg-orange-400' : 'bg-emerald-400'
+                                    }`} />
+                                    {flag}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-xs text-emerald-600 font-medium">Aucun signal d'alerte détecté.</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Matières suivies */}
                       <div className="mb-8">
@@ -411,7 +580,7 @@ export function StudentSearchContent({ role }: StudentSearchContentProps) {
                           Notes et Évaluations
                         </h3>
                         {selectedStudent.grades && selectedStudent.grades.length > 0 ? (
-                          <div className="space-y-3 max-h-48 overflow-y-auto">
+                          <div className="space-y-3">
                             {selectedStudent.grades.map((grade: any) => (
                               <div key={`${grade.assessmentId}-${grade.studentId}`} className="bg-[#F4F7F5] rounded-lg p-4 border border-[#E2EAE5]">
                                 <div className="flex justify-between items-start mb-2">
@@ -440,6 +609,21 @@ export function StudentSearchContent({ role }: StudentSearchContentProps) {
                         )}
                       </div>
                     </div>
+                  </div>
+                  {/* Bouton export PDF - en dehors du div capturé */}
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={exportStudentPdf}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#0F5E3D] hover:bg-[#10B981] text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      Exporter en PDF
+                    </button>
+                  </div>
                   </div>
                 ) : (
                   <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] h-96 flex items-center justify-center">

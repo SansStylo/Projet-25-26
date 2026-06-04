@@ -469,6 +469,119 @@ export async function logoutAction() {
 }
 
 
+// ====== RAPPORT DE CLASSE ======
+export async function getClassReportData(classId: number) {
+  try {
+    const classData = await prisma.class.findUnique({
+      where: { classId },
+      include: {
+        students: {
+          include: {
+            grades: {
+              include: { assessment: { include: { subject: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    if (!classData) return { success: false as const, error: "Classe introuvable" };
+
+    // Cumul des moyennes par matière (sur l'ensemble de la promo)
+    const subjectMap: Record<number, { name: string; totalWeighted: number; totalWeights: number }> = {};
+
+    // Calcul du profil de risque pour chaque étudiant (même logique que analytics.tsx)
+    const studentProfiles = classData.students.map(student => {
+      let totalWeightedGrades = 0;
+      let totalWeights = 0;
+      const studentSubjectMap: Record<number, { name: string; total: number; weights: number }> = {};
+      let lowGradesCount = 0;
+      const flags: string[] = [];
+
+      student.grades.forEach(grade => {
+        const assessment = grade.assessment;
+        const gradeOn20 = (grade.value / assessment.maxGrade) * 20;
+
+        totalWeightedGrades += gradeOn20 * assessment.weight;
+        totalWeights += assessment.weight;
+
+        const sid = assessment.subject.subjectId;
+        if (!studentSubjectMap[sid]) studentSubjectMap[sid] = { name: assessment.subject.label, total: 0, weights: 0 };
+        studentSubjectMap[sid].total += gradeOn20 * assessment.weight;
+        studentSubjectMap[sid].weights += assessment.weight;
+
+        if (!subjectMap[sid]) subjectMap[sid] = { name: assessment.subject.label, totalWeighted: 0, totalWeights: 0 };
+        subjectMap[sid].totalWeighted += gradeOn20 * assessment.weight;
+        subjectMap[sid].totalWeights += assessment.weight;
+
+        if (gradeOn20 < 5) lowGradesCount++;
+      });
+
+      const globalAverage = totalWeights > 0 ? totalWeightedGrades / totalWeights : null;
+      let riskScore = 0;
+
+      // Règle A – moyenne générale
+      if (globalAverage !== null) {
+        if (globalAverage < 10) { riskScore += 40; flags.push(`Moyenne générale critique (${globalAverage.toFixed(2)}/20)`); }
+        else if (globalAverage < 12) { riskScore += 15; flags.push(`Moyenne générale fragile (${globalAverage.toFixed(2)}/20)`); }
+      }
+      // Règle B – matières non validées (+10 par matière < 10)
+      Object.values(studentSubjectMap).forEach(data => {
+        const avg = data.total / data.weights;
+        if (avg < 10) { riskScore += 10; flags.push(`En difficulté en ${data.name} (${avg.toFixed(2)}/20)`); }
+      });
+      // Règle C – notes catastrophiques (+5 par note < 5, max +20)
+      if (lowGradesCount > 0) {
+        riskScore += Math.min(lowGradesCount * 5, 20);
+        flags.push(`${lowGradesCount} note(s) inférieure(s) à 5/20`);
+      }
+
+      riskScore = Math.min(Math.max(riskScore, 0), 100);
+      const riskLevel = riskScore >= 60 ? 'CRITIQUE' : riskScore >= 25 ? 'MODERE' : 'FAIBLE';
+
+      return {
+        studentId: student.studentId.toString(),
+        firstname: student.firstname,
+        surname: student.surname,
+        globalAverage,
+        riskScore,
+        riskLevel,
+        flags,
+      };
+    });
+
+    studentProfiles.sort((a, b) => b.riskScore - a.riskScore);
+
+    const validAverages = studentProfiles.filter(s => s.globalAverage !== null).map(s => s.globalAverage as number);
+    const classAverage = validAverages.length > 0 ? validAverages.reduce((a, b) => a + b, 0) / validAverages.length : null;
+
+    const subjectAverages = Object.entries(subjectMap)
+      .map(([id, data]) => ({
+        subjectId: parseInt(id),
+        name: data.name,
+        average: data.totalWeights > 0 ? parseFloat((data.totalWeighted / data.totalWeights).toFixed(2)) : null,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return {
+      success: true as const,
+      data: {
+        classId,
+        label: classData.label,
+        totalStudents: classData.students.length,
+        classAverage: classAverage !== null ? parseFloat(classAverage.toFixed(2)) : null,
+        subjectAverages,
+        studentProfiles,
+        atRiskCount: studentProfiles.filter(s => s.riskLevel !== 'FAIBLE').length,
+        criticalCount: studentProfiles.filter(s => s.riskLevel === 'CRITIQUE').length,
+      },
+    };
+  } catch (error) {
+    console.error("Erreur [getClassReportData]:", error);
+    return { success: false as const, error: "Erreur lors du calcul du rapport." };
+  }
+}
+
 /**
  * Gestion de l'oubli de mot de passe/nouveau mot de passe
  * avec envoi d'un code par e-mail automatique
