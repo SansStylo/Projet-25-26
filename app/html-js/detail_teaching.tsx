@@ -385,7 +385,7 @@ const handleCreateClass = async () => {
               >
                 <span className="font-medium text-slate-800">{student.firstname} {student.surname}</span>
                 <span className="text-xs font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100">
-                  {student.classId || 'Sans classe'}
+                  {classes.find(c => c.classId === student.classId)?.label || 'Sans classe'}
                 </span>
               </div>
             ))

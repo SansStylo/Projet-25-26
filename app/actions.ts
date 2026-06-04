@@ -273,6 +273,70 @@ export async function updateStudentAssignments(studentIds: bigint[], groupId: nu
   }
 }
 
+export async function updateStudentClass(studentIds: bigint[], classId: number) {
+  try {
+    await prisma.$transaction([
+      // 1. On retire de cette classe tous les étudiants qui y étaient
+      prisma.student.updateMany({
+        where: { classId: classId },
+        data: { classId: null },
+      }),
+      // 2. On assigne la classe aux nouveaux étudiants sélectionnés dans la liste
+      prisma.student.updateMany({
+        where: {
+          studentId: { in: studentIds },
+        },
+        data: { classId: classId },
+      }),
+    ]);
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la classe :", error);
+    throw new Error("Impossible de mettre à jour les étudiants de la classe.");
+  }
+}
+
+export async function deleteGroup(groupId: bigint) {
+  try {
+    return await prisma.$transaction([
+      prisma.studentAssignments.deleteMany({ where: { groupId } }),
+      prisma.group.delete({ where: { groupId } }),
+    ]);
+  } catch (error) {
+    console.error("Erreur suppression groupe:", error);
+    throw new Error("Impossible de supprimer le groupe.");
+  }
+}
+
+export async function deleteClass(classId: number) {
+  try {
+    return await prisma.$transaction([
+      // On remet à null le classId des étudiants concernés
+      prisma.student.updateMany({
+        where: { classId },
+        data: { classId: null },
+      }),
+      prisma.class.delete({ where: { classId } }),
+    ]);
+  } catch (error) {
+    console.error("Erreur suppression classe:", error);
+    throw new Error("Impossible de supprimer la classe.");
+  }
+}
+
+export async function renameGroup(groupId: bigint, newLabel: string) {
+  return await prisma.group.update({
+    where: { groupId },
+    data: { label: newLabel },
+  });
+}
+
+export async function renameClass(classId: number, newLabel: string) {
+  return await prisma.class.update({
+    where: { classId },
+    data: { label: newLabel },
+  });
+}
+
 export async function loginAction(
   prevState: { error: string | null },
   formData: FormData
