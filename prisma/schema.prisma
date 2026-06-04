@@ -20,6 +20,7 @@ model User {
   sessions            Session[]
   assessments         Assessment[]
   passwordReset       PasswordReset?
+  notifications       Notification[]
 
   @@map("user")
 }
@@ -181,4 +182,24 @@ model PasswordReset {
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@map("password_reset")
+}
+
+model Notification {
+  notificationId BigInt @id @default(autoincrement()) @map("notification_id")
+  userId         BigInt @map("user_id")
+  title          String @db.VarChar(255)
+  message        String @db.Text
+  returns        String @db.VarChar(255)
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("notification")
+}
+
+model Logs {
+  logsId BigInt   @id @default(autoincrement()) @map("logs_id")
+  date   DateTime @db.Date
+  label  String   @db.Text
+
+  @@map("logs")
 }
