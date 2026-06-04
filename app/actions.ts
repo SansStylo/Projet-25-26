@@ -469,6 +469,155 @@ export async function logoutAction() {
 }
 
 
+// ====== STATS TABLEAU DE BORD ENSEIGNANT ======
+export async function getTeacherDashboardStats(teacherId: bigint) {
+  try {
+    // Matières assignées à l'enseignant
+    const teacherAssignments = await prisma.teacherAssignments.findMany({
+      where: { teacherId },
+      include: { subject: true },
+    });
+
+    const subjectIds = teacherAssignments.map(ta => ta.subjectId);
+
+    if (subjectIds.length === 0) {
+      return {
+        success: true as const,
+        data: {
+          subjects: [],
+          totalStudents: 0,
+          globalAverage: null,
+          atRiskCount: 0,
+          criticalCount: 0,
+          subjectAverages: [],
+          atRiskStudents: [],
+        },
+      };
+    }
+
+    // Étudiants inscrits dans au moins une des matières de l'enseignant
+    const subjectAssignments = await prisma.subjectAssignments.findMany({
+      where: { subjectId: { in: subjectIds } },
+      include: {
+        student: {
+          include: {
+            grades: {
+              include: {
+                assessment: { include: { subject: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Dédoublonnage des étudiants
+    const studentMap = new Map<string, typeof subjectAssignments[0]['student']>();
+    subjectAssignments.forEach(sa => {
+      studentMap.set(sa.studentId.toString(), sa.student);
+    });
+    const students = Array.from(studentMap.values());
+
+    // Calcul du profil de risque pour chaque étudiant, limité aux matières de l'enseignant
+    const studentProfiles = students.map(student => {
+      const relevantGrades = student.grades.filter(g =>
+        subjectIds.includes(g.assessment.subjectId)
+      );
+
+      let totalWeightedGrades = 0;
+      let totalWeights = 0;
+      const studentSubjectMap: Record<number, { name: string; total: number; weights: number }> = {};
+      let lowGradesCount = 0;
+      const flags: string[] = [];
+
+      relevantGrades.forEach(grade => {
+        const gradeOn20 = (grade.value / grade.assessment.maxGrade) * 20;
+        totalWeightedGrades += gradeOn20 * grade.assessment.weight;
+        totalWeights += grade.assessment.weight;
+
+        const sid = grade.assessment.subjectId;
+        if (!studentSubjectMap[sid]) studentSubjectMap[sid] = { name: grade.assessment.subject.label, total: 0, weights: 0 };
+        studentSubjectMap[sid].total += gradeOn20 * grade.assessment.weight;
+        studentSubjectMap[sid].weights += grade.assessment.weight;
+
+        if (gradeOn20 < 5) lowGradesCount++;
+      });
+
+      const globalAverage = totalWeights > 0 ? totalWeightedGrades / totalWeights : null;
+      let riskScore = 0;
+
+      if (globalAverage !== null) {
+        if (globalAverage < 10) { riskScore += 40; flags.push(`Moyenne critique (${globalAverage.toFixed(2)}/20)`); }
+        else if (globalAverage < 12) { riskScore += 15; flags.push(`Moyenne fragile (${globalAverage.toFixed(2)}/20)`); }
+      }
+      Object.values(studentSubjectMap).forEach(data => {
+        const avg = data.total / data.weights;
+        if (avg < 10) { riskScore += 10; flags.push(`En difficulté en ${data.name} (${avg.toFixed(2)}/20)`); }
+      });
+      if (lowGradesCount > 0) riskScore += Math.min(lowGradesCount * 5, 20);
+
+      riskScore = Math.min(Math.max(riskScore, 0), 100);
+      const riskLevel = riskScore >= 60 ? 'CRITIQUE' : riskScore >= 25 ? 'MODERE' : 'FAIBLE';
+
+      return {
+        studentId: student.studentId.toString(),
+        firstname: student.firstname,
+        surname: student.surname,
+        globalAverage: globalAverage !== null ? parseFloat(globalAverage.toFixed(2)) : null,
+        riskScore,
+        riskLevel,
+        flags,
+      };
+    });
+
+    // Moyenne globale de la promo (sur les matières de l'enseignant)
+    const validAverages = studentProfiles.filter(s => s.globalAverage !== null).map(s => s.globalAverage as number);
+    const globalAverage = validAverages.length > 0
+      ? parseFloat((validAverages.reduce((a, b) => a + b, 0) / validAverages.length).toFixed(2))
+      : null;
+
+    // Moyenne par matière
+    const subjectAverages = teacherAssignments.map(ta => {
+      let totalWeighted = 0, totalWeights = 0;
+      let studentCount = 0;
+      students.forEach(student => {
+        const subGrades = student.grades.filter(g => g.assessment.subjectId === ta.subjectId);
+        if (subGrades.length > 0) studentCount++;
+        subGrades.forEach(g => {
+          const gradeOn20 = (g.value / g.assessment.maxGrade) * 20;
+          totalWeighted += gradeOn20 * g.assessment.weight;
+          totalWeights += g.assessment.weight;
+        });
+      });
+      return {
+        subjectId: ta.subjectId,
+        name: ta.subject.label,
+        average: totalWeights > 0 ? parseFloat((totalWeighted / totalWeights).toFixed(2)) : null,
+        studentCount,
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+
+    return {
+      success: true as const,
+      data: {
+        subjects: teacherAssignments.map(ta => ({ subjectId: ta.subjectId, name: ta.subject.label })),
+        totalStudents: students.length,
+        globalAverage,
+        atRiskCount: studentProfiles.filter(s => s.riskLevel !== 'FAIBLE').length,
+        criticalCount: studentProfiles.filter(s => s.riskLevel === 'CRITIQUE').length,
+        subjectAverages,
+        atRiskStudents: studentProfiles
+          .filter(s => s.riskLevel !== 'FAIBLE')
+          .sort((a, b) => b.riskScore - a.riskScore)
+          .slice(0, 5),
+      },
+    };
+  } catch (error) {
+    console.error("Erreur [getTeacherDashboardStats]:", error);
+    return { success: false as const, error: "Erreur lors du calcul des stats." };
+  }
+}
+
 // ====== RAPPORT DE CLASSE ======
 export async function getClassReportData(classId: number) {
   try {
