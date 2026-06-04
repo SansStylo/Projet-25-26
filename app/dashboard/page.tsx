@@ -201,12 +201,12 @@ export default function DashboardPage() {
               <div className="flex items-center gap-3 cursor-pointer select-none"
                 onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifs(false); }}>
                 <div className="flex flex-col text-right">
-                  <span className="text-xs text-[#718579] font-medium leading-none mb-1">Admin</span>
-                  <span className="text-sm text-[#1E2E24] font-semibold leading-none">Pédagogique</span>
+                  <span className="text-xs text-[#718579] font-medium leading-none mb-1">Enseignant</span>
+                  <span className="text-sm text-[#1E2E24] font-semibold leading-none">Enseignant</span>
                 </div>
                 <div className="w-[38px] h-[38px] relative shrink-0">
                   <div className="w-full h-full rounded-full bg-[#0F5E3D] text-white flex items-center justify-center text-sm font-bold border border-[#E2EAE5]">
-                    AP
+                    E
                   </div>
                 </div>
               </div>
