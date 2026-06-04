@@ -22,13 +22,14 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { searchStudents, getStudentDetail } from "@/app/actions";
+import { searchStudents, searchStudentsForTeacher, getStudentDetail } from "@/app/actions";
 import { LogoutButton } from "@/app/components/LogoutButton";
 
 type UserRole = 'teacher' | 'responsable';
 
 interface StudentSearchContentProps {
   role: UserRole;
+  teacherIdStr?: string;
 }
 
 type RiskLevel = 'FAIBLE' | 'MODERE' | 'CRITIQUE';
@@ -93,7 +94,7 @@ function computeRiskProfile(student: any): RiskProfile {
   return { riskScore, riskLevel, flags, globalAverage };
 }
 
-export function StudentSearchContent({ role }: StudentSearchContentProps) {
+export function StudentSearchContent({ role, teacherIdStr }: StudentSearchContentProps) {
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -117,9 +118,11 @@ export function StudentSearchContent({ role }: StudentSearchContentProps) {
       setSearchResults([]);
       return;
     }
-    
+
     setIsLoading(true);
-    const results = await searchStudents(query);
+    const results = role === 'teacher' && teacherIdStr
+      ? await searchStudentsForTeacher(query, BigInt(teacherIdStr))
+      : await searchStudents(query);
     setSearchResults(results);
     setIsLoading(false);
   };

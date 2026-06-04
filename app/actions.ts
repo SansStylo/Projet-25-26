@@ -215,8 +215,6 @@ export async function searchStudents(query: string) {
       return [];
     }
 
-    const searchTerm = `%${query.toLowerCase()}%`;
-    
     return await prisma.student.findMany({
       where: {
         OR: [
@@ -239,6 +237,53 @@ export async function searchStudents(query: string) {
     });
   } catch (error) {
     console.error("Erreur lors de la recherche d'étudiants :", error);
+    return [];
+  }
+}
+
+export async function searchStudentsForTeacher(query: string, teacherId: bigint) {
+  try {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+
+    const teacherAssignments = await prisma.teacherAssignments.findMany({
+      where: { teacherId },
+      select: { subjectId: true },
+    });
+
+    const subjectIds = teacherAssignments.map(ta => ta.subjectId);
+    if (subjectIds.length === 0) return [];
+
+    return await prisma.student.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { firstname: { contains: query, mode: 'insensitive' } },
+              { surname: { contains: query, mode: 'insensitive' } },
+            ],
+          },
+          {
+            subjectAssignments: {
+              some: { subjectId: { in: subjectIds } },
+            },
+          },
+        ],
+      },
+      include: {
+        class: true,
+        subjectAssignments: {
+          include: { subject: true },
+        },
+      },
+      orderBy: [
+        { surname: 'asc' },
+        { firstname: 'asc' },
+      ],
+    });
+  } catch (error) {
+    console.error("Erreur lors de la recherche filtrée d'étudiants :", error);
     return [];
   }
 }
