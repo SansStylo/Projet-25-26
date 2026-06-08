@@ -161,13 +161,13 @@ export default async function ProfilPage() {
 
   // Choix dynamique du layout selon la session
   if (user.level === 1) {
-    return <ResponsableClientLayout>{profileContent}</ResponsableClientLayout>;
+    return <ResponsableClientLayout user={user}>{profileContent}</ResponsableClientLayout>;
   }
   
   if (user.level === 2) {
-    // return <AdminLayout>{profileContent}</AdminLayout>;
+    // return <AdminLayout user={user}>{profileContent}</AdminLayout>;
   }
 
   // Par défaut (Enseignant)
-  return <EnseignantClientLayout>{profileContent}</EnseignantClientLayout>;
+  return <EnseignantClientLayout user={user}>{profileContent}</EnseignantClientLayout>;
 }

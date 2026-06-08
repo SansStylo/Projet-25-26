@@ -17,10 +17,10 @@ export default async function DashboardLayout({
 }) {
   // Vérifie que l'utilisateur est enseignant (level 0)
   // Redirige automatiquement vers /responsable, /admin ou / sinon
-  await requireExactLevel(0);
+  const user = await requireExactLevel(0);
 
  return (
-    <EnseignantClientLayout>
+    <EnseignantClientLayout user={user}>
       {children}
     </EnseignantClientLayout>
   );

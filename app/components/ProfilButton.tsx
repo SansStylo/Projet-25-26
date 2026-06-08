@@ -13,12 +13,17 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function ProfilButton() {
+  const pathname = usePathname();
+  const profilHref = "/profil";
+
+
   return (
 
     <Link
-      href="/profil"
+      href={profilHref}
         className="w-full flex items-center gap-2.5 px-4 py-3 text-stone-600 hover:bg-[#F4F7F5] font-medium text-sm transition-colors text-left bg-transparent border-none outline-none cursor-pointer"
     >
         <svg 
