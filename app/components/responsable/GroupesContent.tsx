@@ -129,7 +129,7 @@ export default function GroupesContent({ groupsStats }: GroupesContentProps) {
                           <XAxis dataKey="subjectName" tick={false} axisLine={false} tickLine={false} />
                           <YAxis domain={[0, 20]} tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
                           <Tooltip
-                            formatter={(value: number) => [`${value.toFixed(2)}/20`, 'Moyenne']}
+                            formatter={(value: any) => { const numValue = Number(value); if (isNaN(numValue)) return ['--', 'Moyenne']; return [`${numValue.toFixed(2)}/20`, 'Moyenne'];}}
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontSize: '12px' }}
                           />
                           <Bar dataKey="average" fill="#0F5E3D" radius={[3, 3, 0, 0]} />
