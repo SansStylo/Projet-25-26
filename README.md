@@ -30,12 +30,12 @@ psql -U postgres -c "CREATE DATABASE suivi_pedago;"
 
 ---
 
-##  Installation après un pull (première fois)
+##  Installation après un pull (première fois, ne pas hésiter à refaire si problème)
 
 ### 1. Installer les dépendances npm
 ```bash
 npm install
-npm install -D ts-node
+npm install -D tsx
 ```
 
 ### 2. Créer le fichier `.env` (configuration locale)
@@ -55,17 +55,33 @@ DATABASE_URL="postgresql://postgres:root@localhost:5432/suivi_pedago?schema=publ
 npx prisma generate
 ```
 
-### 4. Créer les tables dans la BDD
+### 4. Créer les tables dans la BDD ( ne pas hésiter a reset si demandé puis refaire la commande push)
 ```bash
 npx prisma db push
 ```
 
-### 5. Peupler la BDD avec des données de test
+### 5. Mettre des données dans  la BDD (à refaire si vous avez reset avant !)
 ```bash
 npx prisma db seed
 ```
 *(optionnel, pour avoir des utilisateurs de test)*
 
+---
+Installations supplémentaires :
+Pour la gestion des mots de passe oubliés sur la page de connexion
+```bash
+npm install nodemailer
+```
+
+```bash
+npm install --save-dev @types/nodemailer
+```
+
+Rajouter dans votre .env cette ligne avec le mot de passe de l'adresse email correspondant
+pour configurer l'adresse qui enverra les mails automatiques de récupération de mots de passe
+```env
+GMAIL_PASS=dlbdzqwgpcdkweeh
+```
 ---
 
 ## 📊 Comprendre Prisma, SQL et PostgreSQL

@@ -7,28 +7,44 @@ datasource db {
 }
 
 model User {
-  userId    BigInt   @id @default(autoincrement()) @map("user_id")
-  mail      String   @unique @db.VarChar(255)
-  password  String   @db.VarChar(255)
-  firstname String   @db.VarChar(100)
-  surname   String   @db.VarChar(100)
-  level     Int      @db.SmallInt // Correspond au 'smallint' du schéma
+  userId    BigInt @id @default(autoincrement()) @map("user_id")
+  mail      String @unique @db.VarChar(255)
+  password  String @db.VarChar(255)
+  firstname String @db.VarChar(100)
+  surname   String @db.VarChar(100)
+  level     Int    @db.SmallInt // 0 = enseignant, 1 = responsable, 2 = admin
 
   // Relations
   subjectAddingCaches SubjectAddingCache[]
-  teacherAssignments   TeacherAssignments[]
+  teacherAssignments  TeacherAssignments[]
+  sessions            Session[]
+  assessments         Assessment[]
+  passwordReset       PasswordReset?
+  notifications       Notification[]
 
   @@map("user")
 }
 
+model Session {
+  sessionId BigInt   @id @default(autoincrement()) @map("session_id")
+  userId    BigInt   @map("user_id")
+  token     String   @unique @db.VarChar(255)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("session")
+}
+
 model Student {
   studentId BigInt @id @default(autoincrement()) @map("student_id")
-  classId   Int?    @map("class_id") @db.SmallInt
+  classId   Int?   @map("class_id") @db.SmallInt
   firstname String @db.VarChar(100)
   surname   String @db.VarChar(100)
 
   // Relations
-  class              Class?                @relation(fields: [classId], references: [classId], onDelete: Cascade)
+  class              Class?               @relation(fields: [classId], references: [classId], onDelete: Cascade)
   studentAssignments StudentAssignments[]
   subjectAssignments SubjectAssignments[]
   grades             Grade[]
@@ -53,7 +69,8 @@ model Subject {
   // Relations
   subjectAssignments  SubjectAssignments[]
   subjectAddingCaches SubjectAddingCache[]
-  teacherAssignments   TeacherAssignments[]
+  teacherAssignments  TeacherAssignments[]
+  assessments         Assessment[]
 
   @@map("subject")
 }
@@ -75,6 +92,7 @@ model Group {
 
   // Relations
   studentAssignments StudentAssignments[]
+  groupAssignments   GroupAssignments[]
 
   @@map("group")
 }
@@ -83,8 +101,8 @@ model SubjectAssignments {
   studentId BigInt @map("student_id")
   subjectId Int    @map("subject_id") @db.SmallInt
 
-  student   Student @relation(fields: [studentId], references: [studentId], onDelete: Cascade)
-  subject   Subject @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [studentId], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade)
 
   @@id([studentId, subjectId])
   @@map("subject_assignments")
@@ -119,24 +137,69 @@ model Assessment {
   date         DateTime @db.Date
   maxGrade     Int      @map("max_grade") @db.SmallInt
   weight       Int      @db.SmallInt
-  teacher      String   @db.VarChar(100)
+  userId       BigInt   @map("user_id")
   label        String   @db.VarChar(255)
 
   // Relations
-  grades Grade[]
+  grades           Grade[]
+  subject          Subject            @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade)
+  user             User               @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  groupAssignments GroupAssignments[]
 
   @@map("assessment")
 }
 
 model Grade {
-  assessmentId BigInt @map("assessment_id")
-  studentId    BigInt @map("student_id")
-  value        Int    @db.SmallInt // Note de l'étudiant
-  feedback     String @db.Text
+  assessmentId BigInt  @map("assessment_id")
+  studentId    BigInt  @map("student_id")
+  value        Decimal @db.Decimal(10, 5) // Note de l'étudiant
+  feedback     String  @db.Text
 
   assessment Assessment @relation(fields: [assessmentId], references: [assessmentId], onDelete: Cascade)
   student    Student    @relation(fields: [studentId], references: [studentId], onDelete: Cascade)
 
   @@id([assessmentId, studentId])
   @@map("grade")
+}
+
+model GroupAssignments {
+  groupId      BigInt @map("group_id")
+  assessmentId BigInt @map("assessment_id")
+
+  group      Group      @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  assessment Assessment @relation(fields: [assessmentId], references: [assessmentId], onDelete: Cascade)
+
+  @@id([groupId, assessmentId])
+  @@map("group_assignments")
+}
+
+model PasswordReset {
+  userId       BigInt   @id @map("user_id")
+  resetCode    String   @map("reset_code") @db.VarChar(255)
+  validityTime DateTime @map("validity_time")
+
+  // Relation
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("password_reset")
+}
+
+model Notification {
+  notificationId BigInt @id @default(autoincrement()) @map("notification_id")
+  userId         BigInt @map("user_id")
+  title          String @db.VarChar(255)
+  message        String @db.Text
+  returns        String @db.VarChar(255)
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("notification")
+}
+
+model Logs {
+  logsId BigInt   @id @default(autoincrement()) @map("logs_id")
+  date   DateTime @db.Date
+  label  String   @db.Text
+
+  @@map("logs")
 }

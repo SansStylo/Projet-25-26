@@ -1,16 +1,14 @@
-import { defineConfig } from '@prisma/config'; // ou '@prisma/config' selon ton installation
-import * as dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config';
 
-export default defineConfig({
+export default {
   schema: 'prisma/schema.prisma',
   
-  // 🔗 On injecte explicitement l'URL pour Prisma Studio
   datasource: {
     url: process.env.DATABASE_URL,
   },
   
   migrations: {
-    seed: 'ts-node --compiler-options "{\\"module\\":\\"CommonJS\\"}" prisma/seed.ts',
+    // 
+    seed: 'tsx prisma/seed.ts',
   },
-});
+};

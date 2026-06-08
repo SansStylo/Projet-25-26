@@ -1,3 +1,19 @@
+/**
+ * app/html-js/page.tsx
+ * 
+ * Page de développement/debug - Gestion des données
+ * 
+ * Rôle:
+ * - Page de test et debug pour la gestion des données (sujets, utilisateurs, étudiants)
+ * - Permet l'ajout manuel de données de test
+ * - Affichage et gestion des données via l'interface
+ * 
+ * Fonctionnement:
+ * - Récupère les données via getSubjects(), getUsers(), getStudents()
+ * - Permet l'ajout de données via addDebugSubject(), addDebugUser(), addDebugStudent()
+ * - Interface interactive pour tester et visualiser les données
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
