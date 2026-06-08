@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { sendResetCodeEmail } from "@/app/actions";
+import { sendResetCodeEmail, verifyResetCode, updatePasswordAndCleanUp } from "@/app/actions";
 
 export default function MotDePasseOublie() {
   const router = useRouter();
@@ -19,30 +19,21 @@ export default function MotDePasseOublie() {
   const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsPending(true);
-    
-    // Génération du code à 6 chiffres
-    const codeTemporaire = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log("Code généré pour le test :", codeTemporaire);
 
     // Appel de Nodemailer
-    const resultat = await sendResetCodeEmail(email, codeTemporaire);
+    const resultat = await sendResetCodeEmail(email);
     setIsPending(false);
 
     if (resultat.success) {
         setStep(2);
     } else {
-        alert("Envoi refusé.");
+        alert(resultat.error || "Une erreur est survenue lors de l'envoi.");
     }
   };
 
   const handleResendEmail = async () => {
     setIsPending(true);
-    
-    // Génération d'un nouveau code et envoi
-    const codeTemporaire = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log("Nouveau code généré :", codeTemporaire);
-    
-    const resultat = await sendResetCodeEmail(email, codeTemporaire);
+    const resultat = await sendResetCodeEmail(email);
     setIsPending(false);
 
     if (!resultat.success) {
@@ -53,9 +44,14 @@ export default function MotDePasseOublie() {
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsPending(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    const resultat = await verifyResetCode(email, code);
     setIsPending(false);
-    setStep(3);
+
+    if (resultat.success) {
+      setStep(3);
+    } else {
+      alert(resultat.error || "Code de validation incorrect ou expiré.");
+    }
   };
 
   const handleBackClick = () => {
@@ -151,7 +147,9 @@ export default function MotDePasseOublie() {
           />
         )}
         
-        {step === 3 && <EtapeNouveauMdp />}
+        {step === 3 && (
+          <EtapeNouveauMdp
+            email={email} />)}
 
         {/* Pied de page */}
         <div className="mt-6 text-center border-t border-stone-100 pt-4">
@@ -333,20 +331,29 @@ function EtapeCode({ email, code, setCode, onSubmit, isPending, onBack, onResend
 }
 
 // ÉTAPE 3 : Choix du Nouveau Mot de passe
-function EtapeNouveauMdp() {
+function EtapeNouveauMdp({email}: {email: string}) {
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       alert("Les mots de passe ne correspondent pas !");
       return;
     }
-    setSuccess(true);
+    const res = await updatePasswordAndCleanUp(email, password);
+
+    if (res.success) {
+      setSuccess(true); // Affiche l'écran de succès final
+    } else {
+      alert(res.error || "Erreur lors du changement de mot de passe.");
+    }
   };
+
+  
+
 
   if (success) {
     return (

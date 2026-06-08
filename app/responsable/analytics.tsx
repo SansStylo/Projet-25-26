@@ -20,7 +20,7 @@ import { prisma } from '@/app/lib/db';
 export async function getStudentsAtRisk(classId: number) {
   try {
     // 1. Récupération de tous les étudiants de la classe avec leurs notes et coefficients
-    // 🔄 Adapté au nouveau schéma : classId en minuscules
+    // Adapté au nouveau schéma : classId en minuscules
     const students = await prisma.student.findMany({
       where: { classId: classId },
       include: {
@@ -44,12 +44,12 @@ export async function getStudentsAtRisk(classId: number) {
       let lowGradesCount = 0;
       const flags: string[] = [];
 
-      // Analyse de chaque note de l'étudiant
+      // Analyse de chaque note de l'étudiants
       student.grades.forEach((grade) => {
         const assessment = grade.assessment;
         const subject = assessment.subject;
         
-        // 🔄 Adapté au nouveau schéma : weight et maxGrade en minuscules
+        // Adapté au nouveau schéma : weight et maxGrade en minuscules
         const coefficient = assessment.weight;
         const gradeOn20 = (grade.value / assessment.maxGrade) * 20; // value en minuscules
 
@@ -58,7 +58,7 @@ export async function getStudentsAtRisk(classId: number) {
         totalWeights += coefficient;
 
         // Groupement par matière pour détecter les faiblesses ciblées
-        // 🔄 Adapté au nouveau schéma : subjectId et label en minuscules
+        // Adapté au nouveau schéma : subjectId et label en minuscules
         if (!subjectGradesMap[subject.subjectId]) {
           subjectGradesMap[subject.subjectId] = {
             name: subject.label,
@@ -123,7 +123,7 @@ export async function getStudentsAtRisk(classId: number) {
         riskLevel = 'MODERE';
       }
 
-      // 🔄 Adapté au nouveau schéma : studentId, firstname, surname en camelCase
+      // studentId, firstname, surname en camelCase
       return {
         studentId: student.studentId.toString(),
         firstname: student.firstname,

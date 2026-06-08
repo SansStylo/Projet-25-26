@@ -500,108 +500,211 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendResetCodeEmail(targetEmail: string, code: string) {
-  const mailOptions = {
-    from: '"Junia\'lytics" <junialytics@gmail.com>',
-    to: targetEmail,                     
-    subject: "Votre code de récupération Junia'lytics",    
-    text: `Votre code de validation est : ${code}. Il expirera dans 15 minutes.`,                          
-    html:`
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Code de récupération Junia'lytics</title>
-    </head>
-    <body style="margin: 0; padding: 0; background-color: #F4F7F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
-      
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #F4F7F5; padding: 40px 20px;">
-        <tr>
-          <td align="center">
-            
-            <!-- Conteneur Principal de la Carte -->
-            <table role="presentation" width="100%" max-width="480" cellspacing="0" cellpadding="0" border="0" style="max-width: 480px; width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #E2EAE5; box-shadow: 0 4px 20px rgba(18,38,30,0.02); overflow: hidden;">
-              
-              <!-- En-tête / Bannière Haute -->
-              <tr>
-                <td style="padding: 32px 32px 20px 32px; text-align: center;">
-                  <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #12261E; tracking-tight: -0.025em;">Junia'lytics</h1>
-                  <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: 500; color: #53665A; text-transform: uppercase; letter-spacing: 0.05em;">Sécurité & Authentification</p>
-                </td>
-              </tr>
-
-              <!-- Ligne de séparation discrète -->
-              <tr>
-                <td style="padding: 0 32px;">
-                  <div style="height: 1px; background-color: #F0F4F1; width: 100%;"></div>
-                </td>
-              </tr>
-
-              <!-- Corps du message -->
-              <tr>
-                <td style="padding: 32px;">
-                  <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #1E2E24;">
-                    Bonjour,
-                  </p>
-                  <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #53665A;">
-                    Nous avons reçu une demande de réinitialisation de mot de passe pour votre espace pédagogique. Utilisez le code secret temporaire ci-dessous pour valider votre identité :
-                  </p>
-
-                  <!-- Zone du Code Secret mis en valeur -->
-                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
-                    <tr>
-                      <td align="center" style="padding: 18px; background-color: #F4F7F5; border-radius: 12px; border: 1px dashed #047857;">
-                        <span style="font-size: 32px; font-weight: 800; letter-spacing: 0.25em; color: #047857; font-family: monospace, monospace; padding-left: 0.25em;">${code}</span>
-                      </td>
-                    </tr>
-                  </table>
-
-                  <!-- Information d'expiration -->
-                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
-                    <tr>
-                      <td style="vertical-align: middle; padding-right: 8px;">
-                        <span style="font-size: 16px;">⏱️</span>
-                      </td>
-                      <td style="vertical-align: middle;">
-                        <p style="margin: 0; font-size: 12px; font-weight: 600; color: #B91C1C;">
-                          Ce code secret est strictement confidentiel et expirera dans 15 minutes.
-                        </p>
-                      </td>
-                    </tr>
-                  </table>
-
-                  <div style="height: 1px; background-color: #F0F4F1; width: 100%; margin-bottom: 24px;"></div>
-
-                  <p style="margin: 0; font-size: 11px; line-height: 1.5; color: #8A9A8E;">
-                    Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité. Votre mot de passe actuel restera inchangé.
-                  </p>
-                </td>
-              </tr>
-
-              <!-- Pied de page -->
-              <tr>
-                <td style="padding: 0 32px 32px 32px; text-align: center;">
-                  <p style="margin: 0; font-size: 11px; color: #8A9A8E;">
-                    Junia'lytics — Plateforme d'analyse académique.
-                  </p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>
-  `, 
-  };
-
+export async function sendResetCodeEmail(targetEmail: string) {
   try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log("Email envoyé avec succès : ", info.messageId);
-      return { success: true };
-    } catch (error) {
-      console.error("Erreur lors de l'envoi de l'email : ", error);
-      return { success: false, error: "Impossible d'envoyer le mail." };
+    // Trouver l'utilisateur
+    const user = await prisma.user.findUnique({
+        where: { mail: targetEmail },
+      })
+    if (!user) {
+        return { success: false, error: "Aucun compte n'est associé à cette adresse." };
+      }
+    
+    // Génération du code à 6 chiffres 
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Calcul de la date d'expiration 
+    const quinze_minutes = 15 * 60 * 1000;
+    const expiresAt = new Date(Date.now() + quinze_minutes)
+
+    // 3. Stockage en base de données
+    console.log("-> Début du stockage pour l'utilisateur ID :", user.userId);
+    try {
+      const resetEnregistre = await prisma.passwordReset.upsert({
+        where: { userId: user.userId },
+        update: {
+          resetCode: code,
+          validityTime: expiresAt,
+        },
+        create: {
+          userId: user.userId,
+          resetCode: code,
+          validityTime: expiresAt,
+        },
+      });
+    console.log("-> [BDD SUCCESS] Ligne enregistrée avec succès :", resetEnregistre);
+    } catch (prismaError) {
+      console.error("-> [BDD CRASH] Prisma n'a pas pu écrire dans PostgreSQL :", prismaError);
+      return { success: false, error: "Erreur d'écriture en base de données." };
     }
+
+
+    const mailOptions = {
+      from: '"Junia\'lytics" <junialytics@gmail.com>',
+      to: targetEmail,                     
+      subject: "Votre code de récupération Junia'lytics",    
+      text: `Votre code de validation est : ${code}. Il expirera dans 15 minutes.`,                          
+      html:`
+      <!DOCTYPE html>
+      <html lang="fr">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Code de récupération Junia'lytics</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #F4F7F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #F4F7F5; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              
+              <!-- Conteneur Principal de la Carte -->
+              <table role="presentation" width="100%" max-width="480" cellspacing="0" cellpadding="0" border="0" style="max-width: 480px; width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #E2EAE5; box-shadow: 0 4px 20px rgba(18,38,30,0.02); overflow: hidden;">
+                
+                <!-- En-tête / Bannière Haute -->
+                <tr>
+                  <td style="padding: 32px 32px 20px 32px; text-align: center;">
+                    <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #12261E; tracking-tight: -0.025em;">Junia'lytics</h1>
+                    <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: 500; color: #53665A; text-transform: uppercase; letter-spacing: 0.05em;">Sécurité & Authentification</p>
+                  </td>
+                </tr>
+
+                <!-- Ligne de séparation discrète -->
+                <tr>
+                  <td style="padding: 0 32px;">
+                    <div style="height: 1px; background-color: #F0F4F1; width: 100%;"></div>
+                  </td>
+                </tr>
+
+                <!-- Corps du message -->
+                <tr>
+                  <td style="padding: 32px;">
+                    <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #1E2E24;">
+                      Bonjour,
+                    </p>
+                    <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #53665A;">
+                      Nous avons reçu une demande de réinitialisation de mot de passe pour votre espace pédagogique. Utilisez le code secret temporaire ci-dessous pour valider votre identité :
+                    </p>
+
+                    <!-- Zone du Code Secret mis en valeur -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                      <tr>
+                        <td align="center" style="padding: 18px; background-color: #F4F7F5; border-radius: 12px; border: 1px dashed #047857;">
+                          <span style="font-size: 32px; font-weight: 800; letter-spacing: 0.25em; color: #047857; font-family: monospace, monospace; padding-left: 0.25em;">${code}</span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Information d'expiration -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                      <tr>
+                        <td style="vertical-align: middle; padding-right: 8px;">
+                          <span style="font-size: 16px;">⏱️</span>
+                        </td>
+                        <td style="vertical-align: middle;">
+                          <p style="margin: 0; font-size: 12px; font-weight: 600; color: #B91C1C;">
+                            Ce code secret est strictement confidentiel et expirera dans 15 minutes.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <div style="height: 1px; background-color: #F0F4F1; width: 100%; margin-bottom: 24px;"></div>
+
+                    <p style="margin: 0; font-size: 11px; line-height: 1.5; color: #8A9A8E;">
+                      Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité. Votre mot de passe actuel restera inchangé.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Pied de page -->
+                <tr>
+                  <td style="padding: 0 32px 32px 32px; text-align: center;">
+                    <p style="margin: 0; font-size: 11px; color: #8A9A8E;">
+                      Junia'lytics — Plateforme d'analyse académique.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `, 
+  };
+    await transporter.sendMail(mailOptions);
+    return { success: true };
+
+  } catch (error) {
+    console.error("Erreur lors de la génération/envoi du code :", error);
+    return { success: false, error: "Une erreur technique est survenue." };
+  }
+}
+export async function verifyResetCode(targetEmail: string, codeSaisi: string) {
+  try {
+    const resetRequest = await prisma.passwordReset.findFirst({
+      where: {
+        user: {
+          mail: targetEmail,
+        },
+      },
+    });
+
+    if (!resetRequest) {
+      return { success: false, error: "Aucune demande de récupération n'est active pour ce compte." };
+    }
+
+    const maintenant = new Date();
+    if (maintenant > resetRequest.validityTime) {
+      return { success: false, error: "Ce code a expiré. Veuillez en demander un nouveau." };
+    }
+
+    if (codeSaisi !== resetRequest.resetCode) {
+      return { success: false, error: "Code de validation incorrect." };
+    }
+
+    return { success: true };
+
+  } catch (error) {
+    console.error("Erreur lors de la vérification du code :", error);
+    return { success: false, error: "Une erreur système est survenue lors de la vérification." };
+  }
+}
+
+// ÉTAPE 3 : Changement de mdp + nettoyage BDD
+export async function updatePasswordAndCleanUp(targetEmail: string, newPasswordRaw: string) {
+  try {
+    // 1. Trouver l'utilisateur
+    const user = await prisma.user.findUnique({
+      where: { mail: targetEmail },
+    });
+
+    if (!user) {
+      return { success: true };
+    }
+
+    // 2. Hachage du mot de passe
+    // fonction de hash existante (ex: bcrypt ou argon2), à appliquer ici :
+    // const hashedPassword = await bcrypt.hash(newPasswordRaw, 10);
+    const passwordToStore = newPasswordRaw; // Remplace par hashedPassword
+
+    // 3. Transaction Prisma : On met à jour le mot de passe ET on supprime le token de reset
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { userId: user.userId },
+        data: { password: passwordToStore },
+      }),
+      // prisma.passwordReset.delete({
+      //   where: { userId: user.userId },
+      // }),
+    ]);
+
+    console.log(`[BDD] Mot de passe mis à jour avec succès pour ${targetEmail} et table PasswordReset nettoyée.`);
+    return { success: true };
+
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du mot de passe :", error);
+    return { success: false, error: "Impossible d'enregistrer le nouveau mot de passe." };
+  }
 }

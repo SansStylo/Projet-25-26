@@ -8,6 +8,7 @@
 
 import { requireExactLevel } from "@/app/lib/auth";
 import React from "react";
+import EnseignantClientLayout from "@/app/components/enseignant/EnseignantLayout";
 
 export default async function DashboardLayout({
   children,
@@ -18,5 +19,9 @@ export default async function DashboardLayout({
   // Redirige automatiquement vers /responsable, /admin ou / sinon
   await requireExactLevel(0);
 
-  return <>{children}</>;
+ return (
+    <EnseignantClientLayout>
+      {children}
+    </EnseignantClientLayout>
+  );
 }
