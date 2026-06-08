@@ -48,7 +48,7 @@ export default async function AdminPage() {
           </div>
 
           <div className="bg-white rounded-lg shadow p-6 border border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800 mb-4">Gestion des matières</h2>
+            <h2 className="text-xl font-semibold text-slate-800 mb-4"><a href="/html-js" >Gestion des matières</a></h2>
             <p className="text-slate-600">Définissez les matières et leurs assignations.</p>
           </div>
 
