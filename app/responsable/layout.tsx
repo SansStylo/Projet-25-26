@@ -6,10 +6,12 @@
  * Redirige sinon vers son espace approprié
  */
 
+
 import { requireExactLevel } from "@/app/lib/auth";
 import React from "react";
+import ResponsableClientLayout from "@/app/components/responsable/ResponsableLayout";
 
-export default async function ResponsableLayout({
+export default async function ResponsableServerLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -18,5 +20,9 @@ export default async function ResponsableLayout({
   // Redirige automatiquement vers /dashboard, /admin ou / sinon
   await requireExactLevel(1);
 
-  return <>{children}</>;
+  return (
+    <ResponsableClientLayout>
+      {children}
+    </ResponsableClientLayout>
+  );
 }
