@@ -433,6 +433,70 @@ export async function updateStudentAssignments(studentIds: bigint[], groupId: nu
   }
 }
 
+export async function updateStudentClass(studentIds: bigint[], classId: number) {
+  try {
+    await prisma.$transaction([
+      // 1. On retire de cette classe tous les étudiants qui y étaient
+      prisma.student.updateMany({
+        where: { classId: classId },
+        data: { classId: null },
+      }),
+      // 2. On assigne la classe aux nouveaux étudiants sélectionnés dans la liste
+      prisma.student.updateMany({
+        where: {
+          studentId: { in: studentIds },
+        },
+        data: { classId: classId },
+      }),
+    ]);
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la classe :", error);
+    throw new Error("Impossible de mettre à jour les étudiants de la classe.");
+  }
+}
+
+export async function deleteGroup(groupId: bigint) {
+  try {
+    return await prisma.$transaction([
+      prisma.studentAssignments.deleteMany({ where: { groupId } }),
+      prisma.group.delete({ where: { groupId } }),
+    ]);
+  } catch (error) {
+    console.error("Erreur suppression groupe:", error);
+    throw new Error("Impossible de supprimer le groupe.");
+  }
+}
+
+export async function deleteClass(classId: number) {
+  try {
+    return await prisma.$transaction([
+      // On remet à null le classId des étudiants concernés
+      prisma.student.updateMany({
+        where: { classId },
+        data: { classId: null },
+      }),
+      prisma.class.delete({ where: { classId } }),
+    ]);
+  } catch (error) {
+    console.error("Erreur suppression classe:", error);
+    throw new Error("Impossible de supprimer la classe.");
+  }
+}
+
+export async function renameGroup(groupId: bigint, newLabel: string) {
+  return await prisma.group.update({
+    where: { groupId },
+    data: { label: newLabel },
+  });
+}
+
+export async function renameClass(classId: number, newLabel: string) {
+  return await prisma.class.update({
+    where: { classId },
+    data: { label: newLabel },
+  });
+}
+
 export async function loginAction(
   prevState: { error: string | null },
   formData: FormData
@@ -790,6 +854,71 @@ export async function getClassReportData(classId: number) {
   } catch (error) {
     console.error("Erreur [getClassReportData]:", error);
     return { success: false as const, error: "Erreur lors du calcul du rapport." };
+/**
+ * Action serveur pour la page de gestion des notes
+ * Récupère les matières et les tables d'évaluation, en gérant le problème des BigInt
+ */
+export async function getDropdownData() {
+  try {
+    // 1. Récupère toutes les matières
+    const subjects = await prisma.subject.findMany({
+      orderBy: { label: 'asc' }
+    });
+
+    // 2. Récupére toutes les tables de notes
+    const assessments = await prisma.assessment.findMany({
+      orderBy: { date: 'desc' }
+    });
+
+    // 3. Conversion du BigInt en String pour éviter certains crash
+    const formattedAssessments = assessments.map((assessment) => ({
+      ...assessment,
+      assessmentId: assessment.assessmentId.toString(),
+    }));
+
+    return { subjects, assessments: formattedAssessments };
+  } catch (error) {
+    console.error("Erreur lors de la récupération des données pour les menus:", error);
+    return { subjects: [], assessments: [] };
+  }
+}
+
+
+/**
+ * Récupère les professeurs assignés à une matière précise,
+ * ainsi que l'ensemble des groupes disponibles pour la modale.
+ */
+export async function getModalData(subjectIdStr: string) {
+  try {
+    const subjectId = parseInt(subjectIdStr, 10);
+
+    // 1. Récupère les profs assignés à cette matière
+    const teacherAssignments = await prisma.teacherAssignments.findMany({
+      where: { subjectId: subjectId },
+      include: { teacher: true }
+    });
+
+    // Formatage (conversion BigInt - string)
+    const teachers = teacherAssignments.map(ta => ({
+      id: ta.teacher.userId.toString(),
+      nom: ta.teacher.surname,
+      prenom: ta.teacher.firstname
+    }));
+
+    // 2. Récupère les groupes
+    const groupsDb = await prisma.group.findMany({
+      orderBy: { label: 'asc' }
+    });
+
+    const groups = groupsDb.map(g => ({
+      id: g.groupId.toString(),
+      label: g.label
+    }));
+
+    return { teachers, groups };
+  } catch (error) {
+    console.error("Erreur :", error);
+    return { teachers: [], groups: [] };
   }
 }
 
@@ -911,4 +1040,193 @@ export async function sendResetCodeEmail(targetEmail: string, code: string) {
       console.error("Erreur lors de l'envoi de l'email : ", error);
       return { success: false, error: "Impossible d'envoyer le mail." };
     }
+//  * Création d'une nouvelle table de notation et liaison des groupes
+//  */
+export async function createAssessment(data: {
+  subjectId: string;
+  userId: string;
+  maxGrade: number;
+  weight: number;
+  date: string;
+  label: string;
+  groupIds: string[];
+}) {
+  try {
+    const newAssessment = await prisma.assessment.create({
+      data: {
+        subjectId: parseInt(data.subjectId, 10),
+        userId: BigInt(data.userId),
+        maxGrade: data.maxGrade,
+        weight: data.weight,
+        date: new Date(data.date),
+        label: data.label,
+        groupAssignments: {
+          create: data.groupIds.map(id => ({
+            groupId: BigInt(id)
+          }))
+        }
+      }
+    });
+    return { success: true, assessmentId: newAssessment.assessmentId.toString() };
+  } catch (error) {
+    console.error("Erreur lors de la création de la table de notation:", error);
+    return { success: false, error: "Impossible de créer la table." };
+  }
+}
+
+/**
+ * Récupère les détails d'une évaluation existante pour pré-remplir la modale
+ */
+export async function getAssessmentDetails(assessmentIdStr: string) {
+  try {
+    const assessment = await prisma.assessment.findUnique({
+      where: { assessmentId: BigInt(assessmentIdStr) },
+      include: { groupAssignments: true }
+    });
+
+    if (!assessment) return null;
+
+    return {
+      userId: assessment.userId.toString(),
+      maxGrade: assessment.maxGrade.toString(),
+      weight: assessment.weight.toString(),
+      date: assessment.date.toISOString().split('T')[0],
+      label: assessment.label,
+      groupIds: assessment.groupAssignments.map(ga => ga.groupId.toString())
+    };
+  } catch (error) {
+    console.error("Erreur :", error);
+    return null;
+  }
+}
+
+/**
+ * Met à jour une évaluation existante et ses groupes
+ */
+export async function updateAssessment(assessmentIdStr: string, data: {
+  userId: string; maxGrade: number; weight: number; date: string; label: string; groupIds: string[];
+}) {
+  try {
+    await prisma.assessment.update({
+      where: { assessmentId: BigInt(assessmentIdStr) },
+      data: {
+        userId: BigInt(data.userId),
+        maxGrade: data.maxGrade,
+        weight: data.weight,
+        date: new Date(data.date),
+        label: data.label,
+        groupAssignments: {
+          deleteMany: {},
+          create: data.groupIds.map(id => ({ groupId: BigInt(id) }))
+        }
+      }
+    });
+
+    // 1. Recherche des étudiants des groupes selectionnés
+    const validGroupIds = data.groupIds.map(id => BigInt(id));
+    const validStudents = await prisma.student.findMany({
+      where: {
+        studentAssignments: { some: { groupId: { in: validGroupIds } } }
+      },
+      select: { studentId: true }
+    });
+    const validStudentIds = validStudents.map(s => s.studentId);
+
+    // 2. Suppression de la note si l'étudiant n'est pas dans la liste
+    await prisma.grade.deleteMany({
+      where: {
+        assessmentId: BigInt(assessmentIdStr),
+        studentId: { notIn: validStudentIds }
+      }
+    });
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: `Erreur : ${error.message}` };
+  }
+}
+
+/**
+ * Supprime une évaluation
+ */
+export async function deleteAssessment(assessmentIdStr: string) {
+  try {
+    await prisma.assessment.delete({
+      where: { assessmentId: BigInt(assessmentIdStr) }
+    });
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: `Erreur : ${error.message}` };
+  }
+}
+
+/**
+ * Récupère la liste des étudiants appartenant aux groupes d'une évaluation
+ */
+export async function getAssessmentStudents(assessmentIdStr: string) {
+  try {
+    const assessmentId = BigInt(assessmentIdStr);
+
+    // Recherche des étudiants
+    const studentsDb = await prisma.student.findMany({
+      where: {
+        studentAssignments: {
+          some: {
+            group: {
+              groupAssignments: {
+                some: { assessmentId: assessmentId }
+              }
+            }
+          }
+        }
+      },
+      include: {
+        grades: {
+          where: { assessmentId: assessmentId }
+        }
+      },
+      orderBy: { surname: 'asc' }
+    });
+
+    // 2. Formatage des données
+    return studentsDb.map(student => ({
+      id: student.studentId.toString(),
+      nom: student.surname,
+      prenom: student.firstname,
+      note: student.grades[0] ? student.grades[0].value.toString() : "--",
+      feedback: student.grades[0] ? student.grades[0].feedback : ""
+    }));
+  } catch (error) {
+    console.error("Erreur :", error);
+    return [];
+  }
+}
+
+/**
+ * Ajout ou met à jour de la note et du feedback d'un étudiant
+ */
+export async function saveGrade(assessmentIdStr: string, studentIdStr: string, value: number, feedback: string) {
+  try {
+    await prisma.grade.upsert({
+      where: {
+        assessmentId_studentId: {
+          assessmentId: BigInt(assessmentIdStr),
+          studentId: BigInt(studentIdStr)
+        }
+      },
+      update: {
+        value: value,
+        feedback: feedback
+      },
+      create: {
+        assessmentId: BigInt(assessmentIdStr),
+        studentId: BigInt(studentIdStr),
+        value: value,
+        feedback: feedback
+      }
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error("Erreur :", error);
+    return { success: false, error: `Erreur : ${error.message}` };
+  }
 }

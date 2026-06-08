@@ -18,6 +18,8 @@
 
 import { useState, useEffect } from 'react';
 import BlocDetails from './detail_teaching';
+import BlocGroups from './detail_groups';
+import BlocClasses from './detail_class';
 import { getSubjects, 
   getUsers, 
   getStudents, 
@@ -80,6 +82,9 @@ interface ClassesType{
 
 export default function DashboardPage() {
   const [activeBloc, setActiveBloc] = useState<SubjectType | null>(null);
+  const [showGroupsManager, setShowGroupsManager] = useState(false);
+  const [showClassesManager, setShowClassesManager] = useState(false);
+
   const [subjects, setSubjects] = useState<SubjectType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [users, setUsers] = useState<UsersType[]>([]);
@@ -89,6 +94,7 @@ export default function DashboardPage() {
   const [studentAssignments, setStudentAssignments] = useState<StudentAssignmentsType[]>([]);
   const [groups, setGroups] = useState<GroupType[]>([]);
   const [classes, setClasses] = useState<ClassesType[]>([]);
+
 
   const refreshAssignments = async () => {
     const [teachersData, studentsData, studentData, groupsData, classesData, updatedStudents] = await Promise.all([
@@ -239,6 +245,20 @@ const handleAddDebugStudent = async () => {
 
           </div>
         )}
+        <div className="mt-12 pt-8 border-t border-slate-200 flex gap-4">
+          <button 
+            onClick={() => setShowGroupsManager(true)}
+            className="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg shadow-md transition-all flex items-center gap-2"
+          >
+            Manage Groups
+          </button>
+          <button 
+            onClick={() => setShowClassesManager(true)}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-md transition-all flex items-center gap-2"
+          >
+            Manage Proms
+          </button>
+        </div>
       </main>
 
       {activeBloc && (
@@ -257,6 +277,24 @@ const handleAddDebugStudent = async () => {
         />
       )}
 
+      {showGroupsManager && (
+        <BlocGroups 
+          students={students}
+          groups={groups}
+          studentAssignments={studentAssignments}
+          onClose={() => setShowGroupsManager(false)}
+          onRefreshAssignments={refreshAssignments}
+        />
+      )}
+
+      {showClassesManager && (
+        <BlocClasses 
+          students={students}
+          classes={classes}
+          onClose={() => setShowClassesManager(false)}
+          onRefreshAssignments={refreshAssignments}
+        />
+      )}
     </div>
   );
 }
