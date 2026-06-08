@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoutButton } from "@/app/components/LogoutButton";
+import { ProfilButton } from "@/app/components/ProfilButton";
 
 export default function EnseignantClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -152,11 +153,18 @@ export default function EnseignantClientLayout({ children }: { children: React.R
                       </div>
                     </div>
                     {showProfileMenu && (
-                      <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[180px] z-[1000] overflow-hidden">
-                        <ul className="text-stone-600 hover:[&_*]:!text-red-600 list-none p-0 m-0 divide-y divide-[#EAEFEA]">
-                          <LogoutButton />
-                        </ul>
-                      </div>
+                      <>
+                        <div className="fixed inset-0 z-[999] bg-transparent" 
+                        onClick={() => setShowProfileMenu(false)}/>
+                          <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[180px] z-[1000] overflow-hidden">
+                            <ul className="list-none p-0 m-0 divide-y divide-[#EAEFEA]">
+                              {/* Élément 1 : Mon Profil */}
+                                <ProfilButton />
+                              {/* Élément 2 : Déconnexion */}
+                                <LogoutButton />
+                            </ul>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div> 
