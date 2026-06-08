@@ -196,33 +196,33 @@ async function main() {
   // 1. Évaluations officielles pour l'historique (Mars, Avril, Mai)
   const examProject = await prisma.assessment.create({
     data: {
-      subjectId: subjectDevWeb.subjectId,
+      subject: { connect: { subjectId: subjectDevWeb.subjectId } },
+      user: { connect: { userId: profJean.userId } }, // On utilise "user" et pas "teacher"
       date: new Date('2026-03-15'),
       maxGrade: 20,
       weight: 3,
-      teacher: 'Jean Dupont',
       label: 'Projet d\'architecture Next.js & Prisma',
     },
   });
 
   const examSql = await prisma.assessment.create({
     data: {
-      subjectId: subjectDatabase.subjectId,
+      subject: { connect: { subjectId: subjectDatabase.subjectId } },
+      user: { connect: { userId: profMarie.userId } },
       date: new Date('2026-04-10'),
       maxGrade: 20,
       weight: 2,
-      teacher: 'Marie Martin',
       label: 'Examen sur table : Requêtes et indexation',
     },
   });
 
   const examFinal = await prisma.assessment.create({
     data: {
-      subjectId: subjectDevWeb.subjectId,
+      subject: { connect: { subjectId: subjectDevWeb.subjectId } },
+      user: { connect: { userId: profJean.userId } },
       date: new Date('2026-05-20'),
       maxGrade: 20,
       weight: 4,
-      teacher: 'Jean Dupont',
       label: 'Examen Final : Intégration et API SSR',
     },
   });

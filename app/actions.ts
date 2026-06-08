@@ -785,11 +785,15 @@ export async function getAssessmentStudents(assessmentIdStr: string) {
  */
 export async function saveGrade(assessmentIdStr: string, studentIdStr: string, value: number, feedback: string) {
   try {
+    const assessmentId = BigInt(assessmentIdStr);
+    const studentId = BigInt(studentIdStr);
+
+    // 1. Sauvegarder ou mettre à jour la note saisie
     await prisma.grade.upsert({
       where: {
         assessmentId_studentId: {
-          assessmentId: BigInt(assessmentIdStr),
-          studentId: BigInt(studentIdStr)
+          assessmentId: assessmentId,
+          studentId: studentId
         }
       },
       update: {
@@ -797,16 +801,137 @@ export async function saveGrade(assessmentIdStr: string, studentIdStr: string, v
         feedback: feedback
       },
       create: {
-        assessmentId: BigInt(assessmentIdStr),
-        studentId: BigInt(studentIdStr),
+        assessmentId: assessmentId,
+        studentId: studentId,
         value: value,
         feedback: feedback
       }
     });
+
+    // 2. Récupérer l'évaluation courante pour connaître la matière (subjectId)
+    const currentAssessment = await prisma.assessment.findUnique({
+      where: { assessmentId: assessmentId },
+      include: { subject: true }
+    });
+
+    if (!currentAssessment) return { success: true };
+    const subjectId = currentAssessment.subjectId;
+
+    // 3. Récupérer TOUTES les notes de cet élève pour cette matière
+    const allGrades = await prisma.grade.findMany({
+      where: {
+        studentId: studentId,
+        assessment: {
+          subjectId: subjectId
+        }
+      },
+      include: {
+        assessment: true
+      }
+    });
+
+    // 4. Calcul de la moyenne sur 20 (en utilisant "weight" et "maxGrade" de ton schéma)
+    let totalPoints = 0;
+    let totalWeights = 0;
+
+    for (const g of allGrades) {
+      const max = g.assessment.maxGrade || 20;
+      const weight = g.assessment.weight || 1;
+      
+      // Convertir le type Decimal de Prisma en Number standard JavaScript
+      const gradeValue = Number(g.value);
+      
+      // On ramène la note sur 20
+      const normalizedValue = (gradeValue / max) * 20; 
+      
+      totalPoints += normalizedValue * weight;
+      totalWeights += weight;
+    }
+
+    const average = totalWeights > 0 ? (totalPoints / totalWeights) : null;
+
+    // 5. Si la moyenne passe en dessous de 8, on envoie les notifications
+    if (average !== null && average < 8) {
+      const student = await prisma.student.findUnique({
+        where: { studentId: studentId }
+      });
+
+      if (student) {
+        // A. Trouver les responsables pédagogiques (level = 1)
+        const responsables = await prisma.user.findMany({
+          where: { level: 1 }
+        });
+
+        // B. Trouver les profs assignés à cette matière
+        const profs = await prisma.teacherAssignments.findMany({
+          where: { subjectId: subjectId }
+        });
+
+        // Utilisation d'un Set pour éviter les doublons si un prof est aussi responsable
+        const targetUserIds = new Set<bigint>();
+        responsables.forEach(r => targetUserIds.add(r.userId));
+        profs.forEach(p => targetUserIds.add(p.teacherId));
+
+        const subjectLabel = currentAssessment.subject?.label || "Matière inconnue";
+        const titleNotification = `Alerte de niveau`;
+        const messageNotification = `La moyenne de ${student.firstname} ${student.surname} est de ${average.toFixed(2)}/20 en ${subjectLabel}.`;
+        
+        // J'imagine que le champ "returns" sert à rediriger l'utilisateur vers une page spécifique au clic ?
+        // Je mets une chaîne ou une route par défaut, tu pourras l'adapter
+        const linkPath = "/grades"; 
+
+        // C. Préparer les données pour l'insertion multiple
+        const notificationsData = Array.from(targetUserIds).map(userId => ({
+          userId: userId,
+          title: titleNotification,
+          message: messageNotification,
+          returns: linkPath
+        }));
+
+        if (notificationsData.length > 0) {
+          await prisma.notification.createMany({
+            data: notificationsData
+          });
+        }
+      }
+    }
+
     return { success: true };
   } catch (error: any) {
-    console.error("Erreur :", error);
+    console.error("Erreur lors de l'enregistrement de la note :", error);
     return { success: false, error: `Erreur : ${error.message}` };
+  }
+}
+
+export async function getUserNotifications(userIdStr: string) {
+  try {
+    const notifs = await prisma.notification.findMany({
+      where: { userId: BigInt(userIdStr) },
+      orderBy: { notificationId: 'desc' }
+    });
+
+    // On convertit les BigInt en chaînes/nombres pour éviter les erreurs de sérialisation Next.js client
+    return notifs.map(n => ({
+      id: n.notificationId.toString(),
+      type: n.title,
+      text: n.message,
+      returns: n.returns
+    }));
+  } catch (error) {
+    console.error("Erreur getUserNotifications:", error);
+    return [];
+  }
+}
+
+export async function deleteNotificationAction(notificationIdStr: string) {
+  try {
+    await prisma.notification.delete({
+      where: { notificationId: BigInt(notificationIdStr) }
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur deleteNotificationAction:", error);
+    return { success: false };
   }
 }
 

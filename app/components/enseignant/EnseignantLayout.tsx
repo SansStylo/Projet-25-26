@@ -1,9 +1,17 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoutButton } from "@/app/components/LogoutButton";
+import { getUserNotifications, deleteNotificationAction } from '@/app/actions';
+
+interface AlertType {
+  id: string;        
+  type: string;
+  text: string;
+  returns: string;
+}
 
 export default function EnseignantClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -11,12 +19,29 @@ export default function EnseignantClientLayout({ children }: { children: React.R
   const [isSidebarReduced, setSidebarReduced] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [alerts, setAlerts] = useState([
-      {id: 1, type : "Système", text: "Mise à jour terminée.", date: "Récent"},
-      {id: 2, type : "Rapport", text: "Les notes de B3 sont disponibles.", date: "Récent"}
-  ]);
-  const deleteAlert = (id: number) => {
-      setAlerts(alerts.filter(alert => alert.id !== id));
+  
+  // 2. On force l'état à accepter notre tableau d'Alertes (vide par défaut)
+  const [alerts, setAlerts] = useState<AlertType[]>([]);
+
+  // ID de test pour l'utilisateur connecté (à lier à ton système de session plus tard)
+  const currentUserId = "1"; 
+
+  // 3. On charge les vraies notifs de la BDD au montage du composant
+  useEffect(() => {
+    async function loadNotifications() {
+      const data = await getUserNotifications(currentUserId);
+      setAlerts(data);
+    }
+    loadNotifications();
+  }, [currentUserId]);
+
+  // 4. On change le type de l'id ici en "string"
+  const deleteAlert = async (id: string) => {
+    // Suppression visuelle instantanée côté client
+    setAlerts(alerts.filter(alert => alert.id !== id));
+    
+    // Suppression réelle en BDD via l'action Prisma
+    await deleteNotificationAction(id);
   };
 
   const links = [
@@ -132,7 +157,10 @@ export default function EnseignantClientLayout({ children }: { children: React.R
                   <div className="relative flex items-center justify-center">
                     <button 
                     onClick={(e) => { 
-                      e.stopPropagation(); setShowNotifs(!showNotifs); setShowProfileMenu(false); }}
+                      e.stopPropagation(); 
+                      setShowNotifs(!showNotifs); 
+                      setShowProfileMenu(false); 
+                    }}
                        className="relative z-50 w-9 h-9 flex items-center justify-center relative bg-transparent border-none cursor-pointer text-[#53665A] hover:text-[#0F5E3D]">
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -140,6 +168,36 @@ export default function EnseignantClientLayout({ children }: { children: React.R
                       </svg>
                       {alerts.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-[#F97316] rounded-full border-2 border-white"></span>}
                     </button>
+                    {showNotifs && (
+                      <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[280px] z-[1000] overflow-hidden p-2 animate-fadeIn">
+                        <div className="text-xs font-bold text-[#1E2E24] border-b border-[#EAEFEA] pb-2 mb-2 px-2 flex justify-between items-center">
+                          <span>Notifications</span>
+                          <span className="bg-[#E2EAE5] text-[#0F5E3D] px-1.5 py-0.5 rounded-full text-[10px]">{alerts.length}</span>
+                        </div>
+                        
+                        {alerts.length === 0 ? (
+                          <p className="text-xs text-[#718579] p-4 italic text-center">Aucune notification</p>
+                        ) : (
+                          <ul className="list-none p-0 m-0 max-h-[240px] overflow-y-auto space-y-1">
+                            {alerts.map((alert) => (
+                              <li key={alert.id} className="text-xs p-2 hover:bg-[#F4F7F5] rounded-md flex justify-between items-start gap-3 border border-slate-50 transition-colors">
+                                <div className="flex-1">
+                                  <span className="font-bold text-[#0F5E3D] block text-[10px] uppercase tracking-wider mb-0.5">{alert.type}</span>
+                                  <span className="text-[#1E2E24] font-medium">{alert.text}</span>
+                                </div>
+                                <button 
+                                  onClick={() => deleteAlert(alert.id)}
+                                  className="text-[#718579] hover:text-red-600 bg-transparent border-none cursor-pointer text-xs p-0 w-4 h-4 flex items-center justify-center rounded hover:bg-slate-100"
+                                  title="Supprimer"
+                                >
+                                  ✕
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="relative">
                     <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifs(false); }}>
