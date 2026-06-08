@@ -36,13 +36,13 @@ export default async function ProfilPage() {
 
   // Thèmes dynamiques par session
   const sessionThemes = {
-    0: { // Enseignant : Bleu
-      titleText: "text-blue-700",
-      iconColor: "text-blue-500",
-      badge: "bg-blue-50 text-blue-700 border-blue-200",
-      gradient: "from-blue-600 to-cyan-500",
-      cardGradient: "from-slate-50 to-blue-50/10",
-      moduleBadge: "bg-gradient-to-r from-blue-50 to-slate-50 text-blue-800 border-blue-200"
+    0: { // Enseignant : Vert
+      titleText: "text-[#0F5E3D]",
+      iconColor: "text-[#128455]", // Un vert intermédiaire un peu plus lumineux pour les icônes
+      badge: "bg-[#F4F7F5] text-[#0F5E3D] border-[#E2EAE5]", // Teintes claires de ton site
+      gradient: "from-[#0F5E3D] to-emerald-500", // Dégradé Junia profond vers menthe moderne
+      cardGradient: "from-slate-50 to-[#F4F7F5]/30", // Fond de carte ultra subtil
+      moduleBadge: "bg-gradient-to-r from-[#F4F7F5] to-slate-50 text-[#128455] border-[#E2EAE5]"
     },
     1: { // Responsable : Ambre
       titleText: "text-amber-700",
@@ -61,11 +61,12 @@ export default async function ProfilPage() {
       moduleBadge: "bg-gradient-to-r from-purple-50 to-slate-50 text-purple-800 border-purple-200"
     }
   }[user.level as 0 | 1 | 2] || {
-    titleText: "text-slate-700",
-    badge: "bg-slate-50 text-slate-700 border-slate-200",
-    gradient: "from-slate-600 to-slate-500",
-    cardGradient: "from-slate-50 to-slate-100",
-    moduleBadge: "bg-slate-100 text-slate-800 border-slate-200"
+    titleText: "text-[#0F5E3D]",
+    iconColor: "text-[#128455]", // Un vert intermédiaire un peu plus lumineux pour les icônes
+    badge: "bg-[#F4F7F5] text-[#0F5E3D] border-[#E2EAE5]", // Teintes claires de ton site
+    gradient: "from-[#0F5E3D] to-emerald-500", // Dégradé Junia profond vers menthe moderne
+    cardGradient: "from-slate-50 to-[#F4F7F5]/30", // Fond de carte ultra subtil
+    moduleBadge: "bg-gradient-to-r from-[#F4F7F5] to-slate-50 text-[#128455] border-[#E2EAE5]"
   };
 
   const profileContent = (
