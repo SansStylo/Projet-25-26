@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoutButton } from "@/app/components/LogoutButton";
+import { ProfilButton } from "@/app/components/ProfilButton";
 
 
 export default function ResponsableClientLayout({ children }: { children: React.ReactNode }) {
@@ -61,6 +62,7 @@ export default function ResponsableClientLayout({ children }: { children: React.
             { name: 'Étudiants', href: '/responsable/etudiants', icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></> },
             { name: 'Saisie des notes', href: '/responsable/notes', icon : <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></>},
             { name: 'Rapports', href: '/responsable/rapports', icon: <><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></> }
+          
           ].map((item, index) => {
             const isActive = item.href === '/responsable' ? pathname === item.href : pathname.startsWith(item.href);
             return (
@@ -131,11 +133,18 @@ export default function ResponsableClientLayout({ children }: { children: React.
                 </div>
               </div>
               {showProfileMenu && (
+                <>
+                <div className="fixed inset-0 z-[999] bg-transparent" 
+                  onClick={() => setShowProfileMenu(false)}/>
                 <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[180px] z-[1000] overflow-hidden">
-                  <ul className="text-stone-600 hover:[&_*]:!text-red-600 list-none p-0 m-0 divide-y divide-[#EAEFEA]">
-                    <LogoutButton />
+                  <ul className="list-none p-0 m-0 divide-y divide-[#EAEFEA]">
+                    {/* Élément 1 : Mon Profil */}
+                      <ProfilButton />
+                    {/* Élément 2 : Déconnexion */}
+                      <LogoutButton />
                   </ul>
                 </div>
+                </>
               )}
             </div>
           </div> 

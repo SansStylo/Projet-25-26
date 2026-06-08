@@ -486,6 +486,7 @@ export async function logoutAction() {
 }
 
 
+
 /**
  * Action serveur pour la page de gestion des notes
  * Récupère les matières et les tables d'évaluation, en gérant le problème des BigInt
