@@ -26,6 +26,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { write } from "fs";
 
 export async function getSubjects() {
   try {
@@ -271,6 +272,7 @@ export async function getStudentDetail(studentId: bigint) {
 export async function addGroup(label: string, studentIds: bigint[]) {
   try {
     // 1. On crée d'abord le groupe en BDD
+    const userId = await getCurrentUserId();
     const newGroup = await prisma.group.create({
       data: {
         label: label,
@@ -287,6 +289,7 @@ export async function addGroup(label: string, studentIds: bigint[]) {
       });
     }
 
+    writeLogAction(`Group ${newGroup.groupId} created`, userId);
     return newGroup;
   } catch (error) {
     console.error("Erreur lors de la création du groupe et de ses assignations :", error);
@@ -297,6 +300,7 @@ export async function addGroup(label: string, studentIds: bigint[]) {
 export async function addClass(label: string, studentIds: bigint[]) {
   try {
     // 1. On crée d'abord la classe en BDD
+    const userId = await getCurrentUserId();
     const newClass = await prisma.class.create({
       data: {
         label: label,
@@ -315,6 +319,7 @@ export async function addClass(label: string, studentIds: bigint[]) {
       });
     }
 
+    writeLogAction(`Class ${newClass.classId} created`, userId);
     return newClass;
   } catch (error) {
     console.error("Erreur lors de la création de la classe et de l'assignation des étudiants :", error);
@@ -412,10 +417,13 @@ export async function updateStudentClass(studentIds: bigint[], classId: number) 
 
 export async function deleteGroup(groupId: bigint) {
   try {
-    return await prisma.$transaction([
+    const userId = await getCurrentUserId();
+    const result = await prisma.$transaction([
       prisma.studentAssignments.deleteMany({ where: { groupId } }),
       prisma.group.delete({ where: { groupId } }),
     ]);
+    writeLogAction(`Group ${groupId} deleted`, userId);
+    return result;
   } catch (error) {
     console.error("Erreur suppression groupe:", error);
     throw new Error("Impossible de supprimer le groupe.");
@@ -424,7 +432,8 @@ export async function deleteGroup(groupId: bigint) {
 
 export async function deleteClass(classId: number) {
   try {
-    return await prisma.$transaction([
+    const userId = await getCurrentUserId();
+    const result = await prisma.$transaction([
       // On remet à null le classId des étudiants concernés
       prisma.student.updateMany({
         where: { classId },
@@ -432,6 +441,8 @@ export async function deleteClass(classId: number) {
       }),
       prisma.class.delete({ where: { classId } }),
     ]);
+    writeLogAction(`Class ${classId} deleted`, userId);
+    return result;
   } catch (error) {
     console.error("Erreur suppression classe:", error);
     throw new Error("Impossible de supprimer la classe.");
@@ -439,17 +450,23 @@ export async function deleteClass(classId: number) {
 }
 
 export async function renameGroup(groupId: bigint, newLabel: string) {
-  return await prisma.group.update({
+  const userId = await getCurrentUserId();
+  const result = await prisma.group.update({
     where: { groupId },
     data: { label: newLabel },
   });
+  writeLogAction(`Group ${groupId} renamed`, userId);
+  return result;
 }
 
 export async function renameClass(classId: number, newLabel: string) {
-  return await prisma.class.update({
+  const userId = await getCurrentUserId();
+  const result = await prisma.class.update({
     where: { classId },
     data: { label: newLabel },
   });
+  writeLogAction(`Class ${classId} renamed`, userId);
+  return result;
 }
 
 export async function loginAction(
@@ -646,6 +663,9 @@ export async function createAssessment(data: {
         }
       }
     });
+
+    writeLogAction(`Assessment ${data.label} created`, data.userId);
+
     return { success: true, assessmentId: newAssessment.assessmentId.toString() };
   } catch (error) {
     console.error("Erreur lors de la création de la table de notation:", error);
@@ -729,9 +749,11 @@ export async function updateAssessment(assessmentIdStr: string, data: {
  */
 export async function deleteAssessment(assessmentIdStr: string) {
   try {
+    const userId = await getCurrentUserId();
     await prisma.assessment.delete({
       where: { assessmentId: BigInt(assessmentIdStr) }
     });
+    writeLogAction(`Assessment ${assessmentIdStr} deleted`, userId);
     return { success: true };
   } catch (error: any) {
     return { success: false, error: `Erreur : ${error.message}` };
@@ -785,6 +807,8 @@ export async function getAssessmentStudents(assessmentIdStr: string) {
  */
 export async function saveGrade(assessmentIdStr: string, studentIdStr: string, value: number, feedback: string) {
   try {
+
+    const userId = await getCurrentUserId();
     const assessmentId = BigInt(assessmentIdStr);
     const studentId = BigInt(studentIdStr);
 
@@ -892,9 +916,15 @@ export async function saveGrade(assessmentIdStr: string, studentIdStr: string, v
           await prisma.notification.createMany({
             data: notificationsData
           });
+          writeLogAction(`Alert notification for ${student.firstname} ${student.surname} (Moyenne < 8) created`);
         }
       }
     }
+
+    writeLogAction(
+      `Assessment of ${studentIdStr} modified, (Note: ${value}/20) for evaluation ${assessmentIdStr}`,
+      userId
+    );
 
     return { success: true };
   } catch (error: any) {
@@ -925,9 +955,11 @@ export async function getUserNotifications(userIdStr: string) {
 
 export async function deleteNotificationAction(notificationIdStr: string) {
   try {
+    const userId = await getCurrentUserId();
     await prisma.notification.delete({
       where: { notificationId: BigInt(notificationIdStr) }
     });
+    writeLogAction(`Notification ${notificationIdStr} deleted`, userId);
     return { success: true };
   } catch (error) {
     console.error("Erreur deleteNotificationAction:", error);
@@ -1083,6 +1115,9 @@ export async function sendResetCodeEmail(targetEmail: string) {
     `, 
   };
     await transporter.sendMail(mailOptions);
+
+    writeLogAction(`Reset code sent`, user.userId.toString());
+
     return { success: true };
 
   } catch (error) {
@@ -1150,6 +1185,9 @@ export async function updatePasswordAndCleanUp(targetEmail: string, newPasswordR
     ]);
 
     console.log(`[BDD] Mot de passe mis à jour avec succès pour ${targetEmail} et table PasswordReset nettoyée.`);
+
+    writeLogAction(`Password changed`, user.userId.toString());
+
     return { success: true };
 
   } catch (error) {
@@ -1186,5 +1224,19 @@ export async function getCurrentUserId() {
   } catch (error) {
     console.error("Erreur lors de la récupération de l'utilisateur courant :", error);
     return null;
+  }
+}
+
+export async function writeLogAction(label: string, userIdStr?: string | null) {
+  try {
+    await prisma.log.create({
+      data: {
+        label: label,
+        userId: userIdStr ? BigInt(userIdStr) : null, // null = automatique / server
+      },
+    });
+  } catch (error) {
+    // On met un console.error pour le debug, mais on ne crash pas l'application pour un log raté
+    console.error("Erreur lors de l'écriture du log système :", error);
   }
 }
