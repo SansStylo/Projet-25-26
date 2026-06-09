@@ -31,7 +31,7 @@ export function DashboardContent({ teacherName, stats }: DashboardContentProps) 
 
       {/* Bandeau de bienvenue */}
       <div className="bg-gradient-to-r from-[#0F5E3D] to-[#10B981] rounded-xl p-6 text-white">
-        <h2 className="text-xl font-bold mb-1">Bonjour, {teacherName.split(' ')[0]} 👋</h2>
+        <h2 className="text-xl font-bold mb-1">Bonjour {teacherName}</h2>
         <p className="text-white/80 text-sm">
           {stats && stats.subjects.length > 0
             ? `Vous enseignez ${stats.subjects.length} matière${stats.subjects.length > 1 ? 's' : ''} pour ${stats.totalStudents} étudiant${stats.totalStudents > 1 ? 's' : ''}.`
