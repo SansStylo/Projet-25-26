@@ -4,7 +4,14 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoutButton } from "@/app/components/LogoutButton";
+import { ProfilButton } from "@/app/components/ProfilButton";
 import { getUserNotifications, deleteNotificationAction, getCurrentUserId } from '@/app/actions';
+
+// Définition de la structure l'utilisateur attendu
+interface UserProps {
+  firstname: string;
+  surname: string;
+}
 
 interface AlertType {
   id: string;        
@@ -13,7 +20,7 @@ interface AlertType {
   returns: string;
 }
 
-export default function EnseignantClientLayout({ children }: { children: React.ReactNode }) {
+export default function EnseignantClientLayout({ children, user }: { children: React.ReactNode; user: UserProps; }) {
   const pathname = usePathname();
   const [isHovered, setHovered] = useState(false);
   const [isSidebarReduced, setSidebarReduced] = useState(false);
@@ -53,6 +60,8 @@ export default function EnseignantClientLayout({ children }: { children: React.R
     { name: 'Saisie des notes', href: '/dashboard/notes' },
     { name: 'Rapports', href: '/dashboard/rapports' },
   ];
+
+  const initiales = `${user.firstname[0] || ''}${user.surname[0] || ''}`.toUpperCase();
 
   return (
     <div className="flex min-h-screen bg-[#F4F7F5] text-[#1E2E24] font-sans antialiased">
@@ -205,19 +214,23 @@ export default function EnseignantClientLayout({ children }: { children: React.R
                   <div className="relative">
                     <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifs(false); }}>
                       <div className="flex flex-col text-right">
-                        <span className="text-xs text-[#718579] font-medium leading-none mb-1">Enseignant</span>
-                        <span className="text-sm text-[#1E2E24] font-semibold leading-none">Enseignant</span>
+                        <span className="text-xs text-[#718579] font-medium leading-none mb-1">{user?.firstname}</span>
+                        <span className="text-sm text-[#1E2E24] font-semibold leading-none">{user?.surname}</span>
                       </div>
                       <div className="w-[38px] h-[38px] rounded-full bg-[#0F5E3D] text-white flex items-center justify-center text-sm font-bold border border-[#E2EAE5]">
-                        E
+                        {initiales}
                       </div>
                     </div>
                     {showProfileMenu && (
-                      <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[180px] z-[1000] overflow-hidden">
-                        <ul className="text-stone-600 hover:[&_*]:!text-red-600 list-none p-0 m-0 divide-y divide-[#EAEFEA]">
-                          <LogoutButton />
-                        </ul>
-                      </div>
+                      <>
+                        <div className="fixed inset-0 z-[999] bg-transparent" onClick={() => setShowProfileMenu(false)}/>
+                        <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[180px] z-[1000] overflow-hidden">
+                          <ul className="list-none p-0 m-0 divide-y divide-[#EAEFEA]">
+                            <ProfilButton />
+                            <LogoutButton />
+                          </ul>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div> 
