@@ -67,7 +67,6 @@ export function RapportsContent({ classes }: RapportsContentProps) {
   };
 
 
-
   return (
     <>
       <main className="flex-1 overflow-y-auto bg-[#F4F7F5] p-10">
