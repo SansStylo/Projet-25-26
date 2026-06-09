@@ -1,30 +1,51 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoutButton } from "@/app/components/LogoutButton";
+import { ProfilButton } from "@/app/components/ProfilButton";
 
-export default function EnseignantClientLayout({ children }: { children: React.ReactNode }) {
+
+interface UserProps {
+  firstname: string;
+  surname: string;
+}
+
+
+export default function EnseignantClientLayout({ children, user }: { children: React.ReactNode; user: UserProps;}) {
   const pathname = usePathname();
+
+  // États de l'interface
   const [isHovered, setHovered] = useState(false);
   const [isSidebarReduced, setSidebarReduced] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [alerts, setAlerts] = useState([
-      {id: 1, type : "Système", text: "Mise à jour terminée.", date: "Récent"},
-      {id: 2, type : "Rapport", text: "Les notes de B3 sont disponibles.", date: "Récent"}
-  ]);
+  
+  // Initialisation des alertes (vide au départ pour éviter les bugs de synchronisation)
+  const [alerts, setAlerts] = useState<{id: number, type: string, text: string}[]>([]);
+
+  // Récupération de ce qui est stocké, sinon alerte par défaut
+  useEffect(() => {
+    const savedAlerts = localStorage.getItem('junia_alerts_enseignant');
+    if (savedAlerts) {
+      setAlerts(JSON.parse(savedAlerts));
+    } else {
+      setAlerts([
+        { id: 1, type: "Baisse de niveau", text: "La moyenne générale du groupe CIR2 a baissé de 1.5 points ce mois-ci." }
+      ]);
+    }
+  }, []);
+  
+  // Suppression d'une alerte : mise à jour du state et du localStorage
   const deleteAlert = (id: number) => {
-      setAlerts(alerts.filter(alert => alert.id !== id));
+    const updatedAlerts = alerts.filter(alert => alert.id !== id);
+    setAlerts(updatedAlerts);
+    localStorage.setItem('junia_alerts_enseignant', JSON.stringify(updatedAlerts));
   };
 
-  const links = [
-    { name: 'Accueil', href: '/dashboard' },
-    { name: 'Mes Étudiants', href: '/dashboard/etudiants' },
-    { name: 'Saisie des notes', href: '/dashboard/notes' },
-    { name: 'Rapports', href: '/dashboard/rapports' },
-  ];
+  const initiales = `${user.firstname[0] || ''}${user.surname[0] || ''}`.toUpperCase();
+
 
   return (
     <div className="flex min-h-screen bg-[#F4F7F5] text-[#1E2E24] font-sans antialiased">
@@ -55,7 +76,7 @@ export default function EnseignantClientLayout({ children }: { children: React.R
           )}
         </div>
 
-        {/* liens de navigation A MODIFIER */}
+        {/* liens de navigation (pour rapport à modif) */}
         <ul className="list-none p-0 m-0">
           {[
             { name:'Accueil', href: '/dashboard', icon: (
@@ -122,47 +143,101 @@ export default function EnseignantClientLayout({ children }: { children: React.R
       </aside>
 
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
-              
               {/* HEADER */}
               <header className="bg-white px-10 py-5 flex justify-between items-center border-b border-[#EAEFEA] shadow-[0_1px_3px_rgba(18,38,30,0.01)] h-[75px] shrink-0">
                 <h1 className="text-xl font-semibold text-[#1E2E24]">
                   Espace Enseignant
                 </h1>
                 <div className="flex items-center gap-6">
-                  <div className="relative flex items-center justify-center">
-                    <button 
-                    onClick={(e) => { 
-                      e.stopPropagation(); setShowNotifs(!showNotifs); setShowProfileMenu(false); }}
-                       className="relative z-50 w-9 h-9 flex items-center justify-center relative bg-transparent border-none cursor-pointer text-[#53665A] hover:text-[#0F5E3D]">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                      </svg>
-                      {alerts.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-[#F97316] rounded-full border-2 border-white"></span>}
-                    </button>
+                  
+                  {/* ZONE NOTIFICATIONS */}
+                  <div className="relative">
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setShowNotifs(!showNotifs); 
+                  setShowProfileMenu(false); 
+                }}
+                className="w-9 h-9 flex items-center justify-center bg-transparent border-none rounded-xl cursor-pointer text-[#53665A] hover:text-[#0F5E3D] hover:bg-[#F4F7F5] transition-colors duration-200 focus:outline-none"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                {alerts.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#F97316] rounded-full border border-white"></span>
+                )}
+              </button>
+
+              {/* MENU DÉROULANT DES NOTIFS */}
+              {showNotifs && (
+                <>
+                  <div className="fixed inset-0 z-[999] bg-transparent" onClick={() => setShowNotifs(false)} />
+                  
+                  <div className="absolute right-0 top-[130%] bg-white border border-[#E2EAE5] rounded-xl shadow-xl w-[280px] z-[1000] overflow-hidden animate-fadeIn">
+                    <div className="py-3 px-4 border-b border-[#EAEFEA] bg-[#F8FAFC]">
+                      <h3 className="text-xs font-extrabold text-[#128455] uppercase tracking-widest">
+                        Notifications
+                      </h3>
+                    </div>
+                    
+                    {alerts.length === 0 ? (
+                      <div className="p-5 text-center text-xs text-[#718579] italic">
+                        Aucune nouvelle alerte.
+                      </div>
+                    ) : (
+                      <ul className="list-none p-0 m-0 divide-y divide-[#EAEFEA] max-h-[220px] overflow-y-auto">
+                        {alerts.map((alert) => (
+                          <li key={alert.id} className="p-3 flex items-start gap-3 hover:bg-slate-50/60 transition-colors">
+                            <div className="flex-1">
+                              <span className="inline-block text-[9px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/60 px-1.5 py-0.5 rounded-md mb-1">
+                                {alert.type || "Alerte"}
+                              </span>
+                              <p className="text-xs text-[#1E2E24] font-medium leading-snug">{alert.text}</p>
+                            </div>
+                            <button 
+                              onClick={() => deleteAlert(alert.id)}
+                              className="text-[#A3B8AC] hover:text-red-500 bg-transparent border-none cursor-pointer p-0.5 rounded-md transition-colors"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
+                </>
+              )}
+            </div>
+
+                  {/* ZONE PROFIL */}
                   <div className="relative">
                     <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifs(false); }}>
                       <div className="flex flex-col text-right">
-                        <span className="text-xs text-[#718579] font-medium leading-none mb-1">Enseignant</span>
-                        <span className="text-sm text-[#1E2E24] font-semibold leading-none">Enseignant</span>
+                        <span className="text-xs text-[#718579] font-medium leading-none mb-1">{user?.firstname || "Enseignant"}</span>
+                        <span className="text-sm text-[#1E2E24] font-semibold leading-none">{user?.surname || ""}</span>
                       </div>
                       <div className="w-[38px] h-[38px] rounded-full bg-[#0F5E3D] text-white flex items-center justify-center text-sm font-bold border border-[#E2EAE5]">
-                        E
+                        {initiales}
                       </div>
                     </div>
+                    
                     {showProfileMenu && (
-                      <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[180px] z-[1000] overflow-hidden">
-                        <ul className="text-stone-600 hover:[&_*]:!text-red-600 list-none p-0 m-0 divide-y divide-[#EAEFEA]">
-                          <LogoutButton />
-                        </ul>
-                      </div>
+                      <>
+                        <div className="fixed inset-0 z-[999] bg-transparent" onClick={() => setShowProfileMenu(false)}/>
+                        <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[180px] z-[1000] overflow-hidden">
+                          <ul className="list-none p-0 m-0 divide-y divide-[#EAEFEA]">
+                            <ProfilButton />
+                            <LogoutButton />
+                          </ul>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div> 
               </header>
-      
-              {/* le contenu des pages (page.tsx) s'affiche ici */}
+              
+              {/* contenu des pages (page.tsx) affiché ici */}
               <div className="flex-1 overflow-y-auto">
                 {children}
               </div>

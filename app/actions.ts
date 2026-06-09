@@ -920,6 +920,7 @@ export async function getClassReportData(classId: number) {
   }
 }
 
+
 /**
  * Récupère les matières et les tables d'évaluation
  */
