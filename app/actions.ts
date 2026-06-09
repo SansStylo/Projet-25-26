@@ -26,7 +26,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
-
+import { write } from "fs";
 
 export async function getSubjects() {
   try {
@@ -218,7 +218,7 @@ export async function searchStudents(query: string) {
 
     const searchTerm = `%${query.toLowerCase()}%`;
     
-    const students = await prisma.student.findMany({
+    return await prisma.student.findMany({
       where: {
         OR: [
           { firstname: { contains: query, mode: 'insensitive' } },
@@ -238,16 +238,6 @@ export async function searchStudents(query: string) {
         { firstname: 'asc' },
       ],
     });
-    return students.map(student => ({
-      ...student,
-      studentId: student.studentId.toString(),
-      classId: student.classId ? Number(student.classId) : null,
-      subjectAssignments: student.subjectAssignments.map(sa => ({
-        ...sa,
-        studentId: sa.studentId.toString(),
-        subjectId: Number(sa.subjectId)
-      }))
-    }));
   } catch (error) {
     console.error("Erreur lors de la recherche d'étudiants :", error);
     return [];
@@ -271,7 +261,7 @@ export async function searchStudentsForTeacher(
     const subjectIds = teacherAssignments.map((ta) => ta.subjectId);
     if (subjectIds.length === 0) return [];
 
-    const students = await prisma.student.findMany({
+    return await prisma.student.findMany({
       where: {
         AND: [
           {
@@ -295,16 +285,6 @@ export async function searchStudentsForTeacher(
       },
       orderBy: [{ surname: "asc" }, { firstname: "asc" }],
     });
-    return students.map(student => ({
-      ...student,
-      studentId: student.studentId.toString(),
-      classId: student.classId ? Number(student.classId) : null,
-      subjectAssignments: student.subjectAssignments.map(sa => ({
-        ...sa,
-        studentId: sa.studentId.toString(),
-        subjectId: Number(sa.subjectId)
-      }))
-    }));
   } catch (error) {
     console.error(
       "Erreur lors de la recherche filtrée d'étudiants :",
@@ -316,7 +296,7 @@ export async function searchStudentsForTeacher(
 
 export async function getStudentDetail(studentId: bigint) {
   try {
-    const student = await prisma.student.findUnique({
+    return await prisma.student.findUnique({
       where: { studentId },
       include: {
         class: true,
@@ -336,31 +316,6 @@ export async function getStudentDetail(studentId: bigint) {
         },
       },
     });
-    if (!student) return null;
-    return {
-      ...student,
-      studentId: student.studentId.toString(),
-      classId: student.classId ? Number(student.classId) : null,
-      subjectAssignments: student.subjectAssignments.map(sa => ({
-        ...sa,
-        studentId: sa.studentId.toString(),
-        subjectId: Number(sa.subjectId)
-      })),
-      grades: student.grades.map(grade => ({
-        ...grade,
-        studentId: grade.studentId.toString(),
-        assessmentId: grade.assessmentId.toString(),
-        value: Number(grade.value), // 🌟 Conversion Decimal -> number cruciale !
-        assessment: {
-          ...grade.assessment,
-          assessmentId: grade.assessment.assessmentId.toString(),
-          userId: grade.assessment.userId.toString(),
-          subjectId: Number(grade.assessment.subjectId),
-          maxGrade: Number(grade.assessment.maxGrade), // 🌟 Ici aussi
-          weight: Number(grade.assessment.weight)       // 🌟 Et ici
-        }
-      }))
-    };
   } catch (error) {
     console.error("Erreur lors de la récupération des détails de l'étudiant :", error);
     return null;}}
