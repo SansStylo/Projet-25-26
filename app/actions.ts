@@ -793,6 +793,70 @@ export async function getClassReportData(classId: number) {
   }
 }
 
+// ====== SIMULATION DE RATTRAPAGES ======
+export async function getRattrapageData(classId: number) {
+  try {
+    const students = await prisma.student.findMany({
+      where: { classId },
+      include: {
+        grades: {
+          include: {
+            assessment: { include: { subject: true } },
+          },
+        },
+      },
+      orderBy: { surname: 'asc' },
+    });
+
+    const assessmentMap = new Map<string, {
+      assessmentId: string;
+      label: string;
+      subjectId: number;
+      subjectName: string;
+      maxGrade: number;
+      weight: number;
+    }>();
+
+    students.forEach(student => {
+      student.grades.forEach(grade => {
+        const id = grade.assessmentId.toString();
+        if (!assessmentMap.has(id)) {
+          assessmentMap.set(id, {
+            assessmentId: id,
+            label: grade.assessment.label,
+            subjectId: grade.assessment.subjectId,
+            subjectName: grade.assessment.subject.label,
+            maxGrade: grade.assessment.maxGrade,
+            weight: grade.assessment.weight,
+          });
+        }
+      });
+    });
+
+    return {
+      students: students.map(s => ({
+        studentId: s.studentId.toString(),
+        firstname: s.firstname,
+        surname: s.surname,
+        grades: s.grades.map(g => ({
+          assessmentId: g.assessmentId.toString(),
+          value: Number(g.value),
+          maxGrade: g.assessment.maxGrade,
+          weight: g.assessment.weight,
+          subjectId: g.assessment.subjectId,
+          subjectName: g.assessment.subject.label,
+          assessmentLabel: g.assessment.label,
+        })),
+      })),
+      assessments: Array.from(assessmentMap.values())
+        .sort((a, b) => a.subjectName.localeCompare(b.subjectName) || a.label.localeCompare(b.label)),
+    };
+  } catch (error) {
+    console.error("Erreur [getRattrapageData]:", error);
+    return null;
+  }
+}
+
 /**
  * Gestion de l'oubli de mot de passe/nouveau mot de passe
  * avec envoi d'un code par e-mail automatique
