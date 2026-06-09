@@ -4,16 +4,17 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoutButton } from "@/app/components/LogoutButton";
-import { ProfilButton } from "@/app/components/ProfilButton";
+import { getUserNotifications, deleteNotificationAction, getCurrentUserId } from '@/app/actions';
 
-
-// Définition de la structure l'utilisateur attendu
-interface UserProps {
-  firstname: string;
-  surname: string;
+interface AlertType {
+  id: string;        
+  type: string;
+  text: string;
+  returns: string;
 }
 
-export default function ResponsableClientLayout({ children, user }: { children: React.ReactNode; user: UserProps; }) {
+
+export default function ResponsableClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   
   // États de l'interface
@@ -22,30 +23,35 @@ export default function ResponsableClientLayout({ children, user }: { children: 
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   
-  // Initialisation des alertes (vide au départ pour éviter les bugs de synchronisation)
-  const [alerts, setAlerts] = useState<{id: number, type: string, text: string}[]>([]);
-
-  // Récupération de ce qui est stocké, sinon alerte par défaut
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // Dans ton composant :
   useEffect(() => {
-    const savedAlerts = localStorage.getItem('junia_alerts_respo');
-    if (savedAlerts) {
-      setAlerts(JSON.parse(savedAlerts));
-    } else {
-      setAlerts([
-        { id: 1, type: "Baisse de niveau", text: "La moyenne générale du groupe CIR2 a baissé de 1.5 points ce mois-ci." }
-      ]);
-    }
+    console.log("Le layout client est monté une seule fois");
   }, []);
+  // Alertes
+  const [alerts, setAlerts] = useState<AlertType[]>([]);
 
-  // Suppression d'une alerte : mise à jour du state et du localStorage
-  const deleteAlert = (id: number) => {
-    const updatedAlerts = alerts.filter(alert => alert.id !== id);
-    setAlerts(updatedAlerts);
-    localStorage.setItem('junia_alerts_respo', JSON.stringify(updatedAlerts));
-  };
+  useEffect(() => {
+      async function initSessionAndNotifs() {
+        // Demande au serveur "Qui est connecté avec ce cookie ?"
+        const userId = await getCurrentUserId();
+        
+        if (userId) {
+          setCurrentUserId(userId); // On stocke l'ID réel
+          
+          // On va chercher ses notifications spécifiques
+          const data = await getUserNotifications(userId);
+          setAlerts(data);
+        }
+      }
+      initSessionAndNotifs();
+    }, []);
 
-  const initiales = `${user.firstname[0] || ''}${user.surname[0] || ''}`.toUpperCase();
-
+    const deleteAlert = async (id: string) => {
+        setAlerts(alerts.filter(alert => alert.id !== id));
+        await deleteNotificationAction(id);
+    };
 
   return (
     <div className="flex min-h-screen bg-[#F4F7F5] text-[#1E2E24] font-sans antialiased">
@@ -83,9 +89,7 @@ export default function ResponsableClientLayout({ children, user }: { children: 
             { name: 'Matières', href: '/responsable/matieres', icon: <><rect width="8" height="18" x="3" y="3" rx="1"></rect><path d="M7 3v18"></path><path d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z"></path></> },
             { name: 'Étudiants', href: '/responsable/etudiants', icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></> },
             { name: 'Saisie des notes', href: '/responsable/notes', icon : <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></>},
-            { name: 'Rapports', href: '/responsable/rapports', icon: <><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></> },
-            { name: 'Sim. rattrapages', href: '/responsable/rattrapages', icon: <><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.51"></path></> }
-
+            { name: 'Rapports', href: '/responsable/rapports', icon: <><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></> }
           ].map((item, index) => {
             const isActive = item.href === '/responsable' ? pathname === item.href : pathname.startsWith(item.href);
             return (
@@ -133,94 +137,73 @@ export default function ResponsableClientLayout({ children, user }: { children: 
             Espace Responsable
           </h1>
           <div className="flex items-center gap-6">
-            
-            {/* ZONE NOTIFICATIONS */}
-            <div className="relative">
+            <div className="relative flex items-center justify-center">
               <button 
-                onClick={(e) => { 
-                  e.stopPropagation(); 
-                  setShowNotifs(!showNotifs); 
-                  setShowProfileMenu(false); 
-                }}
-                className="w-9 h-9 flex items-center justify-center bg-transparent border-none rounded-xl cursor-pointer text-[#53665A] hover:text-[#0F5E3D] hover:bg-[#F4F7F5] transition-colors duration-200 focus:outline-none"
-              >
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setShowNotifs(!showNotifs); 
+                setShowProfileMenu(false); 
+              }}
+                 className="relative z-50 w-9 h-9 flex items-center justify-center relative bg-transparent border-none cursor-pointer text-[#53665A] hover:text-[#0F5E3D]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                   <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                 </svg>
-                {alerts.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#F97316] rounded-full border border-white"></span>
-                )}
+                {alerts.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-[#F97316] rounded-full border-2 border-white"></span>}
               </button>
-
-              {/* MENU DÉROULANT DES NOTIFS */}
               {showNotifs && (
-                <>
-                  <div className="fixed inset-0 z-[999] bg-transparent" onClick={() => setShowNotifs(false)} />
-                  
-                  <div className="absolute right-0 top-[130%] bg-white border border-[#E2EAE5] rounded-xl shadow-xl w-[280px] z-[1000] overflow-hidden animate-fadeIn">
-                    <div className="py-3 px-4 border-b border-[#EAEFEA] bg-[#F8FAFC]">
-                      <h3 className="text-xs font-extrabold text-[#128455] uppercase tracking-widest">
-                        Notifications
-                      </h3>
-                    </div>
-                    
-                    {alerts.length === 0 ? (
-                      <div className="p-5 text-center text-xs text-[#718579] italic">
-                        Aucune nouvelle alerte.
-                      </div>
-                    ) : (
-                      <ul className="list-none p-0 m-0 divide-y divide-[#EAEFEA] max-h-[220px] overflow-y-auto">
-                        {alerts.map((alert) => (
-                          <li key={alert.id} className="p-3 flex items-start gap-3 hover:bg-slate-50/60 transition-colors">
-                            <div className="flex-1">
-                              <span className="inline-block text-[9px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/60 px-1.5 py-0.5 rounded-md mb-1">
-                                {alert.type || "Alerte"}
-                              </span>
-                              <p className="text-xs text-[#1E2E24] font-medium leading-snug">{alert.text}</p>
-                            </div>
-                            <button 
-                              onClick={() => deleteAlert(alert.id)}
-                              className="text-[#A3B8AC] hover:text-red-500 bg-transparent border-none cursor-pointer p-0.5 rounded-md transition-colors"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[280px] z-[1000] overflow-hidden p-2 animate-fadeIn">
+                  <div className="text-xs font-bold text-[#1E2E24] border-b border-[#EAEFEA] pb-2 mb-2 px-2 flex justify-between items-center">
+                    <span>Notifications</span>
+                    <span className="bg-[#E2EAE5] text-[#0F5E3D] px-1.5 py-0.5 rounded-full text-[10px]">{alerts.length}</span>
                   </div>
-                </>
+                        
+                  {alerts.length === 0 ? (
+                    <p className="text-xs text-[#718579] p-4 italic text-center">Aucune notification</p>
+                  ) : (
+                    <ul className="list-none p-0 m-0 max-h-[240px] overflow-y-auto space-y-1">
+                      {alerts.map((alert) => (
+                        <li key={alert.id} className="text-xs p-2 hover:bg-[#F4F7F5] rounded-md flex justify-between items-start gap-3 border border-slate-50 transition-colors">
+                          <div className="flex-1">
+                            <span className="font-bold text-[#0F5E3D] block text-[10px] uppercase tracking-wider mb-0.5">{alert.type}</span>
+                            <span className="text-[#1E2E24] font-medium">{alert.text}</span>
+                          </div>
+                          <button 
+                            onClick={() => deleteAlert(alert.id)}
+                            className="text-[#718579] hover:text-red-600 bg-transparent border-none cursor-pointer text-xs p-0 w-4 h-4 flex items-center justify-center rounded hover:bg-slate-100"
+                            title="Supprimer"
+                          >
+                            ✕
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               )}
             </div>
-
-            {/* ZONE PROFIL */}
             <div className="relative">
               <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifs(false); }}>
                 <div className="flex flex-col text-right">
-                  <span className="text-xs text-[#718579] font-medium leading-none mb-1">{user?.firstname}</span>
-                  <span className="text-sm text-[#1E2E24] font-semibold leading-none">{user?.surname}</span>
+                  <span className="text-xs text-[#718579] font-medium leading-none mb-1">Responsable</span>
+                  <span className="text-sm text-[#1E2E24] font-semibold leading-none">Pédagogique</span>
                 </div>
                 <div className="w-[38px] h-[38px] rounded-full bg-[#0F5E3D] text-white flex items-center justify-center text-sm font-bold border border-[#E2EAE5]">
-                  {initiales}
+                  RP
                 </div>
               </div>
               {showProfileMenu && (
-                <>
-                  <div className="fixed inset-0 z-[999] bg-transparent" onClick={() => setShowProfileMenu(false)}/>
-                  <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[180px] z-[1000] overflow-hidden">
-                    <ul className="list-none p-0 m-0 divide-y divide-[#EAEFEA]">
-                      <ProfilButton />
-                      <LogoutButton />
-                    </ul>
-                  </div>
-                </>
+                <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[180px] z-[1000] overflow-hidden">
+                  <ul className="text-stone-600 hover:[&_*]:!text-red-600 list-none p-0 m-0 divide-y divide-[#EAEFEA]">
+                    <LogoutButton />
+                  </ul>
+                </div>
               )}
             </div>
           </div> 
         </header>
 
-        {/* contenu des pages (page.tsx) affiché ici */}
+        {/* le contenu des pages (page.tsx) s'affiche ici */}
         <div className="flex-1 overflow-y-auto">
           {children}
         </div>

@@ -198,8 +198,9 @@ model Notification {
 
 model Logs {
   logsId BigInt   @id @default(autoincrement()) @map("logs_id")
-  date   DateTime @db.Date
+  date   DateTime @default(now())
   label  String   @db.Text
+  userId BigInt?  @map("user_id")
 
   @@map("logs")
 }
