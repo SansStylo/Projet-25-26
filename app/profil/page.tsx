@@ -38,34 +38,34 @@ export default async function ProfilPage() {
   const sessionThemes = {
     0: { // Enseignant : Vert
       titleText: "text-[#0F5E3D]",
-      iconColor: "text-[#128455]", // Un vert intermédiaire un peu plus lumineux pour les icônes
-      badge: "bg-[#F4F7F5] text-[#0F5E3D] border-[#E2EAE5]", // Teintes claires de ton site
-      gradient: "from-[#0F5E3D] to-emerald-500", // Dégradé Junia profond vers menthe moderne
-      cardGradient: "from-slate-50 to-[#F4F7F5]/30", // Fond de carte ultra subtil
+      iconColor: "text-[#128455]",
+      badge: "bg-[#F4F7F5] text-[#0F5E3D] border-[#E2EAE5]",
+      gradient: "from-[#0F5E3D] to-emerald-500", 
+      cardGradient: "from-slate-50 to-[#F4F7F5]/30",
       moduleBadge: "bg-gradient-to-r from-[#F4F7F5] to-slate-50 text-[#128455] border-[#E2EAE5]"
-    },
-    1: { // Responsable : Ambre
-      titleText: "text-amber-700",
-      iconColor: "text-amber-600",
-      badge: "bg-amber-50 text-amber-800 border-amber-200",
-      gradient: "from-orange-600 to-amber-500",
-      cardGradient: "from-slate-50 to-orange-50/10",
-      moduleBadge: "bg-gradient-to-r from-orange-50 to-slate-50 text-orange-800 border-orange-200"
-    },
-    2: { // Admin : Violet
-      titleText: "text-purple-700",
-      iconColor: "text-purple-600",
-      badge: "bg-purple-50 text-purple-700 border-purple-200",
-      gradient: "from-purple-600 to-indigo-500",
-      cardGradient: "from-slate-50 to-purple-50/10",
-      moduleBadge: "bg-gradient-to-r from-purple-50 to-slate-50 text-purple-800 border-purple-200"
     }
-  }[user.level as 0 | 1 | 2] || {
+    // 1: { // Responsable : Ambre
+    //   titleText: "text-amber-700",
+    //   iconColor: "text-amber-600",
+    //   badge: "bg-amber-50 text-amber-800 border-amber-200",
+    //   gradient: "from-orange-600 to-amber-500",
+    //   cardGradient: "from-slate-50 to-orange-50/10",
+    //   moduleBadge: "bg-gradient-to-r from-orange-50 to-slate-50 text-orange-800 border-orange-200"
+    // },
+    // 2: { // Admin : Violet
+    //   titleText: "text-purple-700",
+    //   iconColor: "text-purple-600",
+    //   badge: "bg-purple-50 text-purple-700 border-purple-200",
+    //   gradient: "from-purple-600 to-indigo-500",
+    //   cardGradient: "from-slate-50 to-purple-50/10",
+    //   moduleBadge: "bg-gradient-to-r from-purple-50 to-slate-50 text-purple-800 border-purple-200"
+    // }
+  }[user.level as 0 ] || {
     titleText: "text-[#0F5E3D]",
-    iconColor: "text-[#128455]", // Un vert intermédiaire un peu plus lumineux pour les icônes
-    badge: "bg-[#F4F7F5] text-[#0F5E3D] border-[#E2EAE5]", // Teintes claires de ton site
-    gradient: "from-[#0F5E3D] to-emerald-500", // Dégradé Junia profond vers menthe moderne
-    cardGradient: "from-slate-50 to-[#F4F7F5]/30", // Fond de carte ultra subtil
+    iconColor: "text-[#128455]", 
+    badge: "bg-[#F4F7F5] text-[#0F5E3D] border-[#E2EAE5]", 
+    gradient: "from-[#0F5E3D] to-emerald-500",
+    cardGradient: "from-slate-50 to-[#F4F7F5]/30",
     moduleBadge: "bg-gradient-to-r from-[#F4F7F5] to-slate-50 text-[#128455] border-[#E2EAE5]"
   };
 
@@ -115,7 +115,7 @@ export default async function ProfilPage() {
                 Modules assignés
                 </h3>
                 {modules.length === 0 ? (
-                <div className="p-4 bg-amber-50/40 border border-amber-200/60 rounded-xl text-[#718579] text-sm italic">
+                <div className="p-4 bg-white/60 border border-[#E2EAE5] rounded-xl text-[#718579] text-sm italic">
                     Aucun module assigné pour le moment.
                 </div>
                 ) : (
@@ -147,10 +147,6 @@ export default async function ProfilPage() {
                 <div className="text-5xl font-black text-[#1E2E24] tracking-tight">
                   {assessmentCount}
                 </div>
-              </div>
-              <div className="text-xs text-[#718579] mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                Données synchronisées
               </div>
             </div>
           </div>
