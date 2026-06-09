@@ -244,6 +244,56 @@ export async function searchStudents(query: string) {
   }
 }
 
+export async function searchStudentsForTeacher(
+  query: string,
+  teacherId: bigint
+) {
+  try {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+
+    const teacherAssignments = await prisma.teacherAssignments.findMany({
+      where: { teacherId },
+      select: { subjectId: true },
+    });
+
+    const subjectIds = teacherAssignments.map((ta) => ta.subjectId);
+    if (subjectIds.length === 0) return [];
+
+    return await prisma.student.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { firstname: { contains: query, mode: "insensitive" } },
+              { surname: { contains: query, mode: "insensitive" } },
+            ],
+          },
+          {
+            subjectAssignments: {
+              some: { subjectId: { in: subjectIds } },
+            },
+          },
+        ],
+      },
+      include: {
+        class: true,
+        subjectAssignments: {
+          include: { subject: true },
+        },
+      },
+      orderBy: [{ surname: "asc" }, { firstname: "asc" }],
+    });
+  } catch (error) {
+    console.error(
+      "Erreur lors de la recherche filtrée d'étudiants :",
+      error
+    );
+    return [];
+  }
+}
+
 export async function getStudentDetail(studentId: bigint) {
   try {
     return await prisma.student.findUnique({
@@ -1327,5 +1377,539 @@ export async function getSerializableUsers() {
   } catch (error) {
     console.error("Erreur récupération utilisateurs:", error);
     return [];
+  }
+}
+
+// ====== STATS TABLEAU DE BORD ENSEIGNANT ======
+export async function getTeacherDashboardStats(teacherId: bigint) {
+  try {
+    const teacherAssignments = await prisma.teacherAssignments.findMany({
+      where: { teacherId },
+      include: { subject: true },
+    });
+
+    const subjectIds = teacherAssignments.map((ta) => ta.subjectId);
+
+    if (subjectIds.length === 0) {
+      return {
+        success: true as const,
+        data: {
+          subjects: [],
+          totalStudents: 0,
+          globalAverage: null,
+          atRiskCount: 0,
+          criticalCount: 0,
+          subjectAverages: [],
+          atRiskStudents: [],
+        },
+      };
+    }
+
+    const subjectAssignments = await prisma.subjectAssignments.findMany({
+      where: { subjectId: { in: subjectIds } },
+      include: {
+        student: {
+          include: {
+            grades: {
+              include: {
+                assessment: { include: { subject: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const studentMap = new Map<
+      string,
+      (typeof subjectAssignments)[0]["student"]
+    >();
+    subjectAssignments.forEach((sa) => {
+      studentMap.set(sa.studentId.toString(), sa.student);
+    });
+    const students = Array.from(studentMap.values());
+
+    const studentProfiles = students.map((student) => {
+      const relevantGrades = student.grades.filter((g) =>
+        subjectIds.includes(g.assessment.subjectId)
+      );
+
+      let totalWeightedGrades = 0;
+      let totalWeights = 0;
+      const studentSubjectMap: Record<
+        number,
+        { name: string; total: number; weights: number }
+      > = {};
+      let lowGradesCount = 0;
+      const flags: string[] = [];
+
+      relevantGrades.forEach((grade) => {
+      const gradeOn20 = (Number(grade.value) / Number(grade.assessment.maxGrade)) * 20;
+
+        totalWeightedGrades += gradeOn20 * grade.assessment.weight;
+        totalWeights += grade.assessment.weight;
+
+        const sid = grade.assessment.subjectId;
+        if (!studentSubjectMap[sid])
+          studentSubjectMap[sid] = {
+            name: grade.assessment.subject.label,
+            total: 0,
+            weights: 0,
+          };
+        studentSubjectMap[sid].total += gradeOn20 * grade.assessment.weight;
+        studentSubjectMap[sid].weights += grade.assessment.weight;
+
+        if (gradeOn20 < 5) lowGradesCount++;
+      });
+
+      const globalAverage =
+        totalWeights > 0 ? totalWeightedGrades / totalWeights : null;
+      let riskScore = 0;
+
+      if (globalAverage !== null) {
+        if (globalAverage < 10) {
+          riskScore += 40;
+          flags.push(`Moyenne critique (${globalAverage.toFixed(2)}/20)`);
+        } else if (globalAverage < 12) {
+          riskScore += 15;
+          flags.push(`Moyenne fragile (${globalAverage.toFixed(2)}/20)`);
+        }
+      }
+      Object.values(studentSubjectMap).forEach((data) => {
+        const avg = data.total / data.weights;
+        if (avg < 10) {
+          riskScore += 10;
+          flags.push(`En difficulté en ${data.name} (${avg.toFixed(2)}/20)`);
+        }
+      });
+      if (lowGradesCount > 0) riskScore += Math.min(lowGradesCount * 5, 20);
+
+      riskScore = Math.min(Math.max(riskScore, 0), 100);
+      const riskLevel =
+        riskScore >= 60 ? "CRITIQUE" : riskScore >= 25 ? "MODERE" : "FAIBLE";
+
+      return {
+        studentId: student.studentId.toString(),
+        firstname: student.firstname,
+        surname: student.surname,
+        globalAverage:
+          globalAverage !== null
+            ? parseFloat(globalAverage.toFixed(2))
+            : null,
+        riskScore,
+        riskLevel,
+        flags,
+      };
+    });
+
+    const validAverages = studentProfiles
+      .filter((s) => s.globalAverage !== null)
+      .map((s) => s.globalAverage as number);
+    const globalAverage =
+      validAverages.length > 0
+        ? parseFloat(
+            (
+              validAverages.reduce((a, b) => a + b, 0) / validAverages.length
+            ).toFixed(2)
+          )
+        : null;
+
+    const subjectAverages = teacherAssignments
+      .map((ta) => {
+        let totalWeighted = 0,
+          totalWeights = 0;
+        let studentCount = 0;
+        students.forEach((student) => {
+          const subGrades = student.grades.filter(
+            (g) => g.assessment.subjectId === ta.subjectId
+          );
+          if (subGrades.length > 0) studentCount++;
+          subGrades.forEach((g) => {
+          const gradeOn20 = (Number(g.value) / Number(g.assessment.maxGrade)) * 20;
+
+            totalWeighted += gradeOn20 * g.assessment.weight;
+            totalWeights += g.assessment.weight;
+          });
+        });
+        return {
+          subjectId: ta.subjectId,
+          name: ta.subject.label,
+          average:
+            totalWeights > 0
+              ? parseFloat((totalWeighted / totalWeights).toFixed(2))
+              : null,
+          studentCount,
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return {
+      success: true as const,
+      data: {
+        subjects: teacherAssignments.map((ta) => ({
+          subjectId: ta.subjectId,
+          name: ta.subject.label,
+        })),
+        totalStudents: students.length,
+        globalAverage,
+        atRiskCount: studentProfiles.filter((s) => s.riskLevel !== "FAIBLE")
+          .length,
+        criticalCount: studentProfiles.filter((s) => s.riskLevel === "CRITIQUE")
+          .length,
+        subjectAverages,
+        atRiskStudents: studentProfiles
+          .filter((s) => s.riskLevel !== "FAIBLE")
+          .sort((a, b) => b.riskScore - a.riskScore)
+          .slice(0, 5),
+      },
+    };
+  } catch (error) {
+    console.error("Erreur [getTeacherDashboardStats]:", error);
+    return {
+      success: false as const,
+      error: "Erreur lors du calcul des stats.",
+    };
+  }
+}
+
+// ====== RAPPORT DE CLASSE ======
+export async function getClassReportData(classId: number) {
+  try {
+    const classData = await prisma.class.findUnique({
+      where: { classId },
+      include: {
+        students: {
+          include: {
+            grades: {
+              include: { assessment: { include: { subject: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    if (!classData)
+      return { success: false as const, error: "Classe introuvable" };
+
+    const subjectMap: Record<
+      number,
+      { name: string; totalWeighted: number; totalWeights: number }
+    > = {};
+
+    const studentProfiles = classData.students.map((student) => {
+      let totalWeightedGrades = 0;
+      let totalWeights = 0;
+      const studentSubjectMap: Record<
+        number,
+        { name: string; total: number; weights: number }
+      > = {};
+      let lowGradesCount = 0;
+      const flags: string[] = [];
+
+      student.grades.forEach((grade) => {
+        const assessment = grade.assessment;
+  const gradeOn20 = (Number(grade.value) / Number(grade.assessment.maxGrade)) * 20;
+
+        totalWeightedGrades += gradeOn20 * assessment.weight;
+        totalWeights += assessment.weight;
+
+        const sid = assessment.subject.subjectId;
+        if (!studentSubjectMap[sid])
+          studentSubjectMap[sid] = {
+            name: assessment.subject.label,
+            total: 0,
+            weights: 0,
+          };
+        studentSubjectMap[sid].total += gradeOn20 * assessment.weight;
+        studentSubjectMap[sid].weights += assessment.weight;
+
+        if (!subjectMap[sid])
+          subjectMap[sid] = {
+            name: assessment.subject.label,
+            totalWeighted: 0,
+            totalWeights: 0,
+          };
+        subjectMap[sid].totalWeighted += gradeOn20 * assessment.weight;
+        subjectMap[sid].totalWeights += assessment.weight;
+
+        if (gradeOn20 < 5) lowGradesCount++;
+      });
+
+      const globalAverage =
+        totalWeights > 0 ? totalWeightedGrades / totalWeights : null;
+      let riskScore = 0;
+
+      if (globalAverage !== null) {
+        if (globalAverage < 10) {
+          riskScore += 40;
+          flags.push(
+            `Moyenne générale critique (${globalAverage.toFixed(2)}/20)`
+          );
+        } else if (globalAverage < 12) {
+          riskScore += 15;
+          flags.push(
+            `Moyenne générale fragile (${globalAverage.toFixed(2)}/20)`
+          );
+        }
+      }
+      Object.values(studentSubjectMap).forEach((data) => {
+        const avg = data.total / data.weights;
+        if (avg < 10) {
+          riskScore += 10;
+          flags.push(`En difficulté en ${data.name} (${avg.toFixed(2)}/20)`);
+        }
+      });
+      if (lowGradesCount > 0) {
+        riskScore += Math.min(lowGradesCount * 5, 20);
+        flags.push(`${lowGradesCount} note(s) inférieure(s) à 5/20`);
+      }
+
+      riskScore = Math.min(Math.max(riskScore, 0), 100);
+      const riskLevel =
+        riskScore >= 60 ? "CRITIQUE" : riskScore >= 25 ? "MODERE" : "FAIBLE";
+
+      return {
+        studentId: student.studentId.toString(),
+        firstname: student.firstname,
+        surname: student.surname,
+        globalAverage,
+        riskScore,
+        riskLevel,
+        flags,
+      };
+    });
+
+    studentProfiles.sort((a, b) => b.riskScore - a.riskScore);
+
+    const validAverages = studentProfiles
+      .filter((s) => s.globalAverage !== null)
+      .map((s) => s.globalAverage as number);
+    const classAverage =
+      validAverages.length > 0
+        ? validAverages.reduce((a, b) => a + b, 0) / validAverages.length
+        : null;
+
+    const subjectAverages = Object.entries(subjectMap)
+      .map(([id, data]) => ({
+        subjectId: parseInt(id),
+        name: data.name,
+        average:
+          data.totalWeights > 0
+            ? parseFloat((data.totalWeighted / data.totalWeights).toFixed(2))
+            : null,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return {
+      success: true as const,
+      data: {
+        classId,
+        label: classData.label,
+        totalStudents: classData.students.length,
+        classAverage:
+          classAverage !== null ? parseFloat(classAverage.toFixed(2)) : null,
+        subjectAverages,
+        studentProfiles,
+        atRiskCount: studentProfiles.filter((s) => s.riskLevel !== "FAIBLE")
+          .length,
+        criticalCount: studentProfiles.filter(
+          (s) => s.riskLevel === "CRITIQUE"
+        ).length,
+      },
+    };
+  } catch (error) {
+    console.error("Erreur [getClassReportData]:", error);
+    return {
+      success: false as const,
+      error: "Erreur lors du calcul du rapport.",
+    };
+  }
+}
+
+// ====== SIMULATION DE RATTRAPAGES ======
+export async function getRattrapageData(classId: number) {
+  try {
+    const students = await prisma.student.findMany({
+      where: { classId },
+      include: {
+        grades: {
+          include: {
+            assessment: { include: { subject: true } },
+          },
+        },
+      },
+      orderBy: { surname: 'asc' },
+    });
+
+    const assessmentMap = new Map<string, {
+      assessmentId: string;
+      label: string;
+      subjectId: number;
+      subjectName: string;
+      maxGrade: number;
+      weight: number;
+    }>();
+
+    students.forEach(student => {
+      student.grades.forEach(grade => {
+        const id = grade.assessmentId.toString();
+        if (!assessmentMap.has(id)) {
+          assessmentMap.set(id, {
+            assessmentId: id,
+            label: grade.assessment.label,
+            subjectId: grade.assessment.subjectId,
+            subjectName: grade.assessment.subject.label,
+            maxGrade: grade.assessment.maxGrade,
+            weight: grade.assessment.weight,
+          });
+        }
+      });
+    });
+
+    return {
+      students: students.map(s => ({
+        studentId: s.studentId.toString(),
+        firstname: s.firstname,
+        surname: s.surname,
+        grades: s.grades.map(g => ({
+          assessmentId: g.assessmentId.toString(),
+          value: Number(g.value),
+          maxGrade: g.assessment.maxGrade,
+          weight: g.assessment.weight,
+          subjectId: g.assessment.subjectId,
+          subjectName: g.assessment.subject.label,
+          assessmentLabel: g.assessment.label,
+        })),
+      })),
+      assessments: Array.from(assessmentMap.values())
+        .sort((a, b) => a.subjectName.localeCompare(b.subjectName) || a.label.localeCompare(b.label)),
+    };
+  } catch (error) {
+    console.error("Erreur [getRattrapageData]:", error);
+    return null;
+  }
+}
+
+// ====== RAPPORT PAR MATIÈRE (ENSEIGNANT) ======
+
+export async function getTeacherSubjects(teacherId: bigint) {
+  return await prisma.teacherAssignments.findMany({
+    where: { teacherId },
+    include: { subject: true },
+    orderBy: { subject: { label: "asc" } },
+  });
+}
+
+export async function getTeacherSubjectReportData(
+  teacherId: bigint,
+  subjectId: number
+) {
+  try {
+    const assignment = await prisma.teacherAssignments.findFirst({
+      where: { teacherId, subjectId },
+    });
+    if (!assignment)
+      return { success: false as const, error: "Accès refusé" };
+
+    const subject = await prisma.subject.findUnique({ where: { subjectId } });
+
+    const subjectAssignments = await prisma.subjectAssignments.findMany({
+      where: { subjectId },
+      include: {
+        student: {
+          include: {
+            grades: {
+              where: { assessment: { subjectId } },
+              include: { assessment: true },
+            },
+          },
+        },
+      },
+    });
+
+    const studentProfiles = subjectAssignments.map((sa) => {
+      const student = sa.student;
+      let totalWeighted = 0,
+        totalWeights = 0,
+        lowCount = 0;
+      const flags: string[] = [];
+
+      student.grades.forEach((g) => {
+        const gradeOn20 =
+          (Number(g.value) / Number(g.assessment.maxGrade)) * 20;
+        totalWeighted += gradeOn20 * g.assessment.weight;
+        totalWeights += g.assessment.weight;
+        if (gradeOn20 < 5) lowCount++;
+      });
+
+      const average =
+        totalWeights > 0 ? totalWeighted / totalWeights : null;
+      let riskScore = 0;
+
+      if (average !== null) {
+        if (average < 10) {
+          riskScore += 40;
+          flags.push(`Moyenne critique (${average.toFixed(2)}/20)`);
+        } else if (average < 12) {
+          riskScore += 15;
+          flags.push(`Moyenne fragile (${average.toFixed(2)}/20)`);
+        }
+      }
+      if (lowCount > 0) {
+        riskScore += Math.min(lowCount * 5, 20);
+        flags.push(`${lowCount} note(s) < 5/20`);
+      }
+
+      riskScore = Math.min(Math.max(riskScore, 0), 100);
+      const riskLevel =
+        riskScore >= 60 ? "CRITIQUE" : riskScore >= 25 ? "MODERE" : "FAIBLE";
+
+      return {
+        studentId: student.studentId.toString(),
+        firstname: student.firstname,
+        surname: student.surname,
+        globalAverage:
+          average !== null ? parseFloat(average.toFixed(2)) : null,
+        riskScore,
+        riskLevel,
+        flags,
+      };
+    });
+
+    studentProfiles.sort((a, b) => b.riskScore - a.riskScore);
+
+    const validAverages = studentProfiles
+      .filter((s) => s.globalAverage !== null)
+      .map((s) => s.globalAverage as number);
+    const subjectAverage =
+      validAverages.length > 0
+        ? parseFloat(
+            (
+              validAverages.reduce((a, b) => a + b, 0) / validAverages.length
+            ).toFixed(2)
+          )
+        : null;
+
+    return {
+      success: true as const,
+      data: {
+        subjectId,
+        label: subject?.label ?? "",
+        totalStudents: studentProfiles.length,
+        subjectAverage,
+        studentProfiles,
+        atRiskCount: studentProfiles.filter((s) => s.riskLevel !== "FAIBLE")
+          .length,
+        criticalCount: studentProfiles.filter(
+          (s) => s.riskLevel === "CRITIQUE"
+        ).length,
+      },
+    };
+  } catch (error) {
+    console.error("Erreur [getTeacherSubjectReportData]:", error);
+    return {
+      success: false as const,
+      error: "Erreur lors du calcul du rapport.",
+    };
   }
 }
