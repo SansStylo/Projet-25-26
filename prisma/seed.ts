@@ -1,14 +1,18 @@
 /**
  * prisma/seed.ts
- *
+ * 
  * Script de peuplement de la base de données
- *
- * Chaque enseignant a sa propre classe et ses propres étudiants :
- *   - Jean Dupont    → DevWeb          → classe CSI3 (15 élèves)
- *   - Marie Martin   → Base de données → classe CSI4 (15 élèves)
- *   - Pierre Girard  → Intelligence IA → classe M1 Cyber (15 élèves)
- *
- * Exécuter : npx prisma db seed
+ * 
+ * Rôle:
+ * - Initialise la base de données avec des données de test réalistes
+ * - Génére des utilisateurs (enseignants, responsables, admins), classes, matières, étudiants et notes
+ * - Utilise Faker.js pour générer des données aléatoires en français
+ * 
+ * Fonctionnement:
+ * - Se connecte à PostgreSQL via Prisma
+ * - Crée utilisateurs, classes, matières, étudiants avec assignations et notes
+ * - Génére des données réalistes pour tester l'application en développement
+ * - Exécute: npx prisma db seed
  */
 
 import { fakerFR as faker } from '@faker-js/faker';
@@ -17,19 +21,23 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
+// Setup de connexion identique à ton db.ts
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('🗑️  Nettoyage complet de la base de données...');
-
+  console.log('🗑️ Nettoyage complet de la base de données...');
+  
+  // 1. On supprime d'abord les tables dépendantes (tables enfants / pivots)
   await prisma.grade.deleteMany({});
   await prisma.assessment.deleteMany({});
   await prisma.subjectAddingCache.deleteMany({});
   await prisma.teacherAssignments.deleteMany({});
   await prisma.subjectAssignments.deleteMany({});
   await prisma.studentAssignments.deleteMany({});
+  
+  // 2. On supprime ensuite les tables principales (tables parents)
   await prisma.student.deleteMany({});
   await prisma.subject.deleteMany({});
   await prisma.group.deleteMany({});
@@ -39,227 +47,246 @@ async function main() {
 
   console.log('🚀 Injection des données de test...');
 
-  // ═══════════════════════════════════════════
-  // ÉTAPE 1 : UTILISATEURS
-  // ═══════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+  // STEP 1 : CRÉATION DES UTILISATEURS (COMPTES APPLICATIFS)
+  // ═══════════════════════════════════════════════════════════════════
 
   const profJean = await prisma.user.create({
-    data: { mail: 'prof@isen.fr', password: 'password123', firstname: 'Jean', surname: 'Dupont', level: 0 },
+    data: {
+      mail: 'prof@isen.fr',
+      password: 'password123',
+      firstname: 'Jean',
+      surname: 'Dupont',
+      level: 0, // Enseignant
+    },
   });
 
   const profMarie = await prisma.user.create({
-    data: { mail: 'marie.martin@isen.fr', password: 'secure123', firstname: 'Marie', surname: 'Martin', level: 0 },
-  });
-
-  // Troisième enseignant pour tester l'isolation
-  const profPierre = await prisma.user.create({
-    data: { mail: 'pierre.girard@isen.fr', password: 'pierre123', firstname: 'Pierre', surname: 'Girard', level: 0 },
+    data: {
+      mail: 'marie.martin@isen.fr',
+      password: 'secure123',
+      firstname: 'Marie',
+      surname: 'Martin',
+      level: 0, // Enseignant
+    },
   });
 
   const responsable = await prisma.user.create({
-    data: { mail: 'responsable@isen.fr', password: 'resp123', firstname: 'Sophie', surname: 'Rousseau', level: 1 },
+    data: {
+      mail: 'responsable@isen.fr',
+      password: 'resp123',
+      firstname: 'Sophie',
+      surname: 'Rousseau',
+      level: 1, // Responsable pédagogique
+    },
   });
 
-  await prisma.user.create({
-    data: { mail: 'admin@isen.fr', password: 'admin123', firstname: 'Admin', surname: 'ISEN', level: 2 },
+  const admin = await prisma.user.create({
+    data: {
+      mail: 'admin@isen.fr',
+      password: 'admin123',
+      firstname: 'Pierre',
+      surname: 'Legrand',
+      level: 2, // Administrateur
+    },
   });
 
   console.log('   └─ Comptes utilisateurs créés !');
 
-  // ═══════════════════════════════════════════
-  // ÉTAPE 2 : CLASSES & GROUPES
-  // ═══════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+  // STEP 2 : CLASSES & GROUPES
+  // ═══════════════════════════════════════════════════════════════════
 
-  const classCSI3  = await prisma.class.create({ data: { label: 'CSI3 - Informatique' } });
-  const classCSI4  = await prisma.class.create({ data: { label: 'CSI4 - Génie Logiciel' } });
-  const classM1    = await prisma.class.create({ data: { label: 'M1 Cybersécurité' } });
+  const classCSI3 = await prisma.class.create({ data: { label: 'CSI 3 - Informatique' } });
+  const classCSI4 = await prisma.class.create({ data: { label: 'CSI 4 - Génie Logiciel' } });
+
+  // On injecte et on récupère les autres classes demandées
+  const extraClasses = await prisma.class.createManyAndReturn({
+    data: [
+      { label: 'B3 Informatique' },
+      { label: 'M1 Cybersécurité' },
+      { label: 'M2 Big Data' }
+    ]
+  });
+
+  // Liste globale de toutes nos classes disponibles pour le Faker
+  const allAvailableClasses = [classCSI3, classCSI4, ...extraClasses];
 
   const groupTD1 = await prisma.group.create({ data: { label: 'Groupe TD 1' } });
   const groupTD2 = await prisma.group.create({ data: { label: 'Groupe TD 2' } });
 
   console.log('   └─ Classes et groupes configurés !');
 
-  // ═══════════════════════════════════════════
-  // ÉTAPE 3 : ÉTUDIANTS PAR CLASSE (ISOLÉS)
-  // ═══════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+  // STEP 3 : ÉTUDIANTS (MANUELS + FAKER MASSIF)
+  // ═══════════════════════════════════════════════════════════════════
 
-  // Classe de Jean (CSI3) : 2 étudiants fixes + 13 faker
+  // Création des 3 étudiants fixes pour tes tests de liaison
   const studentLucas = await prisma.student.create({ data: { firstname: 'Lucas', surname: 'Martin', classId: classCSI3.classId } });
-  const studentEmma  = await prisma.student.create({ data: { firstname: 'Emma',  surname: 'Bernard', classId: classCSI3.classId } });
-
-  const csi3FakeData = Array.from({ length: 13 }, () => ({
-    firstname: faker.person.firstName(),
-    surname:   faker.person.lastName(),
-    classId:   classCSI3.classId,
-  }));
-  const csi3FakeStudents = await prisma.student.createManyAndReturn({ data: csi3FakeData });
-  const studentsCSI3 = [studentLucas, studentEmma, ...csi3FakeStudents];
-
-  // Classe de Marie (CSI4) : 1 étudiant fixe + 14 faker
+  const studentEmma = await prisma.student.create({ data: { firstname: 'Emma', surname: 'Bernard', classId: classCSI3.classId } });
   const studentThomas = await prisma.student.create({ data: { firstname: 'Thomas', surname: 'Petit', classId: classCSI4.classId } });
 
-  const csi4FakeData = Array.from({ length: 14 }, () => ({
-    firstname: faker.person.firstName(),
-    surname:   faker.person.lastName(),
-    classId:   classCSI4.classId,
-  }));
-  const csi4FakeStudents = await prisma.student.createManyAndReturn({ data: csi4FakeData });
-  const studentsCSI4 = [studentThomas, ...csi4FakeStudents];
+  // Usine Faker : Préparation de 100 étudiants supplémentaires
+  const fakeStudentsBuffer = [];
+  for (let i = 0; i < 100; i++) {
+    const randomClass = allAvailableClasses[Math.floor(Math.random() * allAvailableClasses.length)];
+    fakeStudentsBuffer.push({
+      firstname: faker.person.firstName(),
+      surname: faker.person.lastName(),
+      classId: randomClass.classId,
+    });
+  }
 
-  // Classe de Pierre (M1 Cyber) : 15 faker
-  const m1FakeData = Array.from({ length: 15 }, () => ({
-    firstname: faker.person.firstName(),
-    surname:   faker.person.lastName(),
-    classId:   classM1.classId,
-  }));
-  const studentsM1 = await prisma.student.createManyAndReturn({ data: m1FakeData });
-
-  const allStudents = [...studentsCSI3, ...studentsCSI4, ...studentsM1];
-  console.log(`   └─ ${allStudents.length} étudiants enregistrés !`);
-
-  // ═══════════════════════════════════════════
-  // ÉTAPE 4 : AFFECTATION AUX GROUPES TD
-  // ═══════════════════════════════════════════
-
-  await prisma.studentAssignments.createMany({
-    data: allStudents.map((student, i) => ({
-      studentId: student.studentId,
-      groupId:   i % 2 === 0 ? groupTD1.groupId : groupTD2.groupId,
-    })),
+  // Insertion en une seule requête SQL de nos 100 élèves
+  const createdFakeStudents = await prisma.student.createManyAndReturn({
+    data: fakeStudentsBuffer
   });
 
-  // ═══════════════════════════════════════════
-  // ÉTAPE 5 : MATIÈRES
-  // ═══════════════════════════════════════════
+  // Regroupement de TOUS les étudiants pour les étapes d'affectation
+  const allStudents = [studentLucas, studentEmma, studentThomas, ...createdFakeStudents];
+  console.log(`   └─ ${allStudents.length} étudiants enregistrés (Usine Faker OK) !`);
 
-  const subjectDevWeb   = await prisma.subject.create({ data: { label: 'Développement Web Avancé (Next.js)' } });
+  // ═══════════════════════════════════════════════════════════════════
+  // STEP 4 : AFFECTATION DES ÉTUDIANTS DANS LES GROUPES (TABLE PIVOT)
+  // ═══════════════════════════════════════════════════════════════════
+
+  const studentAssignmentsBuffer = allStudents.map((student, index) => {
+    // On alterne équitablement entre le TD1 et le TD2
+    const targetGroup = index % 2 === 0 ? groupTD1 : groupTD2;
+    return {
+      studentId: student.studentId,
+      groupId: targetGroup.groupId
+    };
+  });
+
+  await prisma.studentAssignments.createMany({ data: studentAssignmentsBuffer });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // STEP 5 : MATIÈRES
+  // ═══════════════════════════════════════════════════════════════════
+
+  const subjectDevWeb = await prisma.subject.create({ data: { label: 'Développement Web Avancé (Next.js)' } });
   const subjectDatabase = await prisma.subject.create({ data: { label: 'Bases de données relationnelles & SQL' } });
-  const subjectIA       = await prisma.subject.create({ data: { label: 'Intelligence Artificielle & ML' } });
 
-  // ═══════════════════════════════════════════
-  // ÉTAPE 6 : AFFECTATION PROFS → MATIÈRES
-  //           + ÉTUDIANTS → MATIÈRES (ISOLÉ PAR CLASSE)
-  // ═══════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+  // STEP 6 : AFFECTATION DES PROFS ET DES ÉLÈVES AUX MATIÈRES
+  // ═══════════════════════════════════════════════════════════════════
 
-  // Jean enseigne DevWeb à CSI3 uniquement
-  await prisma.teacherAssignments.create({ data: { subjectId: subjectDevWeb.subjectId, teacherId: profJean.userId } });
-  // Marie enseigne Database à CSI4 uniquement
-  await prisma.teacherAssignments.create({ data: { subjectId: subjectDatabase.subjectId, teacherId: profMarie.userId } });
-  // Pierre enseigne IA à M1 Cyber uniquement
-  await prisma.teacherAssignments.create({ data: { subjectId: subjectIA.subjectId, teacherId: profPierre.userId } });
+  await prisma.teacherAssignments.createMany({
+    data: [
+      { subjectId: subjectDevWeb.subjectId, teacherId: profJean.userId },
+      { subjectId: subjectDatabase.subjectId, teacherId: profMarie.userId },
+    ],
+  });
 
+  // Inscription automatique de tous les étudiants aux deux matières
   const subjectAssignmentsBuffer: { studentId: bigint; subjectId: number }[] = [];
-
-  studentsCSI3.forEach(s => subjectAssignmentsBuffer.push({ studentId: s.studentId, subjectId: subjectDevWeb.subjectId }));
-  studentsCSI4.forEach(s => subjectAssignmentsBuffer.push({ studentId: s.studentId, subjectId: subjectDatabase.subjectId }));
-  studentsM1.forEach(s   => subjectAssignmentsBuffer.push({ studentId: s.studentId, subjectId: subjectIA.subjectId }));
+  allStudents.forEach(student => {
+    subjectAssignmentsBuffer.push({ studentId: student.studentId, subjectId: subjectDevWeb.subjectId });
+    subjectAssignmentsBuffer.push({ studentId: student.studentId, subjectId: subjectDatabase.subjectId });
+  });
 
   await prisma.subjectAssignments.createMany({ data: subjectAssignmentsBuffer });
   console.log('   └─ Cartographie des cours et matières validée !');
 
-  // ═══════════════════════════════════════════
-  // ÉTAPE 7 : ÉVALUATIONS & NOTES
-  // ═══════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+  // STEP 7 : ÉVALUATIONS ET INJECTION AUTOMATIQUE DE NOTES
+  // ═══════════════════════════════════════════════════════════════════
 
-const examProject = await prisma.assessment.create({
+  // 1. Évaluations officielles pour l'historique (Mars, Avril, Mai)
+  const examProject = await prisma.assessment.create({
     data: {
-      subjectId: subjectDevWeb.subjectId,
-      date:      new Date('2026-03-15'),
-      maxGrade:  20,
-      weight:    3,
-      userId:    profJean.userId,
-      label:     "Projet d'architecture Next.js & Prisma",
+      subject: { connect: { subjectId: subjectDevWeb.subjectId } },
+      user: { connect: { userId: profJean.userId } }, // On utilise "user" et pas "teacher"
+      date: new Date('2026-03-15'),
+      maxGrade: 20,
+      weight: 3,
+      label: 'Projet d\'architecture Next.js & Prisma',
     },
   });
 
   const examSql = await prisma.assessment.create({
     data: {
-      subjectId: subjectDatabase.subjectId,
-      date:      new Date('2026-04-10'),
-      maxGrade:  20,
-      weight:    2,
-      userId:    profMarie.userId,
-      label:     'Examen sur table : Requêtes et indexation',
+      subject: { connect: { subjectId: subjectDatabase.subjectId } },
+      user: { connect: { userId: profMarie.userId } },
+      date: new Date('2026-04-10'),
+      maxGrade: 20,
+      weight: 2,
+      label: 'Examen sur table : Requêtes et indexation',
     },
   });
 
   const examFinal = await prisma.assessment.create({
     data: {
-      subjectId: subjectDevWeb.subjectId,
-      date:      new Date('2026-05-20'),
-      maxGrade:  20,
-      weight:    4,
-      userId:    profJean.userId,
-      label:     'Examen Final : Intégration et API SSR',
+      subject: { connect: { subjectId: subjectDevWeb.subjectId } },
+      user: { connect: { userId: profJean.userId } },
+      date: new Date('2026-05-20'),
+      maxGrade: 20,
+      weight: 4,
+      label: 'Examen Final : Intégration et API SSR',
     },
   });
 
-  const examIA = await prisma.assessment.create({
-    data: {
-      subjectId: subjectIA.subjectId,
-      date:      new Date('2026-05-10'),
-      maxGrade:  20,
-      weight:    3,
-      userId:    profPierre.userId,
-      label:     'TP Machine Learning : Régression et classification',
-    },
-  });
-
+  const allAssessments = [examProject, examSql, examFinal];
   const gradesBuffer: { assessmentId: bigint; studentId: bigint; value: number; feedback: string }[] = [];
 
-  function randomNote(atRisk: boolean) {
-    if (atRisk) return { value: Math.floor(Math.random() * 8) + 2, feedback: 'Des lacunes importantes. Des efforts soutenus sont requis.' };
-    const v = Math.floor(Math.random() * 11) + 10;
-    return { value: v, feedback: v > 16 ? 'Excellent travail, bravo !' : 'Bonne maîtrise des notions étudiées.' };
-  }
+  // 2. Génération des notes pour TOUS les étudiants sur TOUTES les évaluations
+  allStudents.forEach((student) => {
+    // Pour rendre les alertes de ton dashboard vivantes, on force environ 15% des élèves à être en difficulté
+    const isStudentAtRisk = Math.random() < 0.15;
 
-  // Notes CSI3 (DevWeb, deux évaluations)
-  studentsCSI3.forEach(student => {
-    const atRisk = Math.random() < 0.15;
-    for (const assessment of [examProject, examFinal]) {
-      const note = randomNote(atRisk);
-      // Notes fixes pour Lucas et Emma sur le projet
+    allAssessments.forEach((assessment) => {
+      let score = 0;
+      let feedback = "Bonne maîtrise des notions étudiées.";
+
+      if (isStudentAtRisk) {
+        // Notes basses (entre 2 et 9 / 20)
+        score = Math.floor(Math.random() * 8) + 2;
+        feedback = "Des lacunes importantes. Des efforts soutenus et une reprise des bases sont requis.";
+      } else {
+        // Notes normales/bonnes (entre 10 et 20 / 20)
+        score = Math.floor(Math.random() * 11) + 10;
+        if (score > 16) feedback = "Excellent travail, bravo !";
+      }
+
+      // Cas particulier : écraser avec tes notes fixes d'origine pour Lucas, Emma et Thomas
       if (student.studentId === studentLucas.studentId && assessment.assessmentId === examProject.assessmentId) {
-        gradesBuffer.push({ assessmentId: assessment.assessmentId, studentId: student.studentId, value: 16, feedback: "Excellent travail sur l'intégration de l'adaptateur PostgreSQL !" });
-        continue;
+        score = 16;
+        feedback = 'Excellent travail sur l\'intégration de l\'adaptateur PostgreSQL !';
       }
       if (student.studentId === studentEmma.studentId && assessment.assessmentId === examProject.assessmentId) {
-        gradesBuffer.push({ assessmentId: assessment.assessmentId, studentId: student.studentId, value: 14, feedback: 'Bonne structure globale, attention aux exports de config.' });
-        continue;
+        score = 14;
+        feedback = 'Bonne structure globale, attention aux exports de config.';
       }
-      gradesBuffer.push({ assessmentId: assessment.assessmentId, studentId: student.studentId, ...note });
-    }
+      if (student.studentId === studentThomas.studentId && assessment.assessmentId === examSql.assessmentId) {
+        score = 11;
+        feedback = 'Résultats corrects mais des confusions sur les jointures externes.';
+      }
+
+      gradesBuffer.push({
+        assessmentId: assessment.assessmentId,
+        studentId: student.studentId,
+        value: score,
+        feedback: feedback
+      });
+    });
   });
 
-  // Notes CSI4 (Database)
-  studentsCSI4.forEach(student => {
-    const atRisk = Math.random() < 0.15;
-    const note = randomNote(atRisk);
-    if (student.studentId === studentThomas.studentId) {
-      gradesBuffer.push({ assessmentId: examSql.assessmentId, studentId: student.studentId, value: 11, feedback: 'Résultats corrects mais des confusions sur les jointures externes.' });
-    } else {
-      gradesBuffer.push({ assessmentId: examSql.assessmentId, studentId: student.studentId, ...note });
-    }
-  });
-
-  // Notes M1 Cyber (IA)
-  studentsM1.forEach(student => {
-    const atRisk = Math.random() < 0.20;
-    const note = randomNote(atRisk);
-    gradesBuffer.push({ assessmentId: examIA.assessmentId, studentId: student.studentId, ...note });
-  });
-
+  // Insertion en bloc de toutes les notes
   await prisma.grade.createMany({ data: gradesBuffer });
 
-  console.log(`   └─ ${gradesBuffer.length} notes injectées !`);
+  console.log(`   └─ ${gradesBuffer.length} notes d'évaluations calculées et injectées !`);
   console.log('\n✨ Base de données initialisée avec succès !');
-  console.log(`👉 Jean Dupont   (CSI3 / DevWeb)    : prof@isen.fr        / password123`);
-  console.log(`👉 Marie Martin  (CSI4 / BdD)       : marie.martin@isen.fr / secure123`);
-  console.log(`👉 Pierre Girard (M1 Cyber / IA)    : pierre.girard@isen.fr / pierre123`);
-  console.log(`👉 Responsable                       : responsable@isen.fr / resp123`);
-  console.log(`👉 Admin                             : admin@isen.fr       / admin123`);
+  console.log(`👉 Enseignant : ${profJean.mail} / password123`);
+  console.log(`👉 Responsable : ${responsable.mail} / resp123`);
+  console.log(`👉 Admin : ${admin.mail} / admin123`);
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1); })
-  .finally(async () => { await prisma.$disconnect(); });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
