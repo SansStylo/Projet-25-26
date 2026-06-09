@@ -916,12 +916,12 @@ export async function saveGrade(assessmentIdStr: string, studentIdStr: string, v
           await prisma.notification.createMany({
             data: notificationsData
           });
-          writeLogAction(`Alert notification for ${student.firstname} ${student.surname} (Moyenne < 8) created`);
+          await writeLogAction(`Alert notification for ${student.firstname} ${student.surname} (Moyenne < 8) created`);
         }
       }
     }
 
-    writeLogAction(
+    await writeLogAction(
       `Assessment of ${studentIdStr} modified, (Note: ${value}/20) for evaluation ${assessmentIdStr}`,
       userId
     );
@@ -1229,7 +1229,7 @@ export async function getCurrentUserId() {
 
 export async function writeLogAction(label: string, userIdStr?: string | null) {
   try {
-    await prisma.log.create({
+    await prisma.logs.create({
       data: {
         label: label,
         userId: userIdStr ? BigInt(userIdStr) : null, // null = automatique / server
@@ -1238,5 +1238,94 @@ export async function writeLogAction(label: string, userIdStr?: string | null) {
   } catch (error) {
     // On met un console.error pour le debug, mais on ne crash pas l'application pour un log raté
     console.error("Erreur lors de l'écriture du log système :", error);
+  }
+}
+
+export async function updateUserAction(
+  userIdStr: string, 
+  data: { firstname: string; surname: string; mail: string; password: string }
+) {
+  try {
+    const currentAdminId = await getCurrentUserId();
+    
+    await prisma.user.update({
+      where: { userId: BigInt(userIdStr) },
+      data: {
+        firstname: data.firstname,
+        surname: data.surname,
+        mail: data.mail,
+        password: data.password,
+      },
+    });
+
+    await writeLogAction(`User ${userIdStr} updated details`, currentAdminId);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Erreur modification utilisateur:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteUserAction(userIdStr: string) {
+  try {
+    const currentAdminId = await getCurrentUserId();
+    
+    // Si l'utilisateur a des sessions actives, on les nettoie d'abord
+    await prisma.session.deleteMany({
+      where: { userId: BigInt(userIdStr) }
+    });
+
+    await prisma.user.delete({
+      where: { userId: BigInt(userIdStr) },
+    });
+
+    await writeLogAction(`User ${userIdStr} deleted`, currentAdminId);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Erreur suppression utilisateur:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function createUserAction(data: {
+  firstname: string;
+  surname: string;
+  mail: string;
+  password: string;
+}) {
+  try {
+    const currentAdminId = await getCurrentUserId();
+    
+    const newUser = await prisma.user.create({
+      data: {
+        firstname: data.firstname,
+        surname: data.surname,
+        mail: data.mail,
+        password: data.password,
+        level: 0, // Par défaut enseignant (0 = prof, 1 = resp, 2 = admin)
+      },
+    });
+
+    await writeLogAction(`New user account created: ${data.mail}`, currentAdminId);
+    return { success: true, userId: newUser.userId.toString() };
+  } catch (error: any) {
+    console.error("Erreur création utilisateur:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getSerializableUsers() {
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: { userId: 'asc' },
+    });
+    
+    return users.map(user => ({
+      ...user,
+      userId: user.userId.toString(), // Évite le crash de sérialisation BigInt
+    }));
+  } catch (error) {
+    console.error("Erreur récupération utilisateurs:", error);
+    return [];
   }
 }
