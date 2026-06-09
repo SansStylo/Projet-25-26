@@ -161,13 +161,13 @@ async function main() {
   // ÉTAPE 7 : ÉVALUATIONS & NOTES
   // ═══════════════════════════════════════════
 
-  const examProject = await prisma.assessment.create({
+const examProject = await prisma.assessment.create({
     data: {
       subjectId: subjectDevWeb.subjectId,
       date:      new Date('2026-03-15'),
       maxGrade:  20,
       weight:    3,
-      teacher:   'Jean Dupont',
+      userId:    profJean.userId,
       label:     "Projet d'architecture Next.js & Prisma",
     },
   });
@@ -178,7 +178,7 @@ async function main() {
       date:      new Date('2026-04-10'),
       maxGrade:  20,
       weight:    2,
-      teacher:   'Marie Martin',
+      userId:    profMarie.userId,
       label:     'Examen sur table : Requêtes et indexation',
     },
   });
@@ -189,7 +189,7 @@ async function main() {
       date:      new Date('2026-05-20'),
       maxGrade:  20,
       weight:    4,
-      teacher:   'Jean Dupont',
+      userId:    profJean.userId,
       label:     'Examen Final : Intégration et API SSR',
     },
   });
@@ -200,7 +200,7 @@ async function main() {
       date:      new Date('2026-05-10'),
       maxGrade:  20,
       weight:    3,
-      teacher:   'Pierre Girard',
+      userId:    profPierre.userId,
       label:     'TP Machine Learning : Régression et classification',
     },
   });
