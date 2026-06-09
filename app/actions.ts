@@ -307,26 +307,43 @@ export async function searchStudentsForTeacher(
 
 export async function getStudentDetail(studentId: bigint) {
   try {
-    return await prisma.student.findUnique({
+    const student = await prisma.student.findUnique({
       where: { studentId },
       include: {
         class: true,
         subjectAssignments: {
-          include: {
-            subject: true,
-          },
+          include: { subject: true },
         },
         grades: {
           include: {
             assessment: {
-              include: {
-                subject: true,
-              },
+              include: { subject: true },
             },
           },
         },
       },
     });
+
+    if (!student) return null;
+
+    return {
+      ...student,
+      studentId: student.studentId.toString(),
+      classId: student.classId ?? null,
+      grades: student.grades.map((g) => ({
+        ...g,
+        assessmentId: g.assessmentId.toString(),
+        studentId: g.studentId.toString(),
+        value: Number(g.value),
+        assessment: {
+          ...g.assessment,
+          assessmentId: g.assessment.assessmentId.toString(),
+          userId: g.assessment.userId.toString(),
+          maxGrade: Number(g.assessment.maxGrade),
+          weight: Number(g.assessment.weight),
+        },
+      })),
+    };
   } catch (error) {
     console.error(
       "Erreur lors de la récupération des détails de l'étudiant :",
