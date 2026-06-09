@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoutButton } from "@/app/components/LogoutButton";
-import { getUserNotifications, deleteNotificationAction } from '@/app/actions';
+import { getUserNotifications, deleteNotificationAction, getCurrentUserId } from '@/app/actions';
 
 interface AlertType {
   id: string;        
@@ -22,25 +22,28 @@ export default function EnseignantClientLayout({ children }: { children: React.R
   
   // 2. On force l'état à accepter notre tableau d'Alertes (vide par défaut)
   const [alerts, setAlerts] = useState<AlertType[]>([]);
-
-  // ID de test pour l'utilisateur connecté (à lier à ton système de session plus tard)
-  const currentUserId = "1"; 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // 3. On charge les vraies notifs de la BDD au montage du composant
   useEffect(() => {
-    async function loadNotifications() {
-      const data = await getUserNotifications(currentUserId);
-      setAlerts(data);
+    async function initSessionAndNotifs() {
+      // Demande au serveur "Qui est connecté avec ce cookie ?"
+      const userId = await getCurrentUserId();
+      
+      if (userId) {
+        setCurrentUserId(userId); // On stocke l'ID réel
+        
+        // On va chercher ses notifications spécifiques
+        const data = await getUserNotifications(userId);
+        setAlerts(data);
+      }
     }
-    loadNotifications();
-  }, [currentUserId]);
+    initSessionAndNotifs();
+  }, []);
 
   // 4. On change le type de l'id ici en "string"
   const deleteAlert = async (id: string) => {
-    // Suppression visuelle instantanée côté client
     setAlerts(alerts.filter(alert => alert.id !== id));
-    
-    // Suppression réelle en BDD via l'action Prisma
     await deleteNotificationAction(id);
   };
 

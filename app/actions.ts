@@ -1157,3 +1157,34 @@ export async function updatePasswordAndCleanUp(targetEmail: string, newPasswordR
     return { success: false, error: "Impossible d'enregistrer le nouveau mot de passe." };
   }
 }
+
+/**
+ * Récupère l'ID de l'utilisateur actuellement connecté
+ * en vérifiant le jeton de session en base de données.
+ */
+export async function getCurrentUserId() {
+  try {
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("session_token")?.value;
+
+    if (!sessionToken) {
+      return null; // Pas de session active
+    }
+
+    // On cherche la session en BDD
+    const session = await prisma.session.findUnique({
+      where: { token: sessionToken },
+    });
+
+    // Si la session n'existe pas ou est expirée
+    if (!session || session.expiresAt < new Date()) {
+      return null;
+    }
+
+    // On renvoie le userId converti en string (à cause du BigInt)
+    return session.userId.toString();
+  } catch (error) {
+    console.error("Erreur lors de la récupération de l'utilisateur courant :", error);
+    return null;
+  }
+}

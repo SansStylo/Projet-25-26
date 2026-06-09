@@ -4,6 +4,14 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoutButton } from "@/app/components/LogoutButton";
+import { getUserNotifications, deleteNotificationAction, getCurrentUserId } from '@/app/actions';
+
+interface AlertType {
+  id: string;        
+  type: string;
+  text: string;
+  returns: string;
+}
 
 
 export default function ResponsableClientLayout({ children }: { children: React.ReactNode }) {
@@ -15,14 +23,35 @@ export default function ResponsableClientLayout({ children }: { children: React.
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
   // Dans ton composant :
   useEffect(() => {
     console.log("Le layout client est monté une seule fois");
   }, []);
   // Alertes
-  const [alerts, setAlerts] = useState([
-    { id: 1, type: "Baisse de niveau", text: "La moyenne générale du groupe CIR2 a baissé de 1.5 points ce mois-ci." }
-  ]);
+  const [alerts, setAlerts] = useState<AlertType[]>([]);
+
+  useEffect(() => {
+      async function initSessionAndNotifs() {
+        // Demande au serveur "Qui est connecté avec ce cookie ?"
+        const userId = await getCurrentUserId();
+        
+        if (userId) {
+          setCurrentUserId(userId); // On stocke l'ID réel
+          
+          // On va chercher ses notifications spécifiques
+          const data = await getUserNotifications(userId);
+          setAlerts(data);
+        }
+      }
+      initSessionAndNotifs();
+    }, []);
+
+    const deleteAlert = async (id: string) => {
+        setAlerts(alerts.filter(alert => alert.id !== id));
+        await deleteNotificationAction(id);
+    };
 
   return (
     <div className="flex min-h-screen bg-[#F4F7F5] text-[#1E2E24] font-sans antialiased">
@@ -111,7 +140,10 @@ export default function ResponsableClientLayout({ children }: { children: React.
             <div className="relative flex items-center justify-center">
               <button 
               onClick={(e) => { 
-                e.stopPropagation(); setShowNotifs(!showNotifs); setShowProfileMenu(false); }}
+                e.stopPropagation(); 
+                setShowNotifs(!showNotifs); 
+                setShowProfileMenu(false); 
+              }}
                  className="relative z-50 w-9 h-9 flex items-center justify-center relative bg-transparent border-none cursor-pointer text-[#53665A] hover:text-[#0F5E3D]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -119,6 +151,36 @@ export default function ResponsableClientLayout({ children }: { children: React.
                 </svg>
                 {alerts.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-[#F97316] rounded-full border-2 border-white"></span>}
               </button>
+              {showNotifs && (
+                <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[280px] z-[1000] overflow-hidden p-2 animate-fadeIn">
+                  <div className="text-xs font-bold text-[#1E2E24] border-b border-[#EAEFEA] pb-2 mb-2 px-2 flex justify-between items-center">
+                    <span>Notifications</span>
+                    <span className="bg-[#E2EAE5] text-[#0F5E3D] px-1.5 py-0.5 rounded-full text-[10px]">{alerts.length}</span>
+                  </div>
+                        
+                  {alerts.length === 0 ? (
+                    <p className="text-xs text-[#718579] p-4 italic text-center">Aucune notification</p>
+                  ) : (
+                    <ul className="list-none p-0 m-0 max-h-[240px] overflow-y-auto space-y-1">
+                      {alerts.map((alert) => (
+                        <li key={alert.id} className="text-xs p-2 hover:bg-[#F4F7F5] rounded-md flex justify-between items-start gap-3 border border-slate-50 transition-colors">
+                          <div className="flex-1">
+                            <span className="font-bold text-[#0F5E3D] block text-[10px] uppercase tracking-wider mb-0.5">{alert.type}</span>
+                            <span className="text-[#1E2E24] font-medium">{alert.text}</span>
+                          </div>
+                          <button 
+                            onClick={() => deleteAlert(alert.id)}
+                            className="text-[#718579] hover:text-red-600 bg-transparent border-none cursor-pointer text-xs p-0 w-4 h-4 flex items-center justify-center rounded hover:bg-slate-100"
+                            title="Supprimer"
+                          >
+                            ✕
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
             <div className="relative">
               <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifs(false); }}>
