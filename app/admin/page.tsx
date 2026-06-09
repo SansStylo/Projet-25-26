@@ -22,42 +22,19 @@ import { LogoutButton } from "@/app/components/LogoutButton";
 export default async function AdminPage() {
   const user = await requireExactLevel(2);
 
-  return (
-    <div className="min-h-screen p-6 bg-slate-50">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-4xl font-bold text-slate-900 mb-2">Espace Admin</h1>
-            <p className="text-slate-600">Interface réservée aux administrateurs.</p>
-            <p className="text-sm text-slate-500 mt-3">
-              Connecté en tant que: <span className="font-semibold text-slate-700">{user.firstname} {user.surname}</span> ({ROLE_LABELS[user.level as 0 | 1 | 2]})
-            </p>
+ return (
+        <main className="flex-1 overflow-y-auto p-10 bg-[#F4F7F5]">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            
+            {/* Colonne de gauche */}
+            <section className="lg:col-span-3 bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02)] border border-[#E2EAE5]">
+              <h2 className="text-xl font-bold mb-[15px] text-[#0F5E3D]">
+                Bienvenue sur l'interface d'administrateur.
+              </h2>
+              <p className="text-[#53665A] leading-[1.6]">
+                Gérez les accès utilisateurs, configurez les structures des classes et matières et suivez en temps réel l'activité du système.</p>
+            </section>
           </div>
-          <LogoutButton />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6 border border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800 mb-4">Gestion des utilisateurs</h2>
-            <p className="text-slate-600">Gérez les comptes des enseignants et responsables pédagogiques.</p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6 border border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800 mb-4">Gestion des classes</h2>
-            <p className="text-slate-600">Organisez les classes et les groupes d'étudiants.</p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6 border border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800 mb-4"><a href="/html-js" >Gestion des matières</a></h2>
-            <p className="text-slate-600">Définissez les matières et leurs assignations.</p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6 border border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800 mb-4">Rapports et statistiques</h2>
-            <p className="text-slate-600">Consultez les rapports globaux du système.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+        </main>
   );
 }

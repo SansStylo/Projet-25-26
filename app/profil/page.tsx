@@ -5,7 +5,7 @@ import React from "react";
 
 import EnseignantClientLayout from "@/app/components/enseignant/EnseignantLayout";
 import ResponsableClientLayout from "@/app/components/responsable/ResponsableLayout"; 
-// import AdminClientLayout from "@/app/components/admin/AdminLayout";
+import AdminClientLayout from "@/app/components/admin/AdminLayout";
 
 async function getProfileData(userId: bigint, isAdmin: boolean) {
   // Récupération des matières
@@ -91,7 +91,7 @@ export default async function ProfilPage() {
         </div>
 
         {/* Structure en 2 Colonnes */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className={"grid gap-6 ${user?.level === 2 ? 'grid-cols-1' : 'grid-cols-3'}"}> 
           
           {/* Colonne de gauche */}
           <div className="lg:col-span-2 space-y-6">
@@ -134,23 +134,24 @@ export default async function ProfilPage() {
             )}
           </div>
 
-          {/* Colonne de droite */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl border border-[#E2EAE5] p-6 flex flex-col justify-between h-full min-h-45">
-              <div>
-                <h3 className={`text-sm font-bold ${sessionThemes.titleText} uppercase tracking-widest mb-4 flex items-center gap-2`}>
-                  Activité globale
-                </h3>
-                <h4 className="text-sm font-bold text-[#1E2E24] mb-4">
-                  Évaluations créées
-                </h4>
-                <div className="text-5xl font-black text-[#1E2E24] tracking-tight">
-                  {assessmentCount}
+          {/* Colonne de droite masqu&e pour l'admin */}
+          {user?.level !== 2 && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl border border-[#E2EAE5] p-6 flex flex-col justify-between h-full min-h-45">
+                <div>
+                  <h3 className={`text-sm font-bold ${sessionThemes.titleText} uppercase tracking-widest mb-4 flex items-center gap-2`}>
+                    Activité globale
+                  </h3>
+                  <h4 className="text-sm font-bold text-[#1E2E24] mb-4">
+                    Évaluations créées
+                  </h4>
+                  <div className="text-5xl font-black text-[#1E2E24] tracking-tight">
+                    {assessmentCount}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-
+          )}
         </div>
       </div>
     </div>
@@ -162,7 +163,7 @@ export default async function ProfilPage() {
   }
   
   if (user.level === 2) {
-    // return <AdminLayout user={user}>{profileContent}</AdminLayout>;
+    return <AdminClientLayout user={user}>{profileContent}</AdminClientLayout>;
   }
 
   // Par défaut (Enseignant)
