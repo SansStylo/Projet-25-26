@@ -1,10 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import { getClassReportData } from '@/app/actions';
-import { LogoutButton } from '@/app/components/LogoutButton';
 
 interface ClassOption {
   classId: number;
@@ -30,16 +27,6 @@ const RISK_BAR: Record<RiskLevel, string> = {
 };
 
 export function RapportsContent({ classes }: RapportsContentProps) {
-  const pathname = usePathname();
-  const [isSidebarReduced, setSidebarReduced] = useState(false);
-  const [isHovered, setHoverState] = useState(false);
-  const [showNotifs, setShowNotifs] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [alerts, setAlerts] = useState([
-    { id: 1, type: "Système", text: "Mise à jour terminée.", date: "Récent" },
-    { id: 2, type: "Rapport", text: "Les notes de B3 sont disponibles.", date: "Récent" },
-  ]);
-
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [reportData, setReportData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -82,61 +69,8 @@ export function RapportsContent({ classes }: RapportsContentProps) {
 
 
   return (
-    <div className="flex min-h-screen bg-[#F4F7F5] text-[#1E2E24] font-sans antialiased">
-
-      
-      {/* Contenu principal */}
-      <div className="flex-1 flex flex-col">
-
-        {/* Header */}
-        <header className="bg-white px-10 py-5 flex justify-between items-center border-b border-[#EAEFEA] shadow-[0_1px_3px_rgba(18,38,30,0.01)] h-18.75">
-          <h1 className="text-xl font-semibold text-[#1E2E24]">Rapports</h1>
-          <div className="flex items-center gap-6">
-            <div className="relative flex items-center justify-center">
-              <button onClick={() => { setShowNotifs(!showNotifs); setShowProfileMenu(false); }} className="w-9 h-9 flex items-center justify-center relative bg-transparent border-none cursor-pointer text-[#53665A] hover:text-[#0F5E3D] transition-colors duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                </svg>
-                {alerts.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-[#F97316] rounded-full border-2 border-white"></span>}
-              </button>
-              {showNotifs && (
-                <div className="absolute top-[140%] right-0 w-72 bg-white border border-stone-200/80 rounded-xl shadow-lg z-50 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-[#E2EAE5] bg-[#F4F7F5] flex justify-between items-center">
-                    <h3 className="text-sm font-semibold text-[#1E2E24]">Notifications</h3>
-                    {alerts.length > 0 && <button onClick={() => setAlerts([])} className="px-3 py-1.5 border border-stone-200 hover:bg-red-50 hover:text-red-600 text-xs font-bold rounded-lg transition-all bg-white cursor-pointer">Tout supprimer</button>}
-                  </div>
-                  <ul className="list-none p-0 m-0">
-                    {alerts.length > 0 ? alerts.map(a => (
-                      <li key={a.id} className="px-4 py-3 text-sm text-[#53665A] border-b border-[#EAEFEA] hover:bg-[#EAEFEA] cursor-pointer">
-                        <strong className="text-[#1E2E24]">{a.type}</strong> : {a.text}
-                      </li>
-                    )) : <li className="px-4 py-3 text-sm text-[#53665A] text-center italic">Aucune notification.</li>}
-                  </ul>
-                </div>
-              )}
-            </div>
-            <div className="relative">
-              <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifs(false); }}>
-                <div className="flex flex-col text-right">
-                  <span className="text-xs text-[#718579] font-medium leading-none mb-1">Admin</span>
-                  <span className="text-sm text-[#1E2E24] font-semibold leading-none">Responsable Pédagogique</span>
-                </div>
-                <div className="w-9.5 h-9.5 rounded-full bg-[#0F5E3D] text-white flex items-center justify-center text-sm font-bold border border-[#E2EAE5]">RP</div>
-              </div>
-              {showProfileMenu && (
-                <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-45 z-1000 overflow-hidden">
-                  <ul className="list-none p-0 m-0 divide-y divide-[#EAEFEA]">
-                    <LogoutButton />
-                    <li><Link href="/parametres" className="flex items-center gap-2.5 px-4 py-3 text-[#3B4B40] hover:bg-[#F4F7F5] font-medium text-sm transition-colors">Changer de compte</Link></li>
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto bg-[#F4F7F5] p-10">
+    <>
+      <main className="flex-1 overflow-y-auto bg-[#F4F7F5] p-10">
 
           {/* Sélecteur de promotion */}
           <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] p-6 mb-8">
@@ -260,8 +194,7 @@ export function RapportsContent({ classes }: RapportsContentProps) {
               <p className="font-medium">Sélectionnez une promotion pour générer le rapport</p>
             </div>
           )}
-        </main>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }
