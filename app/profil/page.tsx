@@ -98,10 +98,10 @@ export default async function ProfilPage() {
             
             {/* Email */}
             <div className={`bg-linear-to-r ${sessionThemes.cardGradient} p-6 rounded-2xl border border-[#E2EAE5]`}>
-            <span className={`text-sm font-bold ${sessionThemes.titleText} uppercase tracking-widest flex items-center gap-2 mb-4`}>
+            <h3 className={`text-sm font-bold ${sessionThemes.titleText} uppercase tracking-widest flex items-center gap-2 mb-4`}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={sessionThemes.iconColor}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                 Adresse email académique
-            </span>
+            </h3>
             <span className="text-base font-semibold text-[#1E2E24] break-all bg-white/60 px-4 py-2.5 rounded-xl border border-white/80 inline-block shadow-xs">
                 {user.mail}
             </span>
@@ -138,9 +138,9 @@ export default async function ProfilPage() {
           <div className="space-y-6">
             <div className="bg-white rounded-2xl border border-[#E2EAE5] p-6 flex flex-col justify-between h-full min-h-45">
               <div>
-                <span className="text-xs font-bold text-[#718579] uppercase tracking-widest block mb-1">
+                <h3 className={`text-sm font-bold ${sessionThemes.titleText} uppercase tracking-widest mb-4 flex items-center gap-2`}>
                   Activité globale
-                </span>
+                </h3>
                 <h4 className="text-sm font-bold text-[#1E2E24] mb-4">
                   Évaluations créées
                 </h4>
