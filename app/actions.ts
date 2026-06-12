@@ -1329,3 +1329,34 @@ export async function getSerializableUsers() {
     return [];
   }
 }
+
+export async function getSerializableLogs() {
+  try {
+    const logs = await prisma.logs.findMany({
+      // On trie par ID décroissant pour voir les logs les plus récents en haut
+      orderBy: { logsId: 'desc' }, 
+    });
+
+    // On convertit les BigInt et les Dates pour Next.js (sérialisation)
+    return logs.map(log => ({
+      logsId: log.logsId.toString(),
+      date: log.date.toISOString(), 
+      label: log.label,
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la récupération des logs :", error);
+    return [];
+  }
+}
+
+export async function deleteLogAction(logIdStr: string) {
+  try {
+    await prisma.logs.delete({
+      where: { logsId: BigInt(logIdStr) }
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error("Erreur lors de la suppression du log:", error);
+    return { success: false, error: error.message };
+  }
+}
