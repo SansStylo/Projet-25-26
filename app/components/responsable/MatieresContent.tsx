@@ -238,7 +238,7 @@ function StudentsModal({ subjectId, onClose, subjectName }: { subjectId: number;
             <div className="space-y-2">
               {sortedStudents.map((student, idx) => (
                 <div key={idx} className="p-3 bg-[#F4F7F5] rounded-lg flex justify-between items-center">
-                  <span className="font-medium text-[#1E2E24]">{student.firstname} {student.surname}</span>
+                  <span className="font-medium text-[#1E2E24]">{student.surname} {student.firstname}</span>
                   {student.grade != null && (
                     <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
                       student.grade >= 10 ? 'text-[#0F5E3D] bg-green-50' : 'text-red-600 bg-red-50'

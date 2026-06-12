@@ -129,7 +129,7 @@ export default function GroupesContent({ groupsStats }: GroupesContentProps) {
                           <XAxis dataKey="subjectName" tick={false} axisLine={false} tickLine={false} />
                           <YAxis domain={[0, 20]} tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
                           <Tooltip
-                            formatter={(value: number) => [`${value.toFixed(2)}/20`, 'Moyenne']}
+                            formatter={(value: any) => { const numValue = Number(value); if (isNaN(numValue)) return ['--', 'Moyenne']; return [`${numValue.toFixed(2)}/20`, 'Moyenne'];}}
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontSize: '12px' }}
                           />
                           <Bar dataKey="average" fill="#0F5E3D" radius={[3, 3, 0, 0]} />
@@ -230,7 +230,7 @@ function StudentsModal({ classId, onClose, groupLabel }: { classId: number; onCl
             <div className="space-y-2">
               {sortedStudents.map((student, idx) => (
                 <div key={idx} className="p-3 bg-[#F4F7F5] rounded-lg flex justify-between items-center">
-                  <span className="font-medium text-[#1E2E24]">{student.firstname} {student.surname}</span>
+                  <span className="font-medium text-[#1E2E24]">{student.surname} {student.firstname}</span>
                   {student.globalAverage != null && (
                     <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
                       student.globalAverage >= 10 ? 'text-[#0F5E3D] bg-green-50' : 'text-red-600 bg-red-50'

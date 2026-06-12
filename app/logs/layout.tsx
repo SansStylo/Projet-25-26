@@ -1,5 +1,5 @@
 /**
- * app/admin/layout.tsx
+ * app/logs/layout.tsx
  * 
  * Layout protégé pour la section admin
  * Vérifie que l'utilisateur a le rôle d'administrateur (level 2)

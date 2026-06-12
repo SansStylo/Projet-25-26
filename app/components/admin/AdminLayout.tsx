@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -20,18 +21,18 @@ interface AlertType {
   returns: string;
 }
 
-export default function EnseignantClientLayout({ children, user }: { children: React.ReactNode; user: UserProps; }) {
+export default function AdminClientLayout({ children, user }: { children: React.ReactNode; user: UserProps; }) {
   const pathname = usePathname();
   const [isHovered, setHovered] = useState(false);
   const [isSidebarReduced, setSidebarReduced] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   
-  // 2. On force l'état à accepter notre tableau d'Alertes (vide par défaut)
+  // On force l'état à accepter notre tableau d'Alertes (vide par défaut)
   const [alerts, setAlerts] = useState<AlertType[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // 3. On charge les vraies notifs de la BDD au montage du composant
+  // On charge les vraies notifs de la BDD au montage du composant
   useEffect(() => {
     async function initSessionAndNotifs() {
       // Demande au serveur "Qui est connecté avec ce cookie ?"
@@ -48,18 +49,12 @@ export default function EnseignantClientLayout({ children, user }: { children: R
     initSessionAndNotifs();
   }, []);
 
-  // 4. On change le type de l'id ici en "string"
+  // On change le type de l'id ici en "string"
   const deleteAlert = async (id: string) => {
     setAlerts(alerts.filter(alert => alert.id !== id));
     await deleteNotificationAction(id);
   };
 
-  const links = [
-    { name: 'Accueil', href: '/dashboard' },
-    { name: 'Mes Étudiants', href: '/dashboard/etudiants' },
-    { name: 'Saisie des notes', href: '/dashboard/notes' },
-    { name: 'Rapports', href: '/dashboard/rapports' },
-  ];
 
   const initiales = `${user.firstname[0] || ''}${user.surname[0] || ''}`.toUpperCase();
 
@@ -95,29 +90,39 @@ export default function EnseignantClientLayout({ children, user }: { children: R
         {/* liens de navigation A MODIFIER */}
         <ul className="list-none p-0 m-0">
           {[
-            { name:'Accueil', href: '/dashboard', icon: (
+            { name:'Accueil', href: '/admin', icon: (
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             ), extraIcon : <polyline points="9 22 9 12 15 12 15 22"></polyline>},
-            { name: 'Étudiants', href: '/dashboard/etudiants', icon: (
-              <>
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </>
+            { name: 'Classes', href: '/dashboard/notes', icon : (
+                <>
+                    <path d="M2 3h20" />
+                    <path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" />
+                    <path d="m7 21 5-5 5 5" />
+                </>
             )},
-            { name: 'Saisie des notes', href: '/dashboard/notes', icon : (
-              <>
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </>
+            {name: 'Matières', href: '/html-js', icon: (
+                <>
+                    <rect width="8" height="18" x="3" y="3" rx="1"></rect>
+                    <path d="M7 3v18"></path>
+                    <path d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z"></path>
+                </>
             )},
-            {name: 'Rapports', href: '/dashboard/rapports', icon: (
-              <>
-                <line x1="18" y1="20" x2="18" y2="10"></line>
-                <line x1="12" y1="20" x2="12" y2="4"></line>
-                <line x1="6" y1="20" x2="6" y2="14"></line>
-              </>
+            {name: "Suivi d'activité", href: '/dashboard/rapports', icon: (
+                <>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </>
+            )},
+            { name: 'Utilisateurs', href: '/gestion_compte', icon: (
+                <>
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </>
             )}
           ].map((item, index) => {
             const isActive = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
@@ -137,7 +142,7 @@ export default function EnseignantClientLayout({ children, user }: { children: R
           })}
         </ul>
 
-        {/* bas de la sidebar ; attention links à changer !!! */}
+        {/* bas de la sidebar */}
         <div className="mt-auto flex flex-col">
           <Link href="/parametres"
             className={`flex items-center gap-3 px-6 py-4 text-[#A3B8AC] font-medium transition-all duration-300 border-l-4 border-transparent hover:bg-white/5 hover:text-white ${
@@ -163,7 +168,7 @@ export default function EnseignantClientLayout({ children, user }: { children: R
               {/* HEADER */}
               <header className="bg-white px-10 py-5 flex justify-between items-center border-b border-[#EAEFEA] shadow-[0_1px_3px_rgba(18,38,30,0.01)] h-[75px] shrink-0">
                 <h1 className="text-xl font-semibold text-[#1E2E24]">
-                  Espace Enseignant
+                  Espace Administrateur
                 </h1>
                 <div className="flex items-center gap-6">
                   <div className="relative flex items-center justify-center">

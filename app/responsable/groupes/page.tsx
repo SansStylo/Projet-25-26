@@ -51,10 +51,11 @@ async function getGroupsStats(): Promise<GroupStats[]> {
             },
             _avg: { value: true },
           });
+          const avgValue = result._avg.value ? Number(result._avg.value) : 0;
           return {
             subjectId: subject.subjectId,
             subjectName: subject.label,
-            average: result._avg.value || 0,
+            average: parseFloat(avgValue.toFixed(2)),
           };
         })
       );
@@ -63,12 +64,13 @@ async function getGroupsStats(): Promise<GroupStats[]> {
         where: { student: { classId: cls.classId } },
         _avg: { value: true },
       });
-
+      const globalAvgValue = globalResult._avg.value ? Number(globalResult._avg.value) : 0;
+      
       return {
         classId: cls.classId,
         label: cls.label,
         studentCount: cls.students.length,
-        globalAverage: globalResult._avg.value || 0,
+        globalAverage: parseFloat(globalAvgValue.toFixed(2)),
         averageBySubject,
       };
     })

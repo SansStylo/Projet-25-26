@@ -34,7 +34,7 @@ async function getSubjectsStats(): Promise<MatiereStats[]> {
         select: { classId: true },
       });
 
-      const values = grades.map(g => g.value).filter(v => v !== null) as number[];
+const values = grades.map(g => Number(g.value)).filter(v => v !== null) as number[];
       const average = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
       const minGrade = values.length > 0 ? Math.min(...values) : 0;
       const maxGrade = values.length > 0 ? Math.max(...values) : 0;

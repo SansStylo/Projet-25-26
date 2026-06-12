@@ -22,7 +22,7 @@ export function LogoutButton() {
     <li>
       <button
         onClick={() => logoutAction()}
-        className="w-full flex items-center gap-2.5 px-4 py-3 text-[#3B4B40] hover:bg-[#F4F7F5] font-medium text-sm transition-colors text-left bg-transparent border-none outline-none cursor-pointer"
+        className="w-full flex items-center gap-2.5 px-4 py-3 text-stone-600 hover:text-red-600 hover:bg-red-50 font-medium text-sm transition-colors text-left bg-transparent border-none outline-none cursor-pointer"
       >
         <svg 
           xmlns="http://www.w3.org/2000/svg" 

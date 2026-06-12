@@ -11,17 +11,14 @@ import { requireExactLevel } from "@/app/lib/auth";
 import React from "react";
 import ResponsableClientLayout from "@/app/components/responsable/ResponsableLayout";
 
-export default async function ResponsableServerLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function ResponsableServerLayout({ children,}: { children: React.ReactNode;}) 
+{
   // Vérifie que l'utilisateur est responsable (level 1)
   // Redirige automatiquement vers /dashboard, /admin ou / sinon
-  await requireExactLevel(1);
+  const user = await requireExactLevel(1);
 
   return (
-    <ResponsableClientLayout>
+    <ResponsableClientLayout user={user}>
       {children}
     </ResponsableClientLayout>
   );
