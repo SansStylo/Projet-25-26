@@ -1361,25 +1361,7 @@ export async function deleteLogAction(logIdStr: string) {
   }
 }
 
-        subjectId,
-        label: subject?.label ?? "",
-        totalStudents: studentProfiles.length,
-        subjectAverage,
-        studentProfiles,
-        atRiskCount: studentProfiles.filter((s) => s.riskLevel !== "FAIBLE")
-          .length,
-        criticalCount: studentProfiles.filter(
-          (s) => s.riskLevel === "CRITIQUE"
-        ).length,
-      },
-    };
-  } catch (error) {
-    console.error("Erreur [getTeacherSubjectReportData]:", error);
-    return {
-      success: false as const,
-      error: "Erreur lors du calcul du rapport.",
-    };
-  }
+       
 
 export async function searchStudentsForTeacher(
   query: string,

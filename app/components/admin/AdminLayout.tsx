@@ -107,7 +107,7 @@ export default function AdminClientLayout({ children, user }: { children: React.
                     <path d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z"></path>
                 </>
             )},
-            {name: "Suivi d'activité", href: '/dashboard/rapports', icon: (
+            {name: "Suivi d'activité", href: '/logs', icon: (
                 <>
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
