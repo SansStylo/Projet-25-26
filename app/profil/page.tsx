@@ -91,10 +91,10 @@ export default async function ProfilPage() {
         </div>
 
         {/* Structure en 2 Colonnes */}
-        <div className={`grid gap-6 ${user?.level === 2 ? 'grid-cols-1' : 'grid-cols-3'}`}> 
+        <div className={`grid gap-6 ${user?.level === 2 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
           
           {/* Colonne de gauche */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="col-span-1 lg:col-span-2 space-y-6">
             
             {/* Email */}
             <div className={`bg-linear-to-r ${sessionThemes.cardGradient} p-6 rounded-2xl border border-[#E2EAE5]`}>
