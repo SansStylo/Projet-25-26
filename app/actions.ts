@@ -74,7 +74,7 @@ export async function getStudentsByClass(classId: number) {
   });
 
   return students.map(student => {
-    const values = student.grades.map(g => g.value);
+    const values = student.grades.map(g => Number(g.value));
     const globalAverage = values.length > 0
       ? values.reduce((a, b) => a + b, 0) / values.length
       : null;
@@ -105,7 +105,7 @@ export async function getStudentsBySubject(subjectId: number) {
   });
 
   return students.map(student => {
-    const values = student.grades.map(g => g.value);
+    const values = student.grades.map(g => Number(g.value));
     const grade = values.length > 0
       ? values.reduce((a, b) => a + b, 0) / values.length
       : null;
@@ -1603,6 +1603,7 @@ export async function getTeacherDashboardStats(teacherId: bigint) {
     };
   }
 }
+
 
 // ====== RAPPORT DE CLASSE ======
 export async function getClassReportData(classId: number) {
