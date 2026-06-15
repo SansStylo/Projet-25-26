@@ -21,7 +21,7 @@ model User {
   assessments         Assessment[]
   passwordReset       PasswordReset?
   notifications       Notification[]
-
+  managedClasses Class[] @relation("ClassResponsable")
   @@map("user")
 }
 
@@ -55,7 +55,8 @@ model Student {
 model Class {
   classId Int    @id @default(autoincrement()) @map("class_id") @db.SmallInt
   label   String @db.VarChar(100)
-
+  responsableId BigInt? @map("responsable_id")
+  responsable   User?   @relation("ClassResponsable", fields: [responsableId], references: [userId], onDelete: SetNull)
   // Relations
   students Student[]
 
