@@ -54,6 +54,13 @@ export default function EnseignantClientLayout({ children, user }: { children: R
     await deleteNotificationAction(id);
   };
 
+  const links = [
+    { name: 'Accueil', href: '/dashboard' },
+    { name: 'Mes Étudiants', href: '/dashboard/etudiants' },
+    { name: 'Saisie des notes', href: '/dashboard/notes' },
+    { name: 'Rapports', href: '/dashboard/rapports' },
+  ];
+
   const initiales = `${user.firstname[0] || ''}${user.surname[0] || ''}`.toUpperCase();
 
   return (
@@ -85,7 +92,7 @@ export default function EnseignantClientLayout({ children, user }: { children: R
           )}
         </div>
 
-        {/* liens de navigation */}
+        {/* liens de navigation A MODIFIER */}
         <ul className="list-none p-0 m-0">
           {[
             { name:'Accueil', href: '/dashboard', icon: (
@@ -130,7 +137,7 @@ export default function EnseignantClientLayout({ children, user }: { children: R
           })}
         </ul>
 
-        {/* bas de la sidebar */}
+        {/* bas de la sidebar ; attention links à changer !!! */}
         <div className="mt-auto flex flex-col">
           <Link href="/parametres"
             className={`flex items-center gap-3 px-6 py-4 text-[#A3B8AC] font-medium transition-all duration-300 border-l-4 border-transparent hover:bg-white/5 hover:text-white ${

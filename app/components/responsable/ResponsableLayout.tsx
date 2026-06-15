@@ -59,6 +59,7 @@ export default function ResponsableClientLayout({ children, user }: { children: 
   const initiales = `${user.firstname[0] || ''}${user.surname[0] || ''}`.toUpperCase();
 
 
+
   return (
     <div className="flex min-h-screen bg-[#F4F7F5] text-[#1E2E24] font-sans antialiased">
       
@@ -112,7 +113,7 @@ export default function ResponsableClientLayout({ children, user }: { children: 
             );
           })}
         </ul>
-        {/* bas de la sidebar */}
+        {/* bas de la sidebar ; attention links à changer !!! */}
         <div className="mt-auto flex flex-col">
           <Link href="/parametres"
             className={`flex items-center gap-3 px-6 py-4 text-[#A3B8AC] font-medium transition-all duration-300 border-l-4 border-transparent hover:bg-white/5 hover:text-white ${

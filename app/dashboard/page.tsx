@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/app/lib/auth";
 import { getTeacherDashboardStats } from "@/app/actions";
-import { DashboardContent } from "@/app/components/enseignant/DashboardContent";
+import { DashboardContent } from "@/app/components/dashboard/DashboardContent";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();

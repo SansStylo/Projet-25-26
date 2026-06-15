@@ -91,7 +91,7 @@ export default async function ProfilPage() {
         </div>
 
         {/* Structure en 2 Colonnes */}
-        <div className={`grid gap-6 ${user?.level === 2 ? 'grid-cols-1' : 'grid-cols-3'}`}> 
+        <div className={"grid gap-6 ${user?.level === 2 ? 'grid-cols-1' : 'grid-cols-3'}"}> 
           
           {/* Colonne de gauche */}
           <div className="lg:col-span-2 space-y-6">
@@ -134,7 +134,7 @@ export default async function ProfilPage() {
             )}
           </div>
 
-          {/* Colonne de droite masquée pour l'admin */}
+          {/* Colonne de droite masqu&e pour l'admin */}
           {user?.level !== 2 && (
             <div className="space-y-6">
               <div className="bg-white rounded-2xl border border-[#E2EAE5] p-6 flex flex-col justify-between h-full min-h-45">
