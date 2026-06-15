@@ -74,7 +74,7 @@ export async function getStudentsByClass(classId: number) {
   });
 
   return students.map(student => {
-    const values = student.grades.map(g => g.value);
+    const values = student.grades.map(g => Number(g.value));
     const globalAverage = values.length > 0
       ? values.reduce((a, b) => a + b, 0) / values.length
       : null;
@@ -105,7 +105,7 @@ export async function getStudentsBySubject(subjectId: number) {
   });
 
   return students.map(student => {
-    const values = student.grades.map(g => g.value);
+    const values = student.grades.map(g => Number(g.value));
     const grade = values.length > 0
       ? values.reduce((a, b) => a + b, 0) / values.length
       : null;
@@ -807,12 +807,11 @@ export async function getAssessmentStudents(assessmentIdStr: string) {
  */
 export async function saveGrade(assessmentIdStr: string, studentIdStr: string, value: number, feedback: string) {
   try {
-
     const userId = await getCurrentUserId();
     const assessmentId = BigInt(assessmentIdStr);
     const studentId = BigInt(studentIdStr);
 
-    // 1. Sauvegarder ou mettre à jour la note saisie
+    // 1. Sauvegarder ou mettre à jour la note saisie en base de données
     await prisma.grade.upsert({
       where: {
         assessmentId_studentId: {
@@ -832,79 +831,110 @@ export async function saveGrade(assessmentIdStr: string, studentIdStr: string, v
       }
     });
 
-    // 2. Récupérer l'évaluation courante pour connaître la matière (subjectId)
+    // 2. Récupérer l'évaluation courante pour connaître la matière actuelle (subjectId)
     const currentAssessment = await prisma.assessment.findUnique({
       where: { assessmentId: assessmentId },
       include: { subject: true }
     });
-
     if (!currentAssessment) return { success: true };
     const subjectId = currentAssessment.subjectId;
-
-    // 3. Récupérer TOUTES les notes de cet élève pour cette matière
-    const allGrades = await prisma.grade.findMany({
-      where: {
-        studentId: studentId,
-        assessment: {
-          subjectId: subjectId
-        }
-      },
+    // 3. Récupérer TOUTES les notes de cet élève (toutes matières confondues)
+    // afin de recalculer son score de risque global exact en temps réel
+    const allStudentGrades = await prisma.grade.findMany({
+      where: { studentId: studentId },
       include: {
-        assessment: true
+        assessment: {
+          include: { subject: true }
+        }
       }
     });
 
-    // 4. Calcul de la moyenne sur 20 (en utilisant "weight" et "maxGrade" de ton schéma)
-    let totalPoints = 0;
+    // 4. Calcul du Score de Risque de l'étudiant (Logique calquée sur le Dashboard)
+    let totalWeightedGrades = 0;
     let totalWeights = 0;
+    const studentSubjectMap: Record<number, { name: string; total: number; weights: number }> = {};
+    let lowGradesCount = 0;
 
-    for (const g of allGrades) {
-      const max = g.assessment.maxGrade || 20;
-      const weight = g.assessment.weight || 1;
-      
-      // Convertir le type Decimal de Prisma en Number standard JavaScript
-      const gradeValue = Number(g.value);
-      
+    allStudentGrades.forEach((grade) => {
       // On ramène la note sur 20
-      const normalizedValue = (gradeValue / max) * 20; 
-      
-      totalPoints += normalizedValue * weight;
-      totalWeights += weight;
+      const gradeOn20 = (Number(grade.value) / Number(grade.assessment.maxGrade)) * 20;
+
+      totalWeightedGrades += gradeOn20 * grade.assessment.weight;
+      totalWeights += grade.assessment.weight;
+
+      const sid = grade.assessment.subjectId;
+      if (!studentSubjectMap[sid]) {
+        studentSubjectMap[sid] = {
+          name: grade.assessment.subject.label,
+          total: 0,
+          weights: 0,
+        };
+      }
+      studentSubjectMap[sid].total += gradeOn20 * grade.assessment.weight;
+      studentSubjectMap[sid].weights += grade.assessment.weight;
+
+      if (gradeOn20 < 5) lowGradesCount++;
+    });
+
+    const globalAverage = totalWeights > 0 ? totalWeightedGrades / totalWeights : null;
+    let riskScore = 0;
+
+    // Calcul des points de risque selon la moyenne générale
+    if (globalAverage !== null) {
+      if (globalAverage < 10) {
+        riskScore += 40;
+      } else if (globalAverage < 12) {
+        riskScore += 15;
+      }
     }
 
-    const average = totalWeights > 0 ? (totalPoints / totalWeights) : null;
+    // Calcul des points de risque par matière en difficulté
+    Object.values(studentSubjectMap).forEach((data) => {
+      const avg = data.total / data.weights;
+      if (avg < 10) {
+        riskScore += 10;
+      }
+    });
 
-    // 5. Si la moyenne passe en dessous de 8, on envoie les notifications
-    if (average !== null && average < 8) {
+    // Malus pour les notes très basses (< 5/20)
+    if (lowGradesCount > 0) riskScore += Math.min(lowGradesCount * 5, 20);
+
+    // Encapsulation du score entre 0 et 100
+    riskScore = Math.min(Math.max(riskScore, 0), 100);
+
+    // 5. Déclenchement des alertes automatiques si le score de risque est >= 25 (MODÉRÉ ou CRITIQUE)
+    if (riskScore >= 25) {
       const student = await prisma.student.findUnique({
         where: { studentId: studentId }
-      });
+      }); 
 
       if (student) {
+        // Détermination du statut textuel du risque
+        let status = "MODERE";
+        if (riskScore >= 60) {
+          status = "CRITIQUE";
+        }
+
         // A. Trouver les responsables pédagogiques (level = 1)
         const responsables = await prisma.user.findMany({
           where: { level: 1 }
         });
 
-        // B. Trouver les profs assignés à cette matière
+        // B. Trouver les profs assignés à la matière où la note vient d'être ajoutée/modifiée
         const profs = await prisma.teacherAssignments.findMany({
           where: { subjectId: subjectId }
-        });
+        }); 
 
         // Utilisation d'un Set pour éviter les doublons si un prof est aussi responsable
         const targetUserIds = new Set<bigint>();
-        responsables.forEach(r => targetUserIds.add(r.userId));
+        responsables.forEach(r => targetUserIds.add(r.userId)); 
         profs.forEach(p => targetUserIds.add(p.teacherId));
 
-        const subjectLabel = currentAssessment.subject?.label || "Matière inconnue";
-        const titleNotification = `Alerte de niveau`;
-        const messageNotification = `La moyenne de ${student.firstname} ${student.surname} est de ${average.toFixed(2)}/20 en ${subjectLabel}.`;
-        
-        // J'imagine que le champ "returns" sert à rediriger l'utilisateur vers une page spécifique au clic ?
-        // Je mets une chaîne ou une route par défaut, tu pourras l'adapter
-        const linkPath = "/grades"; 
+        const titleNotification = `Alerte niveau : Risque ${status}`;
+        const messageNotification = `Le score de risque de ${student.firstname} ${student.surname} est dorénavant ${status} (${riskScore}/100).`;
+        const linkPath = "/dashboard/alertes"; // Redirection au clic sur la notif
 
-        // C. Préparer les données pour l'insertion multiple
+        // Préparation des données d'insertion de masse
         const notificationsData = Array.from(targetUserIds).map(userId => ({
           userId: userId,
           title: titleNotification,
@@ -916,13 +946,17 @@ export async function saveGrade(assessmentIdStr: string, studentIdStr: string, v
           await prisma.notification.createMany({
             data: notificationsData
           });
-          await writeLogAction(`Alert notification for ${student.firstname} ${student.surname} (Moyenne < 8) created`);
+          
+          await writeLogAction(
+            `Alert notification for ${student.firstname} ${student.surname} (Risque ${status}: ${riskScore}/100) created`
+          );
         }
       }
     }
 
+    // Log système de la modification de note classique
     await writeLogAction(
-      `Assessment of ${studentIdStr} modified, (Note: ${value}/20) for evaluation ${assessmentIdStr}`,
+      `Assessment of ${studentIdStr} modified, (Note: ${value}) for evaluation ${assessmentIdStr}`,
       userId
     );
 
@@ -1361,26 +1395,6 @@ export async function deleteLogAction(logIdStr: string) {
   }
 }
 
-        subjectId,
-        label: subject?.label ?? "",
-        totalStudents: studentProfiles.length,
-        subjectAverage,
-        studentProfiles,
-        atRiskCount: studentProfiles.filter((s) => s.riskLevel !== "FAIBLE")
-          .length,
-        criticalCount: studentProfiles.filter(
-          (s) => s.riskLevel === "CRITIQUE"
-        ).length,
-      },
-    };
-  } catch (error) {
-    console.error("Erreur [getTeacherSubjectReportData]:", error);
-    return {
-      success: false as const,
-      error: "Erreur lors du calcul du rapport.",
-    };
-  }
-
 export async function searchStudentsForTeacher(
   query: string,
   teacherId: bigint
@@ -1429,7 +1443,7 @@ export async function searchStudentsForTeacher(
     return [];
   }
 }
-
+  
 // ====== STATS TABLEAU DE BORD ENSEIGNANT ======
 export async function getTeacherDashboardStats(teacherId: bigint) {
   try {
