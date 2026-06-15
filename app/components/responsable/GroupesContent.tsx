@@ -17,7 +17,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { getStudentsByClass } from '@/app/actions';
 
 interface GroupStats {
@@ -34,9 +34,10 @@ interface GroupStats {
 
 interface GroupesContentProps {
   groupsStats: GroupStats[];
+  teacherId?: string;
 }
 
-export default function GroupesContent({ groupsStats }: GroupesContentProps) {
+export default function GroupesContent({ groupsStats, teacherId }: GroupesContentProps) {
   const [selectedGroups, setSelectedGroups] = useState<Set<number>>(
     new Set(groupsStats.map(g => g.classId))
   );
@@ -121,18 +122,26 @@ export default function GroupesContent({ groupsStats }: GroupesContentProps) {
                   </div>
                   
                   <div className="p-6">
-                    <h4 className="text-xs font-bold text-[#1E2E24] uppercase mb-2">Moyennes par matière</h4>
+                    <h4 className="text-xs font-bold text-[#1E2E24] uppercase mb-2">Notes</h4>
                     <div className="h-32 mb-4">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={group.averageBySubject} margin={{ top: 5, right: 5, left: -30, bottom: 5 }}>
+                        <BarChart data={group.averageBySubject} margin={{ top: 15, right: 5, left: -30, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2EAE5" />
-                          <XAxis dataKey="subjectName" tick={false} axisLine={false} tickLine={false} />
+                          <XAxis dataKey="subjectName" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                           <YAxis domain={[0, 20]} tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
-                          <Tooltip
-                            formatter={(value: any) => { const numValue = Number(value); if (isNaN(numValue)) return ['--', 'Moyenne']; return [`${numValue.toFixed(2)}/20`, 'Moyenne'];}}
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                          <Tooltip 
+                            content={() => null} 
+                            cursor={false}
                           />
-                          <Bar dataKey="average" fill="#0F5E3D" radius={[3, 3, 0, 0]} />
+                          <Bar dataKey="min" name="Note Min" fill="#F97316" radius={[3, 3, 0, 0]}>
+                            <LabelList dataKey="min" position="top" fontSize={10} fontWeight="bold" fill="#C2410C" formatter={(v) => Number(v).toFixed(1)} />
+                          </Bar>
+                          <Bar dataKey="average" name="Moyenne" fill="#0F5E3D" radius={[3, 3, 0, 0]}>
+                            <LabelList dataKey="average" position="top" fontSize={10} fontWeight="bold" fill="#0F5E3D" formatter={(v) => Number(v).toFixed(1)} />
+                          </Bar>
+                          <Bar dataKey="max" name="Note Max" fill="#3B82F6" radius={[3, 3, 0, 0]}>
+                            <LabelList dataKey="max" position="top" fontSize={10} fontWeight="bold" fill="#1D4ED8" formatter={(v) => Number(v).toFixed(1)} />
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -164,29 +173,47 @@ export default function GroupesContent({ groupsStats }: GroupesContentProps) {
           classId={selectedGroupForStudents}
           onClose={() => setShowStudentModal(false)}
           groupLabel={groupsStats.find(g => g.classId === selectedGroupForStudents)?.label || ''}
+          teacherId={teacherId}
         />
       )}
     </>
   );
 }
 
+interface StudentsModalProps {
+  classId: number;
+  onClose: () => void;
+  groupLabel: string;
+  teacherId?: string;
+}
+
 // Composant Modal pour afficher les étudiants
-function StudentsModal({ classId, onClose, groupLabel }: { classId: number; onClose: () => void; groupLabel: string }) {
+function StudentsModal({ classId, onClose, groupLabel, teacherId }: StudentsModalProps) {
   const [students, setStudents] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc' | null>(null);
 
   React.useEffect(() => {
-    getStudentsByClass(classId)
-      .then(data => {
+    const loadData = async () => {
+      try {
+        let data;
+        if (teacherId) {
+          // Si prof connecté
+          const { getTeacherStudentsByClass } = await import('@/app/actions');
+          data = await getTeacherStudentsByClass(classId, BigInt(teacherId));
+        } else {
+          // Sinon action respo 
+          data = await getStudentsByClass(classId);
+        }
         setStudents(data);
-        setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error('Erreur chargement étudiants:', err);
+      } finally {
         setLoading(false);
-      });
-  }, [classId]);
+      }
+    };
+    loadData();
+  }, [classId, teacherId]);
 
   const sortedStudents = React.useMemo(() => {
     if (!sortOrder) return students;
