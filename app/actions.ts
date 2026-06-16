@@ -218,7 +218,7 @@ export async function searchStudents(query: string) {
 
     const searchTerm = `%${query.toLowerCase()}%`;
     
-    const students = await prisma.student.findMany({
+    return await prisma.student.findMany({
       where: {
         OR: [
           { firstname: { contains: query, mode: 'insensitive' } },
@@ -238,85 +238,15 @@ export async function searchStudents(query: string) {
         { firstname: 'asc' },
       ],
     });
-    return students.map(student => ({
-      ...student,
-      studentId: student.studentId.toString(),
-      classId: student.classId ? Number(student.classId) : null,
-      subjectAssignments: student.subjectAssignments.map(sa => ({
-        ...sa,
-        studentId: sa.studentId.toString(),
-        subjectId: Number(sa.subjectId)
-      }))
-    }));
   } catch (error) {
     console.error("Erreur lors de la recherche d'étudiants :", error);
     return [];
   }
 }
 
-export async function searchStudentsForTeacher(
-  query: string,
-  teacherId: bigint
-) {
-  try {
-    if (!query || query.trim().length === 0) {
-      return [];
-    }
-
-    const teacherAssignments = await prisma.teacherAssignments.findMany({
-      where: { teacherId },
-      select: { subjectId: true },
-    });
-
-    const subjectIds = teacherAssignments.map((ta) => ta.subjectId);
-    if (subjectIds.length === 0) return [];
-
-    const students = await prisma.student.findMany({
-      where: {
-        AND: [
-          {
-            OR: [
-              { firstname: { contains: query, mode: "insensitive" } },
-              { surname: { contains: query, mode: "insensitive" } },
-            ],
-          },
-          {
-            subjectAssignments: {
-              some: { subjectId: { in: subjectIds } },
-            },
-          },
-        ],
-      },
-      include: {
-        class: true,
-        subjectAssignments: {
-          include: { subject: true },
-        },
-      },
-      orderBy: [{ surname: "asc" }, { firstname: "asc" }],
-    });
-    return students.map(student => ({
-      ...student,
-      studentId: student.studentId.toString(),
-      classId: student.classId ? Number(student.classId) : null,
-      subjectAssignments: student.subjectAssignments.map(sa => ({
-        ...sa,
-        studentId: sa.studentId.toString(),
-        subjectId: Number(sa.subjectId)
-      }))
-    }));
-  } catch (error) {
-    console.error(
-      "Erreur lors de la recherche filtrée d'étudiants :",
-      error
-    );
-    return [];
-  }
-}
-
 export async function getStudentDetail(studentId: bigint) {
   try {
-    const student = await prisma.student.findUnique({
+    return await prisma.student.findUnique({
       where: { studentId },
       include: {
         class: true,
@@ -336,31 +266,6 @@ export async function getStudentDetail(studentId: bigint) {
         },
       },
     });
-    if (!student) return null;
-    return {
-      ...student,
-      studentId: student.studentId.toString(),
-      classId: student.classId ? Number(student.classId) : null,
-      subjectAssignments: student.subjectAssignments.map(sa => ({
-        ...sa,
-        studentId: sa.studentId.toString(),
-        subjectId: Number(sa.subjectId)
-      })),
-      grades: student.grades.map(grade => ({
-        ...grade,
-        studentId: grade.studentId.toString(),
-        assessmentId: grade.assessmentId.toString(),
-        value: Number(grade.value),
-        assessment: {
-          ...grade.assessment,
-          assessmentId: grade.assessment.assessmentId.toString(),
-          userId: grade.assessment.userId.toString(),
-          subjectId: Number(grade.assessment.subjectId),
-          maxGrade: Number(grade.assessment.maxGrade),
-          weight: Number(grade.assessment.weight)      
-        }
-      }))
-    };
   } catch (error) {
     console.error("Erreur lors de la récupération des détails de l'étudiant :", error);
     return null;}}
@@ -1425,6 +1330,106 @@ export async function getSerializableUsers() {
   }
 }
 
+export async function getSerializableLogs() {
+  try {
+    const logs = await prisma.logs.findMany({
+      // On trie par ID décroissant pour voir les logs les plus récents en haut
+      orderBy: { logsId: 'desc' }, 
+    });
+
+    // On convertit les BigInt et les Dates pour Next.js (sérialisation)
+    return logs.map(log => ({
+      logsId: log.logsId.toString(),
+      date: log.date.toISOString(), 
+      label: log.label,
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la récupération des logs :", error);
+    return [];
+  }
+}
+
+export async function deleteLogAction(logIdStr: string) {
+  try {
+    await prisma.logs.delete({
+      where: { logsId: BigInt(logIdStr) }
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error("Erreur lors de la suppression du log:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+        subjectId,
+        label: subject?.label ?? "",
+        totalStudents: studentProfiles.length,
+        subjectAverage,
+        studentProfiles,
+        atRiskCount: studentProfiles.filter((s) => s.riskLevel !== "FAIBLE")
+          .length,
+        criticalCount: studentProfiles.filter(
+          (s) => s.riskLevel === "CRITIQUE"
+        ).length,
+      },
+    };
+  } catch (error) {
+    console.error("Erreur [getTeacherSubjectReportData]:", error);
+    return {
+      success: false as const,
+      error: "Erreur lors du calcul du rapport.",
+    };
+  }
+
+export async function searchStudentsForTeacher(
+  query: string,
+  teacherId: bigint
+) {
+  try {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+    const teacherAssignments = await prisma.teacherAssignments.findMany({
+      where: { teacherId },
+      select: { subjectId: true },
+    });
+
+    const subjectIds = teacherAssignments.map((ta) => ta.subjectId);
+    if (subjectIds.length === 0) return [];
+
+    return await prisma.student.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { firstname: { contains: query, mode: "insensitive" } },
+              { surname: { contains: query, mode: "insensitive" } },
+            ],
+          },
+          {
+            subjectAssignments: {
+              some: { subjectId: { in: subjectIds } },
+            },
+          },
+        ],
+      },
+      include: {
+        class: true,
+        subjectAssignments: {
+          include: { subject: true },
+        },
+      },
+      orderBy: [{ surname: "asc" }, { firstname: "asc" }],
+    });
+  } catch (error) {
+    console.error(
+      "Erreur lors de la recherche filtrée d'étudiants :",
+      error
+    );
+    return [];
+  }
+}
+
 // ====== STATS TABLEAU DE BORD ENSEIGNANT ======
 export async function getTeacherDashboardStats(teacherId: bigint) {
   try {
@@ -1463,7 +1468,7 @@ export async function getTeacherDashboardStats(teacherId: bigint) {
           },
         },
       },
-    });
+      });
 
     const studentMap = new Map<
       string,
@@ -1484,7 +1489,7 @@ export async function getTeacherDashboardStats(teacherId: bigint) {
       const studentSubjectMap: Record<
         number,
         { name: string; total: number; weights: number }
-      > = {};
+        > = {};
       let lowGradesCount = 0;
       const flags: string[] = [];
 
@@ -1518,7 +1523,7 @@ export async function getTeacherDashboardStats(teacherId: bigint) {
         } else if (globalAverage < 12) {
           riskScore += 15;
           flags.push(`Moyenne fragile (${globalAverage.toFixed(2)}/20)`);
-        }
+          }
       }
       Object.values(studentSubjectMap).forEach((data) => {
         const avg = data.total / data.weights;
@@ -1556,7 +1561,7 @@ export async function getTeacherDashboardStats(teacherId: bigint) {
             (
               validAverages.reduce((a, b) => a + b, 0) / validAverages.length
             ).toFixed(2)
-          )
+            )
         : null;
 
     const subjectAverages = teacherAssignments
@@ -1594,7 +1599,7 @@ export async function getTeacherDashboardStats(teacherId: bigint) {
         subjects: teacherAssignments.map((ta) => ({
           subjectId: ta.subjectId,
           name: ta.subject.label,
-        })),
+          })),
         totalStudents: students.length,
         globalAverage,
         atRiskCount: studentProfiles.filter((s) => s.riskLevel !== "FAIBLE")
@@ -1650,7 +1655,6 @@ export async function getClassReportData(classId: number) {
       > = {};
       let lowGradesCount = 0;
       const flags: string[] = [];
-
       student.grades.forEach((grade) => {
         const assessment = grade.assessment;
   const gradeOn20 = (Number(grade.value) / Number(grade.assessment.maxGrade)) * 20;
@@ -1871,7 +1875,6 @@ export async function getTeacherSubjectReportData(
         },
       },
     });
-
     const studentProfiles = subjectAssignments.map((sa) => {
       const student = sa.student;
       let totalWeighted = 0,
@@ -1890,7 +1893,6 @@ export async function getTeacherSubjectReportData(
       const average =
         totalWeights > 0 ? totalWeighted / totalWeights : null;
       let riskScore = 0;
-
       if (average !== null) {
         if (average < 10) {
           riskScore += 40;
@@ -1904,7 +1906,6 @@ export async function getTeacherSubjectReportData(
         riskScore += Math.min(lowCount * 5, 20);
         flags.push(`${lowCount} note(s) < 5/20`);
       }
-
       riskScore = Math.min(Math.max(riskScore, 0), 100);
       const riskLevel =
         riskScore >= 60 ? "CRITIQUE" : riskScore >= 25 ? "MODERE" : "FAIBLE";
@@ -1922,7 +1923,6 @@ export async function getTeacherSubjectReportData(
     });
 
     studentProfiles.sort((a, b) => b.riskScore - a.riskScore);
-
     const validAverages = studentProfiles
       .filter((s) => s.globalAverage !== null)
       .map((s) => s.globalAverage as number);
@@ -1945,7 +1945,7 @@ export async function getTeacherSubjectReportData(
         studentProfiles,
         atRiskCount: studentProfiles.filter((s) => s.riskLevel !== "FAIBLE")
           .length,
-        criticalCount: studentProfiles.filter(
+          criticalCount: studentProfiles.filter(
           (s) => s.riskLevel === "CRITIQUE"
         ).length,
       },

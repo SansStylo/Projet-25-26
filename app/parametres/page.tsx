@@ -4,7 +4,7 @@ import React from "react";
 // Import de TES layouts pour inclure la sidebar principale
 import EnseignantClientLayout from "@/app/components/enseignant/EnseignantLayout";
 import ResponsableClientLayout from "@/app/components/responsable/ResponsableLayout"; 
-//import AdminLayout from "@/app/components/admin/AdminLayout";
+import AdminClientLayout from "@/app/components/admin/AdminLayout";
 import ParametresContentWrapper from "@/app/parametres/ParametresContentWrapper";
 
 export default async function ParametresPage() {
@@ -46,9 +46,9 @@ export default async function ParametresPage() {
     return <ResponsableClientLayout user={user}>{pageContent}</ResponsableClientLayout>;
   }
   
-//   if (user.level === 2) {
-//     return <AdminCLientLayout user={user}>{pageContent}</AdminClientLayout>;
-//   }
+if (user.level === 2) {
+  return <AdminClientLayout user={user}>{pageContent}</AdminClientLayout>;
+}
 
   return <EnseignantClientLayout user={user}>{pageContent}</EnseignantClientLayout>;
 }

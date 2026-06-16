@@ -15,7 +15,7 @@ export default async function GestionComptePage() {
           <div>
             <h1 className="text-2xl font-bold text-[#12261E]">Gestion des Comptes</h1>
             <p className="text-sm text-[#53665A] mt-1">
-              Consultez, modifiez directement en ligne ou supprimez les comptes utilisateurs de l'application.
+              Consultez, modifiez ou supprimez directement les comptes utilisateurs de l'application.
             </p>
           </div>
         </div>

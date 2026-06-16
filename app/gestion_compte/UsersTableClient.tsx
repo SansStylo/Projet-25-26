@@ -149,7 +149,7 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
           </div>
           <button
             type="submit"
-            className="w-full bg-[#12261E] hover:bg-[#1e3e32] text-white font-medium py-2 px-4 rounded-lg transition duration-150 text-sm"
+            className="w-full bg-[#12261E] hover:bg-[#065f46] text-white font-medium py-2 px-4 rounded-lg transition duration-150 text-sm"
           >
             Enregistrer le compte
           </button>
