@@ -489,21 +489,21 @@ export async function logoutAction() {
 
 /**
  * Action serveur pour la page de gestion des notes
- * Récupère les matières et les tables d'évaluation, en gérant le problème des BigInt
+ * Récupère les matières et les tables d'évaluation
  */
 export async function getDropdownData() {
   try {
-    // 1. Récupère toutes les matières
+    // Récupère toutes les matières
     const subjects = await prisma.subject.findMany({
       orderBy: { label: 'asc' }
     });
 
-    // 2. Récupére toutes les tables de notes
+    // Récupère toutes les tables de notes
     const assessments = await prisma.assessment.findMany({
       orderBy: { date: 'desc' }
     });
 
-    // 3. Conversion du BigInt en String pour éviter certains crash
+    // Conversion du BigInt en String
     const formattedAssessments = assessments.map((assessment) => ({
       ...assessment,
       assessmentId: assessment.assessmentId.toString(),
@@ -518,14 +518,13 @@ export async function getDropdownData() {
 
 
 /**
- * Récupère les professeurs assignés à une matière précise,
- * ainsi que l'ensemble des groupes disponibles pour la modale.
+ * Récupère les professeurs assignés à une matière précise et l'ensemble des groupes disponibles.
  */
 export async function getModalData(subjectIdStr: string) {
   try {
     const subjectId = parseInt(subjectIdStr, 10);
 
-    // 1. Récupère les profs assignés à cette matière
+    // Récupère les professeurs assignés à cette matière
     const teacherAssignments = await prisma.teacherAssignments.findMany({
       where: { subjectId: subjectId },
       include: { teacher: true }
@@ -538,7 +537,7 @@ export async function getModalData(subjectIdStr: string) {
       prenom: ta.teacher.firstname
     }));
 
-    // 2. Récupère les groupes
+    // Récupère les groupes
     const groupsDb = await prisma.group.findMany({
       orderBy: { label: 'asc' }
     });
@@ -638,7 +637,7 @@ export async function updateAssessment(assessmentIdStr: string, data: {
       }
     });
 
-    // 1. Recherche des étudiants des groupes selectionnés
+    // Recherche des étudiants des groupes selectionnés
     const validGroupIds = data.groupIds.map(id => BigInt(id));
     const validStudents = await prisma.student.findMany({
       where: {
@@ -648,7 +647,7 @@ export async function updateAssessment(assessmentIdStr: string, data: {
     });
     const validStudentIds = validStudents.map(s => s.studentId);
 
-    // 2. Suppression de la note si l'étudiant n'est pas dans la liste
+    // Suppression de la note si l'étudiant n'est pas dans la liste
     await prisma.grade.deleteMany({
       where: {
         assessmentId: BigInt(assessmentIdStr),
@@ -703,7 +702,7 @@ export async function getAssessmentStudents(assessmentIdStr: string) {
       orderBy: { surname: 'asc' }
     });
 
-    // 2. Formatage des données
+    // Formatage des données
     return studentsDb.map(student => ({
       id: student.studentId.toString(),
       nom: student.surname,
@@ -718,7 +717,7 @@ export async function getAssessmentStudents(assessmentIdStr: string) {
 }
 
 /**
- * Ajout ou met à jour de la note et du feedback d'un étudiant
+ * Ajout ou mise à jour de la note et du feedback d'un étudiant
  */
 export async function saveGrade(assessmentIdStr: string, studentIdStr: string, value: number, feedback: string) {
   try {
@@ -967,5 +966,67 @@ export async function updatePasswordAndCleanUp(targetEmail: string, newPasswordR
   } catch (error) {
     console.error("Erreur lors de la mise à jour du mot de passe :", error);
     return { success: false, error: "Impossible d'enregistrer le nouveau mot de passe." };
+  }
+}
+
+/**
+ * Import d'un fichier CSV
+ */
+export async function saveImportedGrades(
+    assessmentIdStr: string,
+    importedData: { nom: string; prenom: string; note: number; feedback: string }[]
+) {
+  try {
+    const assessmentId = BigInt(assessmentIdStr);
+
+    // Récupération des étudiants valides dans la table de notation
+    const validStudents = await prisma.student.findMany({
+      where: {
+        studentAssignments: {
+          some: { group: { groupAssignments: { some: { assessmentId: assessmentId } } } }
+        }
+      },
+      select: { studentId: true, surname: true, firstname: true }
+    });
+
+    const unmatched: { nom: string; prenom: string }[] = [];
+    const operations = [];
+
+    // Normalisation des données
+    const normalize = (str: string) =>
+        str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/-/g, " ").trim();
+
+    // Compare les données du CSV avec la base de données
+    for (const row of importedData) {
+      const matchedStudent = validStudents.find(
+          (s) => normalize(s.surname) === normalize(row.nom) && normalize(s.firstname) === normalize(row.prenom)
+      );
+
+      // Si l'étudiant est trouvé, modification de la base de donnée
+      if (matchedStudent) {
+        operations.push(
+            prisma.grade.upsert({
+              where: {
+                assessmentId_studentId: { assessmentId, studentId: matchedStudent.studentId }
+              },
+              update: { value: row.note, feedback: row.feedback },
+              create: { assessmentId, studentId: matchedStudent.studentId, value: row.note, feedback: row.feedback }
+            })
+        );
+      } else {
+        // Etudiant non trouvé
+        unmatched.push({ nom: row.nom, prenom: row.prenom });
+      }
+    }
+
+    // Exécution des requêtes
+    if (operations.length > 0) {
+      await prisma.$transaction(operations);
+    }
+
+    return { success: true, unmatched, importedCount: operations.length };
+  } catch (error: any) {
+    console.error("Erreur saveImportedGrades:", error);
+    return { success: false, error: `Erreur Prisma: ${error.message}` };
   }
 }

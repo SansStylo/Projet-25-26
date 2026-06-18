@@ -1,16 +1,15 @@
 /**
- * app/grades/page.tsx
  * * Page de gestion des notes
- *
- */
+**/
 
 "use client";
 
-import { getDropdownData, getModalData, createAssessment, getAssessmentDetails, updateAssessment, deleteAssessment, getAssessmentStudents, saveGrade } from '@/app/actions';
-import React, { useState, useEffect } from 'react';
+import { getDropdownData, getModalData, createAssessment, getAssessmentDetails, updateAssessment, deleteAssessment, getAssessmentStudents, saveGrade, saveImportedGrades } from '@/app/actions';
+import React, { useState, useEffect, useRef } from 'react';
+import * as XLSX from 'xlsx';
 
 export default function GradesPageContent () {;
-  // Nouveaux états pour les menus déroulants
+  // États pour les menus déroulants
   const [selectedMatiere, setSelectedMatiere] = useState("");
   const [selectedTable, setSelectedTable] = useState("");
 
@@ -41,7 +40,7 @@ export default function GradesPageContent () {;
     groupIds: [] as string[]
   });
 
-  // Changement des données
+  // Chargement des données
   useEffect(() => {
     async function loadData() {
       const data = await getDropdownData();
@@ -60,10 +59,9 @@ export default function GradesPageContent () {;
 
   // Toasts
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" | "warning" } | null>(null);
-
   const showToast = (message: string, type: "error" | "success" | "warning" = "warning") => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+    setTimeout(() => setToast(null), 3000);
   };
 
   // Fonction bouton "+"
@@ -106,7 +104,7 @@ export default function GradesPageContent () {;
     loadStudents();
   }, [selectedTable]);
 
-  // État pour gérer l'affichage d'un feedback
+  // État pour la gestion d'affichage d'un feedback
   const [overflowingFeedbackId, setOverflowingFeedbackId] = useState<string | null>(null);
 
   // États pour le bloc Triage et Recherche
@@ -120,15 +118,17 @@ export default function GradesPageContent () {;
   const [showGradeModal, setShowGradeModal] = useState(false);
   const [gradeForm, setGradeForm] = useState({ studentId: "", name: "", note: "", feedback: "" });
 
-  // Calcul de la note maximale
+  // Récupération de la table de notation sélectionnée
   const activeAssessment = allAssessments.find(a => a.assessmentId === selectedTable);
+  // Calcul de la note maximale
   const maxScore = activeAssessment ? activeAssessment.maxGrade : "X";
 
 
   // Logique et recherche de tri
   const filteredAndSortedStudents = studentsList
-      .filter((student) => {
 
+      // Filtre barre de recherche
+      .filter((student) => {
         if (searchQuery.trim() === "") return true;
         const searchLower = searchQuery.toLowerCase();
         return (
@@ -138,6 +138,7 @@ export default function GradesPageContent () {;
       })
       .sort((a, b) => {
 
+        // Triage alphabétique ou numérique
         if (activeSortType === "alpha") {
           const nameA = a.nom.toLowerCase();
           const nameB = b.nom.toLowerCase();
@@ -193,11 +194,9 @@ export default function GradesPageContent () {;
   })();
 
 // Ajout table de notation
-
   const filteredGroups = dbGroups.filter(g =>
       g.label.toLowerCase().includes(groupSearchQuery.toLowerCase())
   );
-
   const handleGroupToggle = (groupId: string) => {
     setAddTableForm((prev) => {
       const isSelected = prev.groupIds.includes(groupId);
@@ -210,14 +209,16 @@ export default function GradesPageContent () {;
     });
   };
 
+  // sauvegarde d'une table de notation
   const handleSaveAssessment = async () => {
+    // Vérification des données
     if (!addTableForm.userId || !addTableForm.date || !addTableForm.label) {
       showToast("Veuillez remplir le professeur, la date et le nom de l'évaluation.", "warning");
       return;
     }
-
     setIsSaving(true);
 
+    // Formatage des données
     const payload = {
       subjectId: selectedMatiere,
       userId: addTableForm.userId,
@@ -227,35 +228,31 @@ export default function GradesPageContent () {;
       label: addTableForm.label,
       groupIds: addTableForm.groupIds
     };
-
     let result;
+
+    // Envoi au serveur
     if (editingTableId) {
       result = await updateAssessment(editingTableId, payload);
     } else {
       result = await createAssessment(payload);
     }
-
     setIsSaving(false);
-
     if (result.success) {
       showToast("Table de notation enregistrée avec succès.", "success");
       setShowAddModal(false);
 
+      // Rafraichissement et affichage de la table
       const refreshData = await getDropdownData();
       setAllAssessments(refreshData.assessments);
-
-
       if (editingTableId === selectedTable) {
         setIsStudentsLoading(true);
         const data = await getAssessmentStudents(selectedTable);
         setStudentsList(data);
         setIsStudentsLoading(false);
       }
-
       if (!editingTableId && 'assessmentId' in result && result.assessmentId) {
         setSelectedTable(result.assessmentId as string);
       }
-
     } else {
       showToast(result.error || "Une erreur est survenue.", "error");
     }
@@ -266,14 +263,11 @@ export default function GradesPageContent () {;
     setIsModalLoading(true);
     setEditingTableId(selectedTable);
     setShowAddModal(true);
-
     const data = await getModalData(selectedMatiere);
     setDbTeachers(data.teachers);
     setDbGroups(data.groups);
-
     const details = await getAssessmentDetails(selectedTable);
     if (details) setAddTableForm(details);
-
     setIsModalLoading(false);
   };
 
@@ -288,7 +282,6 @@ export default function GradesPageContent () {;
     setIsSaving(true);
     const result = await deleteAssessment(selectedTable);
     setIsSaving(false);
-
     if (result.success) {
       showToast("Évaluation supprimée.", "success");
       setShowDeleteModal(false);
@@ -322,18 +315,15 @@ export default function GradesPageContent () {;
     }
     const numericGrade = parseFloat(gradeForm.note.replace(',', '.'));
     const currentMaxScore = maxScore !== "--" ? parseFloat(String(maxScore)) : 20;
-
     if (numericGrade < 0 || numericGrade > currentMaxScore) {
       showToast(`La note doit être comprise entre 0 et ${currentMaxScore}.`, "error");
       return;
     }
-
     setIsSaving(true);
 
     // Envoi au serveur
     const result = await saveGrade(selectedTable, gradeForm.studentId, numericGrade, gradeForm.feedback);
     setIsSaving(false);
-
     if (result.success) {
       showToast("Note enregistrée.", "success");
       setShowGradeModal(false);
@@ -346,16 +336,201 @@ export default function GradesPageContent () {;
     }
   };
 
+  // Import et Export
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [unmatchedStudents, setUnmatchedStudents] = useState<{nom: string, prenom: string}[]>([]);
+  const [showUnmatchedModal, setShowUnmatchedModal] = useState(false);
+
+  // Export CSV
+  const handleExportCSV = () => {
+    if (studentsList.length === 0) {
+      showToast("Aucune donnée à exporter.", "warning");
+      return;
+    }
+
+    // Format des données
+    let csv = "Nom;Prenom;Note;Feedback;Absence\n";
+    studentsList.forEach(s => {
+      const nom = s.nom;
+      const prenom = s.prenom;
+      const note = s.note === "--" ? "" : s.note;
+      const feedback = (s.feedback || "").replace(/"/g, '""');
+      const absence = (s.feedback || "").includes("Absence non justifiée") ? "Absence non excusée" : "";
+      csv += `"${nom}";"${prenom}";"${note}";"${feedback}";"${absence}"\n`;
+    });
+
+    // Téléchargement de l'export
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Notes_${activeAssessment?.label || "Table"}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Fichier exporté avec succès.", "success");
+  };
+
+  // Import CSV
+  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    // Traitement du fichier et des données
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false }) as string[][];
+
+        // Recherche des en-têtes
+        let headerRowIndex = -1;
+        let headers: string[] = [];
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || row.length === 0) continue;
+          const stringRow = row.map(cell => String(cell || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim());
+
+          // En-têtes choisis si on trouve "nom" et "prenom" en français ou en anglais
+          const hasNom = stringRow.some(c => c.includes("nom") || c.includes("surname") || c.includes("last name") || c.includes("lastname"));
+          const hasPrenom = stringRow.some(c => c.includes("prenom") || c.includes("first name") || c.includes("firstname"));
+
+          if (hasNom && hasPrenom) {
+            headerRowIndex = i;
+            headers = stringRow;
+            break;
+          }
+        }
+
+        // En-têtes non trouvés
+        if (headerRowIndex === -1) {
+          showToast("Impossible de trouver les colonnes 'Nom' et 'Prénom' dans le fichier.", "error");
+          return;
+        }
+
+        // Indexation des en-têtes
+        const idxPrenom = headers.findIndex(h => h === "prenom" || h.includes("prenom") || h.includes("first name") || h.includes("firstname"));
+        const idxNom = headers.findIndex(h => (h === "nom" || h.includes("nom")) && !h.includes("prenom") || h.includes("surname") || h.includes("last name") || h.includes("lastname"));
+        const idxNote = headers.findIndex(h => h === "note" || h.includes("note") || h.includes("score") || h === "grade" || h.includes("moyenne") || h.includes("average"));
+        const idxAbsence = headers.findIndex(h =>
+            (h.includes("absence") || h.includes("statut") || h.includes("status") || h.includes("etat") || h.includes("state") || h.includes("motif") || h.includes("reason") || h.includes("attendance"))
+            && !h.includes("id.motif")
+            && !h.startsWith("id.")
+        );
+        const idxFeedback = headers.findIndex(h => h.includes("feedback") || h.includes("commentaire") || h.includes("appreciation"));
+
+
+        // Vérification de la validité des données
+        const parsedGrades = [];
+        const currentMaxScore = maxScore !== "--" ? parseFloat(String(maxScore)) : 20;
+        let hasError = false;
+        let errorMessage = "";
+
+        // Extraction des données
+        for (let i = headerRowIndex + 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || row.length === 0) continue;
+          const nom = String(row[idxNom] || '').trim();
+          const prenom = String(row[idxPrenom] || '').trim();
+          if (!nom || !prenom) continue;
+          let noteValue = NaN;
+          const rawAbsenceValue = row[idxAbsence];
+
+          // Transformation en minuscule
+          const absenceStatus = idxAbsence !== -1 ? String(rawAbsenceValue || '').toLowerCase() : "";
+          const noteRaw = idxNote !== -1 ? String(row[idxNote] || '').trim() : "";
+          let feedbackValue = idxFeedback !== -1 ? String(row[idxFeedback] || '').trim() : "";
+
+
+          // Detection des absences
+          const isAbsent =
+              absenceStatus.includes("absent") ||
+              absenceStatus.includes("absence non") ||
+              noteRaw.toLowerCase() === "abs" ||
+              noteRaw.toLowerCase() === "absent" ||
+              noteRaw.toLowerCase() === "nc";
+
+          // Si absence détectée, note de 0 et ajout de l'information dans le feedback
+          if (isAbsent) {
+            noteValue = 0;
+            feedbackValue = feedbackValue ? `${feedbackValue} - Absence non justifiée` : "Absence non justifiée";
+          } else if (noteRaw !== "") {
+            // Conversion de la note au bon format
+            noteValue = parseFloat(noteRaw.replace(',', '.'));
+          }
+          if (!isNaN(noteValue)) {
+
+            // Vérification de la validité de la note
+            if (noteValue < 0 || noteValue > currentMaxScore) {
+              hasError = true;
+              errorMessage = `L'étudiant ${prenom} ${nom} a une note de ${noteValue}, ce qui dépasse le maximum autorisé (${currentMaxScore}). Importation annulée.`;
+              break;
+            }
+            parsedGrades.push({ nom, prenom, note: noteValue, feedback: feedbackValue });
+          }
+        }
+
+        // Annulation de l'import si détection d'une erreur
+        if (hasError) {
+          showToast(errorMessage, "error");
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          return;
+        }
+        if (parsedGrades.length === 0) {
+          showToast("Aucune note valide n'a pu être extraite du fichier.", "warning");
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          return;
+        }
+
+        // Mise à jour de la base de donnée
+        setIsSaving(true);
+        showToast("Importation en cours...", "warning");
+        const result = await saveImportedGrades(selectedTable, parsedGrades);
+        setIsSaving(false);
+
+        // Confirmation de l'importation
+        if (result.success) {
+          showToast(`${result.importedCount} notes importées avec succès !`, "success");
+          setIsStudentsLoading(true);
+          const data = await getAssessmentStudents(selectedTable);
+          setStudentsList(data);
+          setIsStudentsLoading(false);
+
+          // Affiche les étudiants non importés du CSV
+          if (result.unmatched && result.unmatched.length > 0) {
+            setUnmatchedStudents(result.unmatched);
+            setShowUnmatchedModal(true);
+          }
+        } else {
+          showToast(result.error || "Erreur lors de l'import", "error");
+        }
+      } catch (err) {
+        showToast("Erreur lors de la lecture du fichier Excel/CSV.", "error");
+        console.error(err);
+      } finally {
+        // Reset de l'input
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    };
+
+    // Lecture Buffer
+    reader.readAsArrayBuffer(file);
+
+    // Clear de l'input
+    event.target.value = "";
+  };
+
   return (
           <main className="p-10 flex-1 flex flex-col gap-8">
             <div className="flex flex-col xl:flex-row gap-8 items-start w-full shrink-0">
 
               {/* Critère de notation */}
               <section className="flex-1 w-full bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5]">
-                <h2 className="text-xl font-bold mb-6 text-[#0F5E3D]">
-                  Critères de notation
-                </h2>
-
+                <h2 className="text-xl font-bold mb-6 text-[#0F5E3D]">Critères de notation</h2>
                 <div className="flex flex-col sm:flex-row items-end gap-6">
 
                   {/* Menu : Matière */}
@@ -433,41 +608,34 @@ export default function GradesPageContent () {;
 
               {/* Vue d'ensemble */}
               <section className="w-full xl:w-[400px] shrink-0 bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] flex flex-col justify-center">
-                <h2 className="text-xl font-bold mb-6 text-[#0F5E3D]">
-                  Vue d'ensemble
-                </h2>
-
-                <div className="flex items-center justify-between bg-[#F4F7F5] rounded-xl border border-[#E2EAE5] py-[13px] px-2 h-[74px]">
+                <h2 className="text-xl font-bold mb-6 text-[#0F5E3D]">Vue d'ensemble</h2>
+                <div className="flex items-stretch justify-between bg-[#F4F7F5] rounded-xl border border-[#E2EAE5] py-3 px-1 sm:px-2 min-h-[74px]">
 
                   {/* Moyenne */}
-                  <div className="flex flex-col items-center justify-center flex-1 border-r border-[#E2EAE5]">
-                    <span className="text-[10px] text-[#718579] font-bold uppercase tracking-wider mb-1">Moyenne</span>
-                    <span className="text-2xl font-bold text-[#1E2E24]">{stats.moyenne}</span>
+                  <div className="flex flex-col items-center justify-between flex-1 border-r border-[#E2EAE5] px-1">
+                    <span className="text-[9px] sm:text-[10px] text-[#718579] font-bold uppercase tracking-normal sm:tracking-wider mb-1 text-center">Moyenne</span>
+                    <span className="text-lg sm:text-2xl font-bold text-[#1E2E24]">{stats.moyenne}</span>
                   </div>
 
                   {/* Écart-Type */}
-                  <div className="flex flex-col items-center justify-center flex-1 border-r border-[#E2EAE5]">
-                    <span className="text-[10px] text-[#718579] font-bold uppercase tracking-wider mb-1">Écart-Type</span>
-                    <span className="text-2xl font-bold text-[#1E2E24]">{stats.ecartType}</span>
+                  <div className="flex flex-col items-center justify-between flex-1 border-r border-[#E2EAE5] px-1">
+                    <span className="text-[9px] sm:text-[10px] text-[#718579] font-bold uppercase tracking-normal sm:tracking-wider mb-1 text-center">Écart-Type</span>
+                    <span className="text-lg sm:text-2xl font-bold text-[#1E2E24]">{stats.ecartType}</span>
                   </div>
 
                   {/* Médiane */}
-                  <div className="flex flex-col items-center justify-center flex-1">
-                    <span className="text-[10px] text-[#718579] font-bold uppercase tracking-wider mb-1">Médiane</span>
-                    <span className="text-2xl font-bold text-[#1E2E24]">{stats.mediane}</span>
+                  <div className="flex flex-col items-center justify-between flex-1 px-1">
+                    <span className="text-[9px] sm:text-[10px] text-[#718579] font-bold uppercase tracking-normal sm:tracking-wider mb-1 text-center">Médiane</span>
+                    <span className="text-lg sm:text-2xl font-bold text-[#1E2E24]">{stats.mediane}</span>
                   </div>
-
                 </div>
               </section>
-
             </div>
 
             {/* Tableau des étudiants */}
             <div className="flex flex-col xl:flex-row gap-8 items-start w-full shrink-0">
-              <section className="flex-1 w-full bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] flex flex-col">
-                <h2 className="text-xl font-bold mb-6 text-[#0F5E3D]">
-                  Liste des étudiants
-                </h2>
+              <section className="flex-1 min-w-0 w-full bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] flex flex-col">
+                <h2 className="text-xl font-bold mb-6 text-[#0F5E3D]">Liste des étudiants</h2>
 
                 {selectedTable === "" ? (
 
@@ -492,120 +660,219 @@ export default function GradesPageContent () {;
                 ) : (
 
                     // État non vide
-                    <div className="w-full overflow-hidden border border-[#E2EAE5] rounded-xl">
-                      <div className="max-h-[400px] xl:max-h-[500px] overflow-y-auto overscroll-none bg-white">
-                        <table className="w-full text-left border-separate border-spacing-0">
+                    <>
+                      {/* Page ordinateur */}
+                      <div className="hidden md:block w-full overflow-hidden border border-[#E2EAE5] rounded-xl">
+                        <div className="max-h-[400px] xl:max-h-[500px] overflow-y-auto overflow-x-hidden overscroll-none bg-white">
+                          <table className="w-full table-fixed text-left border-separate border-spacing-0">
 
-                          {/* En-tête du tableau */}
-                          <thead>
-                          <tr className="text-xs uppercase tracking-wider text-[#718579]">
-                            <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-6 font-bold w-[20%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Nom</th>
-                            <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-6 font-bold w-[20%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Prénom</th>
-                            <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-6 font-bold text-center w-[15%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Note</th>
-                            <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-6 font-bold w-[35%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Feedback</th>
-                            <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-6 font-bold text-center w-[10%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Éditer</th>
-                          </tr>
-                          </thead>
+                            {/* En-tête du tableau */}
+                            <thead>
+                            <tr className="text-xs uppercase tracking-wider text-[#718579]">
+                              <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-4 font-bold w-[22%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Nom</th>
+                              <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-4 font-bold w-[20%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Prénom</th>
+                              <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-2 font-bold text-center w-[13%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Note</th>
+                              <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-4 font-bold w-[33%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Feedback</th>
+                              <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-2 font-bold text-center w-[12%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Éditer</th>
+                            </tr>
+                            </thead>
 
-                          {/* Corps du tableau */}
-                          <tbody className="divide-y divide-[#EAEFEA]">
-                          {filteredAndSortedStudents.map((student, index) => {
-                            const showTooltipDownward = index < 2;
+                            {/* Corps du tableau */}
+                            <tbody className="divide-y divide-[#EAEFEA]">
+                            {filteredAndSortedStudents.map((student, index) => {
+                              const showTooltipDownward = index < 2;
 
-                            return (
-                                <tr key={student.id} className="hover:bg-[#F9FAFA] transition-colors group">
-                                  <td className="py-4 px-6 font-semibold text-[#1E2E24]">{student.nom}</td>
-                                  <td className="py-4 px-6 text-[#53665A]">{student.prenom}</td>
-                                  <td className="py-4 px-6 text-center">
-                                    {student.note === "--" ? (
-                                        <span className="text-[#A3B8AC] font-medium">--</span>
-                                    ) : (
-                                        (() => {
-                                          const note = parseFloat(student.note);
-                                          const classAverage = parseFloat(stats.moyenne);
-                                          const max = parseFloat(maxScore as string);
+                              return (
+                                  <tr key={student.id} className="hover:bg-[#F9FAFA] transition-colors group">
+                                    <td className="py-4 px-4 font-semibold text-[#1E2E24]">{student.nom}</td>
+                                    <td className="py-4 px-4 text-[#53665A]">{student.prenom}</td>
+                                    <td className="py-4 px-2 text-center">
+                                      {student.note === "--" ? (
+                                          <span className="text-[#A3B8AC] font-medium">--</span>
+                                      ) : (
+                                          (() => {
+                                            const note = parseFloat(student.note);
+                                            const classAverage = parseFloat(stats.moyenne);
+                                            const max = parseFloat(maxScore as string);
 
-                                          // Gestion des couleurs de la note
-                                          // Vert
-                                          let bgColor = "bg-[#E6F4EE]";
-                                          let textColor = "text-[#0F5E3D]";
+                                            // Gestion des couleurs de la note
+                                            let bgColor = "bg-[#E6F4EE]";
+                                            let textColor = "text-[#0F5E3D]";
 
-                                          if (!isNaN(note) && !isNaN(max)) {
-                                            const globalAverage = max / 2;
-
-                                            // Rouge
-                                            if (note < globalAverage) {
-                                              bgColor = "bg-red-50";
-                                              textColor = "text-red-500";
-                                            // Orange
-                                            } else if (!isNaN(classAverage) && note < classAverage) {
-                                              bgColor = "bg-[#F97316]/10";
-                                              textColor = "text-[#F97316]";
+                                            if (!isNaN(note) && !isNaN(max)) {
+                                              const globalAverage = max / 2;
+                                              if (note < globalAverage) {
+                                                bgColor = "bg-red-50";
+                                                textColor = "text-red-500";
+                                              } else if (!isNaN(classAverage) && note < classAverage) {
+                                                bgColor = "bg-[#F97316]/10";
+                                                textColor = "text-[#F97316]";
+                                              }
                                             }
-                                          }
 
-                                          return (
-                                              <span className={`inline-flex items-center justify-center font-bold py-1 px-3 rounded-lg ${bgColor} ${textColor}`}>
-                                              {student.note}
-                                            </span>
-                                          );
-                                        })()
-                                    )}
-                                  </td>
+                                            return (
+                                                <span className={`inline-flex items-center justify-center font-bold py-1 px-3 rounded-lg ${bgColor} ${textColor}`}> {student.note} </span>
+                                            );
+                                          })()
+                                      )}
+                                    </td>
 
-                                  {/* Feedback  */}
-                                  <td className="py-4 px-6 relative">
-                                    {student.feedback ? (
-                                        <>
-                                          <div
-                                              className={`max-w-[200px] xl:max-w-[350px] truncate text-sm text-[#53665A] ${
-                                                  overflowingFeedbackId === student.id ? 'cursor-zoom-in' : 'cursor-default'
-                                              }`}
-                                              onMouseEnter={(e) => {
-                                                if (e.currentTarget.scrollWidth > e.currentTarget.clientWidth) {
-                                                  setOverflowingFeedbackId(student.id);
-                                                }
-                                              }}
-                                              onMouseLeave={() => setOverflowingFeedbackId(null)}
-                                          >
-                                            {student.feedback}
-                                          </div>
+                                    {/* Feedback */}
+                                    <td className="py-4 px-4 relative">
+                                      {student.feedback ? (
+                                          <>
+                                            <div
+                                                className={`w-full truncate text-sm text-[#53665A] ${
+                                                    overflowingFeedbackId === student.id ? 'cursor-zoom-in' : 'cursor-default'
+                                                }`}
+                                                onMouseEnter={(e) => {
+                                                  if (e.currentTarget.scrollWidth > e.currentTarget.clientWidth) {
+                                                    setOverflowingFeedbackId(student.id);
+                                                  }
+                                                }}
+                                                onMouseLeave={() => setOverflowingFeedbackId(null)}
+                                            >
+                                              {student.feedback}
+                                            </div>
 
-                                          {/* Bulle de feedback */}
-                                          {overflowingFeedbackId === student.id && (
-                                              <div className={`absolute left-6 z-[9999] w-max max-w-[250px] sm:max-w-[350px] p-3 bg-[#1E2E24] text-[#F4F7F5] text-xs font-medium rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.2)] whitespace-normal break-words pointer-events-none ${
-                                                  showTooltipDownward ? 'top-full mt-2' : 'bottom-full mb-2'
-                                              }`}>
-                                                {student.feedback}
-                                                <div className={`absolute left-6 w-3 h-3 bg-[#1E2E24] rotate-45 ${
-                                                    showTooltipDownward ? 'bottom-full -mb-1.5' : 'top-full -mt-1.5'
-                                                }`}></div>
-                                              </div>
-                                          )}
-                                        </>
-                                    ) : (
-                                        <span className="text-sm text-[#A3B8AC] italic">Aucun feedback</span>
-                                    )}
-                                  </td>
-                                  <td className="py-4 px-6 text-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleOpenGradeModal(student)}
-                                        title="Modifier la note de cet étudiant"
-                                        className="text-[#A3B8AC] hover:text-[#10B981] hover:bg-[#E6F4EE] transition-all p-2 rounded-lg cursor-pointer flex mx-auto">
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                      </svg>
-                                    </button>
-                                  </td>
-                                </tr>
-                            );
-                          })}
-                          </tbody>
-                        </table>
+                                            {/* Bulle du feedback */}
+                                            {overflowingFeedbackId === student.id && (
+                                                <div className={`absolute left-4 z-[9999] w-max max-w-[250px] sm:max-w-[350px] p-3 bg-[#1E2E24] text-[#F4F7F5] text-xs font-medium rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.2)] whitespace-normal break-words pointer-events-none ${
+                                                    showTooltipDownward ? 'top-full mt-2' : 'bottom-full mb-2'
+                                                }`}>
+                                                  {student.feedback}
+                                                  <div className={`absolute left-4 w-3 h-3 bg-[#1E2E24] rotate-45 ${
+                                                      showTooltipDownward ? 'bottom-full -mb-1.5' : 'top-full -mt-1.5'
+                                                  }`}></div>
+                                                </div>
+                                            )}
+                                          </>
+                                      ) : (
+                                          <span className="text-sm text-[#A3B8AC] italic">Aucun feedback</span>
+                                      )}
+                                    </td>
+                                    <td className="py-4 px-2 text-center">
+                                      <button
+                                          type="button"
+                                          onClick={() => handleOpenGradeModal(student)}
+                                          title="Modifier la note de cet étudiant"
+                                          className="text-[#A3B8AC] hover:text-[#10B981] hover:bg-[#E6F4EE] transition-all p-2 rounded-lg cursor-pointer flex mx-auto">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                      </button>
+                                    </td>
+                                  </tr>
+                              );
+                            })}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                    </div>
+
+                      {/* Page mobile */}
+                      <div className="flex md:hidden flex-col gap-5">
+                        {filteredAndSortedStudents.map((student, index) => {
+                          const showTooltipDownward = index < 2;
+                          const note = parseFloat(student.note);
+                          const max = parseFloat(maxScore as string);
+                          const classAverage = parseFloat(stats.moyenne);
+
+                          // Gestion des couleurs de la note
+                          let bgColor = "bg-[#E6F4EE]";
+                          let textColor = "text-[#0F5E3D]";
+
+                          if (!isNaN(note) && !isNaN(max)) {
+                            const globalAverage = max / 2;
+                            if (note < globalAverage) {
+                              bgColor = "bg-red-50";
+                              textColor = "text-red-500";
+                            } else if (!isNaN(classAverage) && note < classAverage) {
+                              bgColor = "bg-[#F97316]/10";
+                              textColor = "text-[#F97316]";
+                            }
+                          }
+
+                          return (
+                              <div key={student.id} className="bg-[#F9FAFA] border border-[#EAEFEA] rounded-2xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-lg transition-shadow duration-300">
+
+                                {/* Header */}
+                                <div className="flex items-center justify-between gap-4">
+                                  <div className="flex flex-col flex-1 min-w-0">
+                                    <span className="text-base tracking-tight font-bold text-[#1E2E24] uppercase leading-tight truncate block w-full">{student.nom}</span>
+                                    <span className="text-sm text-[#53665A] leading-normal truncate block w-full">{student.prenom}</span>
+                                  </div>
+                                  <button
+                                      type="button"
+                                      onClick={() => handleOpenGradeModal(student)}
+                                      title="Modifier la note de cet étudiant"
+                                      className="text-[#A3B8AC] hover:text-[#10B981] hover:bg-[#E6F4EE] transition-all p-3 rounded-xl cursor-pointer shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                  </button>
+                                </div>
+                                <hr className="border-[#EAEFEA]" />
+
+                                {/* Section Note */}
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-sm font-semibold text-[#1E2E24]">Note actuelle</span>
+                                  {student.note === "--" ? (
+                                      <span className="text-sm font-medium text-[#A3B8AC]">--</span>
+                                  ) : (
+                                      <span className={`inline-flex items-center justify-center font-bold text-lg py-1 px-4 rounded-lg ${bgColor} ${textColor}`}>{student.note}</span>
+                                  )}
+                                </div>
+
+                                {/* Section Feedback */}
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-sm font-semibold text-[#1E2E24]">Dernier feedback</span>
+                                  {student.feedback ? (
+
+                                      <div className="relative bg-white border border-[#E2EAE5] px-4 py-3 rounded-xl shadow-inner-sm">
+                                        <div
+                                            className={`w-full truncate text-sm text-[#53665A] ${
+                                                overflowingFeedbackId === student.id ? 'cursor-zoom-in' : 'cursor-pointer'
+                                            }`}
+                                            onClick={(e) => {
+                                              if (e.currentTarget.scrollWidth > e.currentTarget.clientWidth) {
+                                                setOverflowingFeedbackId(overflowingFeedbackId === student.id ? null : student.id);
+                                              }
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              if (e.currentTarget.scrollWidth > e.currentTarget.clientWidth) {
+                                                setOverflowingFeedbackId(student.id);
+                                              }
+                                            }}
+                                            onMouseLeave={() => setOverflowingFeedbackId(null)}
+                                        >
+                                          {student.feedback}
+                                        </div>
+
+                                        {/* Bulle de feedback */}
+                                        {overflowingFeedbackId === student.id && (
+                                            <div className={`absolute left-0 z-[9999] w-full p-3 bg-[#1E2E24] text-[#F4F7F5] text-xs font-medium rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.2)] whitespace-normal break-words pointer-events-none ${
+                                                showTooltipDownward ? 'top-full mt-2' : 'bottom-full mb-2'
+                                            }`}>
+                                              {student.feedback}
+                                              <div className={`absolute left-6 w-3 h-3 bg-[#1E2E24] rotate-45 ${
+                                                  showTooltipDownward ? 'bottom-full -mb-1.5' : 'top-full -mt-1.5'
+                                              }`}></div>
+                                            </div>
+                                        )}
+                                      </div>
+
+                                  ) : (
+                                      <span className="text-sm text-[#A3B8AC] italic leading-relaxed bg-white border border-[#E2EAE5] px-4 py-3 rounded-xl shadow-inner-sm">Aucun feedback</span>
+                                  )}
+                                </div>
+                              </div>
+                          );
+                        })}
+                      </div>
+                    </>
 
                 )}
               </section>
@@ -613,13 +880,12 @@ export default function GradesPageContent () {;
               {/* Triage */}
               <div className="w-full xl:w-[400px] shrink-0 flex flex-col gap-8">
                 <section className="w-full shrink-0 bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] flex flex-col min-h-[349px] xl:h-[349px]">
-                  <h2 className="text-xl font-bold mb-10 text-[#0F5E3D] shrink-0">
-                    Trier
-                  </h2>
+                  <h2 className="text-xl font-bold mb-10 text-[#0F5E3D] shrink-0">Trier</h2>
                   <div className="flex flex-col flex-1 gap-9">
 
                     {/* Boutons */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
+
                       {/* Alphabétique */}
                       <button
                           type="button"
@@ -627,16 +893,16 @@ export default function GradesPageContent () {;
                             setAlphaSort(alphaSort === "A-Z" ? "Z-A" : "A-Z");
                             setActiveSortType("alpha");
                           }}
-                          className={`flex-1 flex items-center justify-center gap-2 border font-bold py-3 px-4 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 group ${
+                          className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 border font-bold py-3 px-2 sm:px-4 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 group ${
                               activeSortType === "alpha"
                                   ? "bg-[#E6F4EE] border-[#10B981] text-[#0F5E3D]"
                                   : "bg-[#F4F7F5] border-[#E2EAE5] text-[#1E2E24]"
                           }`}
                       >
-                        <span>{alphaSort}</span>
+                        <span className="whitespace-nowrap text-sm sm:text-base">{alphaSort}</span>
                         <svg
                             xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
-                            className={`transition-transform duration-300 ${alphaSort === "Z-A" ? "rotate-180" : ""}`}
+                            className={`shrink-0 transition-transform duration-300 ${alphaSort === "Z-A" ? "rotate-180" : ""}`}
                         >
                           <path d="M12 5v14"></path>
                           <path d="m19 12-7 7-7-7"></path>
@@ -650,16 +916,16 @@ export default function GradesPageContent () {;
                             setScoreSort(scoreSort === "0-X" ? "X-0" : "0-X");
                             setActiveSortType("score");
                           }}
-                          className={`flex-1 flex items-center justify-center gap-2 border font-bold py-3 px-4 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 group ${
+                          className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 border font-bold py-3 px-2 sm:px-4 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 group ${
                               activeSortType === "score"
                                   ? "bg-[#E6F4EE] border-[#10B981] text-[#0F5E3D]"
                                   : "bg-[#F4F7F5] border-[#E2EAE5] text-[#1E2E24]"
                           }`}
                       >
-                        <span>{scoreSort === "0-X" ? `0 - ${maxScore}` : `${maxScore} - 0`}</span>
+                        <span className="whitespace-nowrap text-sm sm:text-base">{scoreSort === "0-X" ? `0 - ${maxScore}` : `${maxScore} - 0`}</span>
                         <svg
                             xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
-                            className={`transition-transform duration-300 ${scoreSort === "X-0" ? "rotate-180" : ""}`}
+                            className={`shrink-0 transition-transform duration-300 ${scoreSort === "X-0" ? "rotate-180" : ""}`}
                         >
                           <path d="M12 5v14"></path>
                           <path d="m19 12-7 7-7-7"></path>
@@ -697,42 +963,51 @@ export default function GradesPageContent () {;
                 {/* Gestion de la table */}
                 {selectedTable !== "" && (
                     <section className="w-full shrink-0 bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] flex flex-col animate-fadeIn">
-                      <h2 className="text-xl font-bold mb-6 text-[#0F5E3D]">
-                        Gestion de la table
-                      </h2>
+                      <h2 className="text-xl font-bold mb-6 text-[#0F5E3D]">Gestion de la table</h2>
+                      <div className="flex items-center gap-2 sm:gap-4 w-full">
 
-                      {/* Import / Export */}
-                      <div className="flex items-center gap-4 mb-5">
+                        {/* Import */}
+                        <input
+                            id="csv-upload"
+                            type="file"
+                            accept=".csv, .xlsx"
+                            className="hidden"
+                            onChange={handleImportCSV}
+                        />
+
+                        {/* Bouton */}
                         <button
                             type="button"
-                            className="flex-1 flex items-center justify-center gap-2 bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] font-bold py-3 px-4 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 group"
+                            onClick={() => document.getElementById('csv-upload')?.click()}
+                            className="flex-1 flex items-center justify-center gap-2 sm:gap-3 bg-[#F4F7F5] border border-[#E2EAE5] py-3 px-2 sm:px-4 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 min-w-0 group"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#1E2E24] group-hover:text-white">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="17 8 12 3 7 8"></polyline>
                             <line x1="12" y1="3" x2="12" y2="15"></line>
                           </svg>
-                          <span className="text-sm">Import CSV</span>
+                          <span className="font-bold text-[#1E2E24] group-hover:text-white text-sm sm:text-base whitespace-nowrap"> Import <span className="hidden sm:inline">CSV</span></span>
                         </button>
 
+                        {/* Bouton Export */}
                         <button
                             type="button"
-                            className="flex-1 flex items-center justify-center gap-2 bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] font-bold py-3 px-4 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 group"
+                            onClick={handleExportCSV}
+                            className="flex-1 flex items-center justify-center gap-2 sm:gap-3 bg-[#F4F7F5] border border-[#E2EAE5] py-3 px-2 sm:px-4 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 min-w-0"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#1E2E24] group-hover:text-white">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="7 10 12 15 17 10"></polyline>
                             <line x1="12" y1="15" x2="12" y2="3"></line>
                           </svg>
-                          <span className="text-sm">Export CSV</span>
+                          <span className="font-bold text-[#1E2E24] group-hover:text-white text-sm sm:text-base whitespace-nowrap">Export <span className="hidden sm:inline">CSV</span></span>
                         </button>
+
                       </div>
 
                       {/* Paramètres de la table */}
                       <div className="flex items-center justify-between pt-4 border-t border-[#EAEFEA]">
-                      <span className="text-xs text-[#A3B8AC] font-medium uppercase tracking-wider">
-                        Modification
-                      </span>
+                      <span className="text-xs text-[#A3B8AC] font-medium uppercase tracking-wider">Modification </span>
 
                         <div className="flex items-center gap-1">
                           <button
@@ -766,9 +1041,9 @@ export default function GradesPageContent () {;
                 )}
               </div>
             </div>
-          
-  
-           {showAddModal && (
+
+            {/* Modale : Création / Modification d'une Table de Notation */}
+            {showAddModal && (
               <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
                 <div
                     className="absolute inset-0 bg-[#12261E]/40 backdrop-blur-sm transition-opacity cursor-pointer"
@@ -777,6 +1052,7 @@ export default function GradesPageContent () {;
 
                 <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-2xl relative z-10 animate-fadeIn flex flex-col overflow-hidden">
 
+                  {/* En-tête */}
                   <div className="px-6 py-5 border-b border-[#E2EAE5] flex justify-between items-center bg-[#F4F7F5]">
                     <h3 className="text-lg font-bold text-[#0F5E3D] flex items-center gap-2">
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -793,8 +1069,8 @@ export default function GradesPageContent () {;
                     </button>
                   </div>
 
+                  {/* Corps */}
                   <div className="p-6 flex flex-col gap-6 relative">
-
                     {isModalLoading && (
                         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center rounded-b-2xl">
                           <div className="w-8 h-8 border-4 border-[#10B981] border-t-transparent rounded-full animate-spin mb-3"></div>
@@ -803,12 +1079,16 @@ export default function GradesPageContent () {;
                     )}
 
                     <div className="flex flex-col sm:flex-row gap-5">
+
+                      {/* Matière */}
                       <div className="flex-1">
                         <label className="block text-sm font-semibold text-[#1E2E24] mb-2">Matière</label>
                         <select disabled className="w-full bg-[#EAEFEA] border border-[#E2EAE5] text-[#718579] text-sm rounded-xl px-4 py-2.5 cursor-not-allowed font-medium">
                           <option>{subjects.find(s => s.subjectId.toString() === selectedMatiere)?.label || "Matière inconnue"}</option>
                         </select>
                       </div>
+
+                      {/* Professeur */}
                       <div className="flex-1">
                         <label htmlFor="teacher" className="block text-sm font-semibold text-[#1E2E24] mb-2">Professeur</label>
                         <select
@@ -826,6 +1106,8 @@ export default function GradesPageContent () {;
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-5">
+
+                      {/* Note maximale */}
                       <div className="w-full sm:w-1/3">
                         <label htmlFor="maxGrade" className="block text-sm font-semibold text-[#1E2E24] mb-2">Noté sur</label>
                         <input
@@ -835,6 +1117,8 @@ export default function GradesPageContent () {;
                             className="w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors"
                         />
                       </div>
+
+                      {/* Coefficient */}
                       <div className="w-full sm:w-1/3">
                         <label htmlFor="weight" className="block text-sm font-semibold text-[#1E2E24] mb-2">Coefficient</label>
                         <input
@@ -844,6 +1128,8 @@ export default function GradesPageContent () {;
                             className="w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors"
                         />
                       </div>
+
+                      {/* Date */}
                       <div className="w-full sm:w-1/3">
                         <label htmlFor="date" className="block text-sm font-semibold text-[#1E2E24] mb-2">Date</label>
                         <input
@@ -855,6 +1141,7 @@ export default function GradesPageContent () {;
                       </div>
                     </div>
 
+                    {/* Nom de la table */}
                     <div>
                       <label htmlFor="label" className="block text-sm font-semibold text-[#1E2E24] mb-2">Nom de l'évaluation</label>
                       <input
@@ -865,7 +1152,7 @@ export default function GradesPageContent () {;
                       />
                     </div>
 
-                    {/* Groupes */}
+                    {/* Gestion des groupes */}
                     <div>
                       <label className="block text-sm font-semibold text-[#1E2E24] mb-3">Groupes évalués</label>
                       <div className="flex flex-wrap items-center gap-2 p-3 bg-[#F4F7F5] border border-[#E2EAE5] rounded-xl min-h-[52px]">
@@ -874,11 +1161,11 @@ export default function GradesPageContent () {;
                           if (!group) return null;
                           return (
                               <span key={id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E6F4EE] text-[#0F5E3D] text-sm font-medium rounded-lg border border-[#10B981]/30 transition-all group">
-                          {group.label}
+                                {group.label}
                                 <button type="button" onClick={() => handleGroupToggle(id)} title="Retirer ce groupe" className="text-[#0F5E3D]/40 hover:text-red-500 hover:bg-red-100 rounded-full p-0.5 transition-colors focus:outline-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                          </button>
-                        </span>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                              </span>
                           );
                         })}
                         <button type="button" onClick={() => setShowGroupSelector(true)} title="Ajouter un groupe" className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-dashed border-[#A3B8AC] text-[#A3B8AC] hover:text-[#10B981] hover:border-[#10B981] hover:bg-white transition-all focus:outline-none">
@@ -889,6 +1176,7 @@ export default function GradesPageContent () {;
                     </div>
                   </div>
 
+                  {/* Boutons */}
                   <div className="px-6 py-5 border-t border-[#E2EAE5] flex justify-end gap-3 bg-[#F4F7F5]/50">
                     <button
                         type="button" onClick={() => setShowAddModal(false)}
@@ -898,7 +1186,7 @@ export default function GradesPageContent () {;
                     </button>
                     <button
                         type="button" onClick={handleSaveAssessment} disabled={isSaving}
-                        className="px-5 py-2.5 text-sm font-bold text-white bg-[#10B981] hover:bg-[#0EA5E9] shadow-md shadow-[#10B981]/20 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="px-5 py-2.5 text-sm font-bold text-white bg-[#10B981] hover:bg-[#0A4A31] shadow-md shadow-[#10B981]/20 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                       {isSaving ? "Enregistrement..." : "Enregistrer"}
                     </button>
@@ -918,6 +1206,7 @@ export default function GradesPageContent () {;
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
                   </div>
+                  {/* Barre de recherche */}
                   <div className="p-3 border-b border-[#EAEFEA]">
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -930,6 +1219,8 @@ export default function GradesPageContent () {;
                       />
                     </div>
                   </div>
+
+                  {/* Corps */}
                   <div className="max-h-[250px] overflow-y-auto p-2">
                     {filteredGroups.length > 0 ? (
                         filteredGroups.map((group) => (
@@ -938,17 +1229,17 @@ export default function GradesPageContent () {;
                                   type="checkbox" className="w-4 h-4 text-[#10B981] border-gray-300 rounded focus:ring-[#10B981]"
                                   checked={addTableForm.groupIds.includes(group.id)} onChange={() => handleGroupToggle(group.id)}
                               />
-                              <span className={`text-sm ${addTableForm.groupIds.includes(group.id) ? 'text-[#0F5E3D] font-semibold' : 'text-[#53665A]'}`}>
-                        {group.label}
-                      </span>
+                              <span className={`text-sm ${addTableForm.groupIds.includes(group.id) ? 'text-[#0F5E3D] font-semibold' : 'text-[#53665A]'}`}>{group.label}</span>
                             </label>
                         ))
                     ) : (
                         <div className="text-center py-6 text-sm text-[#A3B8AC] italic">Aucun groupe trouvé.</div>
                     )}
                   </div>
+
+                  {/* Bouton */}
                   <div className="p-4 border-t border-[#E2EAE5] bg-[#F4F7F5]/50 flex justify-end">
-                    <button type="button" onClick={() => { setShowGroupSelector(false); setGroupSearchQuery(""); }} className="px-5 py-2 bg-[#10B981] text-white text-sm font-bold rounded-lg hover:bg-[#0EA5E9] shadow-md shadow-[#10B981]/20 transition-all">
+                    <button type="button" onClick={() => { setShowGroupSelector(false); setGroupSearchQuery(""); }} className="px-5 py-2 bg-[#10B981] text-white text-sm font-bold rounded-lg hover:bg-[#0A4A31] shadow-md shadow-[#10B981]/20 transition-all">
                       Valider
                     </button>
                   </div>
@@ -962,6 +1253,7 @@ export default function GradesPageContent () {;
               <div className="absolute inset-0 bg-[#12261E]/40 backdrop-blur-sm" onClick={() => setShowGradeModal(false)}></div>
               <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 animate-fadeIn flex flex-col overflow-hidden border border-[#E2EAE5]">
 
+                {/* En-tête */}
                 <div className="px-6 py-4 border-b border-[#E2EAE5] bg-[#F4F7F5] flex justify-between items-center">
                   <h4 className="font-bold text-[#1E2E24]">Noter {gradeForm.name}</h4>
                   <button onClick={() => setShowGradeModal(false)} className="text-[#A3B8AC] hover:text-[#F97316]">
@@ -969,7 +1261,10 @@ export default function GradesPageContent () {;
                   </button>
                 </div>
 
+                {/* Corps */}
                 <div className="p-6 flex flex-col gap-4">
+
+                  {/* Note */}
                   <div>
                     <label className="block text-sm font-semibold text-[#1E2E24] mb-2">Note (sur {maxScore})</label>
                     <input
@@ -983,6 +1278,8 @@ export default function GradesPageContent () {;
                         placeholder="Saisir la note..."
                     />
                   </div>
+
+                  {/* Feedback */}
                   <div>
                     <label className="block text-sm font-semibold text-[#1E2E24] mb-2">Feedback (Optionnel)</label>
                     <textarea
@@ -995,11 +1292,12 @@ export default function GradesPageContent () {;
                   </div>
                 </div>
 
+                {/* Boutons */}
                 <div className="px-6 py-4 bg-[#F4F7F5]/50 border-t border-[#E2EAE5] flex justify-end gap-3">
                   <button type="button" onClick={() => setShowGradeModal(false)} className="px-5 py-2 text-sm font-bold text-[#53665A] bg-white border border-[#E2EAE5] hover:bg-[#EAEFEA] rounded-xl">
                     Annuler
                   </button>
-                  <button type="button" onClick={handleSaveGrade} disabled={isSaving} className="px-5 py-2 text-sm font-bold text-white bg-[#10B981] hover:bg-[#0EA5E9] shadow-md shadow-[#10B981]/20 rounded-xl disabled:opacity-70">
+                  <button type="button" onClick={handleSaveGrade} disabled={isSaving} className="px-5 py-2 text-sm font-bold text-white bg-[#10B981] hover:bg-[#0A4A31] shadow-md shadow-[#10B981]/20 rounded-xl disabled:opacity-70">
                     {isSaving ? "Enregistrement..." : "Enregistrer"}
                   </button>
                 </div>
@@ -1017,6 +1315,8 @@ export default function GradesPageContent () {;
               ></div>
 
               <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-md relative z-10 animate-fadeIn flex flex-col overflow-hidden border border-[#E2EAE5]">
+
+                {/* Corps */}
                 <div className="p-6 flex flex-col items-center text-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0 border border-red-100">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1035,6 +1335,7 @@ export default function GradesPageContent () {;
                   </div>
                 </div>
 
+                {/* Boutons */}
                 <div className="px-6 py-4 bg-[#F4F7F5]/50 border-t border-[#E2EAE5] flex items-center justify-stretch gap-3">
                   <button
                       type="button"
@@ -1052,10 +1353,60 @@ export default function GradesPageContent () {;
                     {isSaving ? "Suppression..." : "Supprimer"}
                   </button>
                 </div>
-
               </div>
             </div>
         )}
+
+            {/* Modale : Non importation des étudiants CSV */}
+            {showUnmatchedModal && (
+                <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4">
+                  <div className="absolute inset-0 bg-[#12261E]/40 backdrop-blur-sm transition-opacity" onClick={() => setShowUnmatchedModal(false)}></div>
+
+                  <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-lg relative z-10 animate-fadeIn flex flex-col overflow-hidden border border-[#E2EAE5]">
+
+                    {/* En-tête */}
+                    <div className="px-6 py-5 border-b border-[#F97316]/20 bg-[#F97316]/10 flex justify-between items-center">
+                      <h3 className="text-lg font-bold text-[#F97316] flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        Étudiants non importés ({unmatchedStudents.length})
+                      </h3>
+                      <button onClick={() => setShowUnmatchedModal(false)} className="text-[#F97316] hover:text-red-500 transition-colors bg-white rounded-md p-1 shadow-sm border border-[#F97316]/20">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                      </button>
+                    </div>
+
+                    {/* Corps */}
+                    <div className="p-6">
+                      <p className="text-sm text-[#53665A] mb-4 leading-relaxed">
+                        Les étudiants suivants n'ont pas pu être associés à cette table de notes car ils n'en font pas parti.
+                      </p>
+
+                      <div className="max-h-[250px] overflow-y-auto bg-[#F4F7F5] rounded-xl border border-[#E2EAE5] p-2">
+                        <ul className="divide-y divide-[#EAEFEA]">
+                          {unmatchedStudents.map((student, index) => (
+                              <li key={index} className="px-4 py-2.5 text-sm font-semibold text-[#1E2E24] flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#F97316]"></span>
+                                {student.nom} {student.prenom}
+                              </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
+
+                    {/* Bouton */}
+                    <div className="px-6 py-4 bg-[#F4F7F5]/50 border-t border-[#E2EAE5] flex justify-end">
+                      <button
+                          type="button"
+                          onClick={() => setShowUnmatchedModal(false)}
+                          className="px-6 py-2.5 text-sm font-bold text-white bg-[#F97316] hover:bg-[#EA580C] shadow-md shadow-[#F97316]/20 rounded-xl transition-colors"
+                      >
+                        J'ai compris
+                      </button>
+                    </div>
+                  </div>
+                </div>
+            )}
 
         {/* Toast */}
         {toast && (
