@@ -171,13 +171,17 @@ export async function getClass() {
   }
 }
 
+
+
 export async function addDebugSubject(label: string) {
   try {
-    return await prisma.subject.create({
+    const newSubject = await prisma.subject.create({
       data: { label },
     });
+    await writeLogAction(`Matière ${newSubject.subjectId} (${label}) créée`);
+    return newSubject;
   } catch (error) {
-    console.error("Erreur lors de la création de la matière de debug :", error);
+    console.error("Erreur lors de la création de la matière :", error);
     throw new Error("Impossible de créer la matière");
   }
 }
@@ -268,7 +272,10 @@ export async function getStudentDetail(studentId: bigint) {
     });
   } catch (error) {
     console.error("Erreur lors de la récupération des détails de l'étudiant :", error);
-    return null;}}
+    return null;
+}}
+
+
 export async function addGroup(label: string, studentIds: bigint[]) {
   try {
     // 1. On crée d'abord le groupe en BDD
@@ -289,7 +296,7 @@ export async function addGroup(label: string, studentIds: bigint[]) {
       });
     }
 
-    writeLogAction(`Group ${newGroup.groupId} created`, userId);
+    writeLogAction(`Groupe ${newGroup.groupId} créé`, userId);
     return newGroup;
   } catch (error) {
     console.error("Erreur lors de la création du groupe et de ses assignations :", error);
@@ -319,11 +326,11 @@ export async function addClass(label: string, studentIds: bigint[]) {
       });
     }
 
-    writeLogAction(`Class ${newClass.classId} created`, userId);
+    writeLogAction(`Promotion ${newClass.classId} créée`, userId);
     return newClass;
   } catch (error) {
-    console.error("Erreur lors de la création de la classe et de l'assignation des étudiants :", error);
-    throw new Error("Impossible de créer la classe.");
+    console.error("Erreur lors de la création de la promotion et de l'assignation des étudiants :", error);
+    throw new Error("Impossible de créer la promotion.");
   }
 }
 
@@ -422,7 +429,7 @@ export async function deleteGroup(groupId: bigint) {
       prisma.studentAssignments.deleteMany({ where: { groupId } }),
       prisma.group.delete({ where: { groupId } }),
     ]);
-    writeLogAction(`Group ${groupId} deleted`, userId);
+    writeLogAction(`Groupe ${groupId} supprimé`, userId);
     return result;
   } catch (error) {
     console.error("Erreur suppression groupe:", error);
@@ -441,11 +448,11 @@ export async function deleteClass(classId: number) {
       }),
       prisma.class.delete({ where: { classId } }),
     ]);
-    writeLogAction(`Class ${classId} deleted`, userId);
+    writeLogAction(`Promotion ${classId} supprimée`, userId);
     return result;
   } catch (error) {
-    console.error("Erreur suppression classe:", error);
-    throw new Error("Impossible de supprimer la classe.");
+    console.error("Erreur suppression promotion:", error);
+    throw new Error("Impossible de supprimer la promotion.");
   }
 }
 
@@ -455,7 +462,7 @@ export async function renameGroup(groupId: bigint, newLabel: string) {
     where: { groupId },
     data: { label: newLabel },
   });
-  writeLogAction(`Group ${groupId} renamed`, userId);
+  writeLogAction(`Groupe ${groupId} renommé`, userId);
   return result;
 }
 
@@ -465,8 +472,61 @@ export async function renameClass(classId: number, newLabel: string) {
     where: { classId },
     data: { label: newLabel },
   });
-  writeLogAction(`Class ${classId} renamed`, userId);
+  writeLogAction(`Promotion ${classId} renommée`, userId);
   return result;
+}
+
+
+export async function updateSubject(subjectId: number, newLabel: string) {
+  try {
+    const currentSubject = await prisma.subject.findUnique({
+      where: { subjectId },
+      select: { label: true }
+    });
+    if (!currentSubject) {
+      return { success: false, error: "La matière n'existe pas." };
+    }
+    const oldLabel = currentSubject.label;
+
+    const result = await prisma.subject.update({
+      where: { subjectId },
+      data: { label: newLabel },
+    });
+    // Optionnel : Ajouter un log si tu le souhaites
+    writeLogAction(`Matière ${subjectId} (${oldLabel}) renommée en : ${newLabel}`);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la matière :", error);
+    return { success: false, error: "Impossible de mettre à jour le nom de la matière." };
+  }
+}
+
+export async function deleteSubject(subjectId: number) {
+  try {
+    const userId = await getCurrentUserId();
+    
+    const subjectToDelete = await prisma.subject.findUnique({
+      where: { subjectId },
+      select: { label: true } // on récupère le nom avant suppression
+    });
+
+    if (!subjectToDelete) {
+      throw new Error("La matière n'existe pas.");
+    }
+
+    // On utilise une transaction pour supprimer les dépendances puis la matière
+    await prisma.$transaction([
+      prisma.teacherAssignments.deleteMany({ where: { subjectId } }),
+      prisma.subjectAssignments.deleteMany({ where: { subjectId } }),
+      prisma.subject.delete({ where: { subjectId } }),
+    ]);
+
+    writeLogAction(`Matière ${subjectId} (${subjectToDelete.label}) supprimée`, userId);
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la suppression de la matière :", error);
+    throw new Error("Impossible de supprimer la matière.");
+  }
 }
 
 export async function loginAction(
@@ -664,7 +724,7 @@ export async function createAssessment(data: {
       }
     });
 
-    writeLogAction(`Assessment ${data.label} created`, data.userId);
+    writeLogAction(`Evaluation ${data.label} créée`, data.userId);
 
     return { success: true, assessmentId: newAssessment.assessmentId.toString() };
   } catch (error) {
@@ -753,7 +813,7 @@ export async function deleteAssessment(assessmentIdStr: string) {
     await prisma.assessment.delete({
       where: { assessmentId: BigInt(assessmentIdStr) }
     });
-    writeLogAction(`Assessment ${assessmentIdStr} deleted`, userId);
+    writeLogAction(`Evaluation ${assessmentIdStr} supprimée`, userId);
     return { success: true };
   } catch (error: any) {
     return { success: false, error: `Erreur : ${error.message}` };
@@ -922,7 +982,7 @@ export async function saveGrade(assessmentIdStr: string, studentIdStr: string, v
     }
 
     await writeLogAction(
-      `Assessment of ${studentIdStr} modified, (Note: ${value}/20) for evaluation ${assessmentIdStr}`,
+      `Evaluation de ${studentIdStr} modifiée, (Note: ${value}/20) pour l'évaluation ${assessmentIdStr}`,
       userId
     );
 
@@ -1186,7 +1246,7 @@ export async function updatePasswordAndCleanUp(targetEmail: string, newPasswordR
 
     console.log(`[BDD] Mot de passe mis à jour avec succès pour ${targetEmail} et table PasswordReset nettoyée.`);
 
-    writeLogAction(`Password changed`, user.userId.toString());
+    writeLogAction(`Mot de passe changé`, user.userId.toString());
 
     return { success: true };
 
@@ -1258,7 +1318,7 @@ export async function updateUserAction(
       },
     });
 
-    await writeLogAction(`User ${userIdStr} updated details`, currentAdminId);
+    await writeLogAction(`Détails mis à jour pour l'utilisateur ${userIdStr}`, currentAdminId);
     return { success: true };
   } catch (error: any) {
     console.error("Erreur modification utilisateur:", error);
@@ -1306,7 +1366,7 @@ export async function createUserAction(data: {
       },
     });
 
-    await writeLogAction(`New user account created: ${data.mail}`, currentAdminId);
+    await writeLogAction(`Nouveau compte utilisateur créé: ${data.mail}`, currentAdminId);
     return { success: true, userId: newUser.userId.toString() };
   } catch (error: any) {
     console.error("Erreur création utilisateur:", error);
