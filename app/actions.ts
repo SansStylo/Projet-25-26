@@ -26,7 +26,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
-import { write } from "fs";
+import { hashPassword, verifyPassword } from "./lib/password";
 
 export async function getSubjects() {
   try {
@@ -74,7 +74,7 @@ export async function getStudentsByClass(classId: number) {
   });
 
   return students.map(student => {
-    const values = student.grades.map(g => g.value);
+    const values = student.grades.map(g => Number(g.value));
     const globalAverage = values.length > 0
       ? values.reduce((a, b) => a + b, 0) / values.length
       : null;
@@ -105,7 +105,7 @@ export async function getStudentsBySubject(subjectId: number) {
   });
 
   return students.map(student => {
-    const values = student.grades.map(g => g.value);
+    const values = student.grades.map(g => Number(g.value));
     const grade = values.length > 0
       ? values.reduce((a, b) => a + b, 0) / values.length
       : null;
@@ -184,8 +184,9 @@ export async function addDebugSubject(label: string) {
 
 export async function addDebugUser(mail : string, password : string, firstname : string, surname : string, level : number) {
   try {
+    const hashedPassword = await hashPassword(password);
     return await prisma.user.create({
-      data: { mail, password, firstname, surname, level },
+      data: { mail, password: hashedPassword, firstname, surname, level },
     });
   } catch (error) {
     console.error("Erreur lors de la création de l'utilisateur de debug :", error);
@@ -487,7 +488,7 @@ export async function loginAction(
     // Vérifie que l'utilisateur existe et que le mot de passe est correct
 
 
-    if (!user || user.password !== password) {
+    if (!user || !(await verifyPassword(password, user.password))) {
       return { error: "Email ou mot de passe incorrect" };
     }
 
@@ -1169,9 +1170,7 @@ export async function updatePasswordAndCleanUp(targetEmail: string, newPasswordR
     }
 
     // 2. Hachage du mot de passe
-    // fonction de hash existante (ex: bcrypt ou argon2), à appliquer ici :
-    // const hashedPassword = await bcrypt.hash(newPasswordRaw, 10);
-    const passwordToStore = newPasswordRaw; // Remplace par hashedPassword
+    const passwordToStore = await hashPassword(newPasswordRaw);
 
     // 3. Transaction Prisma : On met à jour le mot de passe ET on supprime le token de reset
     await prisma.$transaction([
@@ -1243,19 +1242,29 @@ export async function writeLogAction(label: string, userIdStr?: string | null) {
 
 export async function updateUserAction(
   userIdStr: string, 
-  data: { firstname: string; surname: string; mail: string; password: string }
+  data: { firstname: string; surname: string; mail: string; password?: string }
 ) {
   try {
     const currentAdminId = await getCurrentUserId();
-    
+
+    const updateData: {
+      firstname: string;
+      surname: string;
+      mail: string;
+      password?: string;
+    } = {
+      firstname: data.firstname,
+      surname: data.surname,
+      mail: data.mail,
+    };
+
+    if (data.password && data.password.trim() !== "") {
+      updateData.password = await hashPassword(data.password);
+    }
+
     await prisma.user.update({
       where: { userId: BigInt(userIdStr) },
-      data: {
-        firstname: data.firstname,
-        surname: data.surname,
-        mail: data.mail,
-        password: data.password,
-      },
+      data: updateData,
     });
 
     await writeLogAction(`User ${userIdStr} updated details`, currentAdminId);
@@ -1295,13 +1304,14 @@ export async function createUserAction(data: {
 }) {
   try {
     const currentAdminId = await getCurrentUserId();
-    
+    const hashedPassword = await hashPassword(data.password);
+
     const newUser = await prisma.user.create({
       data: {
         firstname: data.firstname,
         surname: data.surname,
         mail: data.mail,
-        password: data.password,
+        password: hashedPassword,
         level: 0, // Par défaut enseignant (0 = prof, 1 = resp, 2 = admin)
       },
     });
@@ -1321,8 +1331,11 @@ export async function getSerializableUsers() {
     });
     
     return users.map(user => ({
-      ...user,
       userId: user.userId.toString(), // Évite le crash de sérialisation BigInt
+      firstname: user.firstname,
+      surname: user.surname,
+      mail: user.mail,
+      level: user.level,
     }));
   } catch (error) {
     console.error("Erreur récupération utilisateurs:", error);
@@ -1360,26 +1373,6 @@ export async function deleteLogAction(logIdStr: string) {
     return { success: false, error: error.message };
   }
 }
-
-        subjectId,
-        label: subject?.label ?? "",
-        totalStudents: studentProfiles.length,
-        subjectAverage,
-        studentProfiles,
-        atRiskCount: studentProfiles.filter((s) => s.riskLevel !== "FAIBLE")
-          .length,
-        criticalCount: studentProfiles.filter(
-          (s) => s.riskLevel === "CRITIQUE"
-        ).length,
-      },
-    };
-  } catch (error) {
-    console.error("Erreur [getTeacherSubjectReportData]:", error);
-    return {
-      success: false as const,
-      error: "Erreur lors du calcul du rapport.",
-    };
-  }
 
 export async function searchStudentsForTeacher(
   query: string,

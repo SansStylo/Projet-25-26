@@ -9,7 +9,6 @@ interface UserType {
   firstname: string;
   surname: string;
   mail: string;
-  password: string;
   level: number;
 }
 
@@ -24,6 +23,9 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
   const [newMail, setNewMail] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
+  // Nouveaux mots de passe en attente de validation, par utilisateur (vide = inchangé)
+  const [newPasswords, setNewPasswords] = useState<Record<string, string>>({});
+
   // Gérer le changement de texte dans les lignes du tableau
   const handleInputChange = (userId: string, field: keyof UserType, value: string) => {
     setUsers(prev =>
@@ -31,17 +33,27 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
     );
   };
 
+  // Gérer la saisie d'un nouveau mot de passe pour une ligne
+  const handlePasswordInputChange = (userId: string, value: string) => {
+    setNewPasswords(prev => ({ ...prev, [userId]: value }));
+  };
+
   // Sauvegarder la ligne modifiée
   const handleSave = async (user: UserType) => {
+    const newPwd = newPasswords[user.userId]?.trim();
+
     const res = await updateUserAction(user.userId, {
       firstname: user.firstname,
       surname: user.surname,
       mail: user.mail,
-      password: user.password
+      ...(newPwd ? { password: newPwd } : {}),
     });
 
     if (res.success) {
       alert(`Compte de ${user.firstname} mis à jour avec succès !`);
+      if (newPwd) {
+        setNewPasswords(prev => ({ ...prev, [user.userId]: "" }));
+      }
       router.refresh();
     } else {
       alert(`Erreur lors de la modification : ${res.error}`);
@@ -140,11 +152,12 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
           <div>
             <label className="block text-xs font-semibold text-[#53665A] mb-1">Mot de passe</label>
             <input
-              type="text"
+              type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full bg-white border border-[#E2EAE5] rounded-lg p-2 text-sm focus:outline-none focus:border-[#047857]"
               placeholder="Mot de passe sécurisé"
+              autoComplete="new-password"
             />
           </div>
           <button
@@ -165,7 +178,7 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
               <th className="py-3 px-2">Prénom</th>
               <th className="py-3 px-2">Nom</th>
               <th className="py-3 px-2">Email</th>
-              <th className="py-3 px-2">Mot de Passe</th>
+              <th className="py-3 px-2">Nouveau mot de passe</th>
               <th className="py-3 px-2 text-center w-36">Actions</th>
             </tr>
           </thead>
@@ -207,13 +220,15 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
                   />
                 </td>
 
-                {/* Zone de texte Mot de passe */}
+                {/* Zone de texte Nouveau mot de passe (vide = inchangé) */}
                 <td className="py-2 px-2">
                   <input
-                    type="text"
-                    value={user.password}
-                    onChange={(e) => handleInputChange(user.userId, "password", e.target.value)}
-                    className="w-full bg-transparent hover:bg-white focus:bg-white border border-transparent hover:border-[#E2EAE5] focus:border-[#047857] rounded px-2 py-1 transition-all font-mono text-xs"
+                    type="password"
+                    value={newPasswords[user.userId] ?? ""}
+                    onChange={(e) => handlePasswordInputChange(user.userId, e.target.value)}
+                    placeholder="Laisser vide pour ne pas changer"
+                    autoComplete="new-password"
+                    className="w-full bg-transparent hover:bg-white focus:bg-white border border-transparent hover:border-[#E2EAE5] focus:border-[#047857] rounded px-2 py-1 transition-all text-xs"
                   />
                 </td>
 
