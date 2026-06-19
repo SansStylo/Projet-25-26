@@ -247,7 +247,7 @@ export async function searchStudents(query: string) {
 
 export async function getStudentDetail(studentId: bigint) {
   try {
-    return await prisma.student.findUnique({
+    const student = await prisma.student.findUnique({
       where: { studentId },
       include: {
         class: true,
@@ -267,6 +267,27 @@ export async function getStudentDetail(studentId: bigint) {
         },
       },
     });
+    if (!student) return null;
+    return {
+      ...student,
+      studentId: student.studentId.toString(),
+      subjectAssignments: student.subjectAssignments.map((sa) => ({
+        ...sa,
+        studentId: sa.studentId.toString(),
+      })),
+      grades: student.grades.map((g) => ({
+        ...g,
+        assessmentId: g.assessmentId.toString(),
+        studentId: g.studentId.toString(),
+        value: Number(g.value),
+        assessment: {
+          ...g.assessment,
+          assessmentId: g.assessment.assessmentId.toString(),
+          userId: g.assessment.userId.toString(),
+          date: g.assessment.date.toISOString(),
+        },
+      })),
+    };
   } catch (error) {
     console.error("Erreur lors de la récupération des détails de l'étudiant :", error);
     return null;}}
@@ -1235,7 +1256,7 @@ export async function writeLogAction(label: string, userIdStr?: string | null) {
       },
     });
   } catch (error) {
-    // On met un console.error pour le debug, mais on ne crash pas l'application pour un log raté
+    // On met un console.error pour le debug
     console.error("Erreur lors de l'écriture du log système :", error);
   }
 }

@@ -7,10 +7,9 @@
 "use client";
 
 import Link from 'next/link';
-import { requireAuth } from "@/app/lib/auth";
 import { LogoutButton } from "@/app/components/LogoutButton";
 import { getDropdownData, getModalData, createAssessment, getAssessmentDetails, updateAssessment, deleteAssessment, getAssessmentStudents, saveGrade } from '@/app/actions';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function GradesPage() {
   // États pour l'interactivité des menus et de la sidebar
@@ -394,7 +393,7 @@ export default function GradesPage() {
           {/* liens de navigation A MODIFIER */}
           <ul className="list-none p-0 m-0">
             {[
-              { name:'Accueil', href: 'page.tsx', icon: (
+              { name:'Accueil', href: '/dashboard', icon: (
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                 ), extraIcon : <polyline points="9 22 9 12 15 12 15 22"></polyline>},
               { name: 'Étudiants', href: '/dashboard/etudiants', icon: (
@@ -405,13 +404,13 @@ export default function GradesPage() {
                       <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                     </>
                 )},
-              { name: 'Saisie des notes', href: 'notes.tsx', active: true, icon : (
+              { name: 'Saisie des notes', href: '/dashboard/notes', active: true, icon : (
                     <>
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </>
                 )},
-              {name: 'Rapports', href: 'rapports.tsx', icon: (
+              {name: 'Rapports', href: '/dashboard/rapports', icon: (
                     <>
                       <line x1="18" y1="20" x2="18" y2="10"></line>
                       <line x1="12" y1="20" x2="12" y2="4"></line>
@@ -435,7 +434,7 @@ export default function GradesPage() {
 
           {/* bas de la sidebar */}
           <div className="mt-auto flex flex-col">
-            <Link href="parametres.tsx"
+            <Link href="/parametres"
                   className={`flex items-center gap-3 px-6 py-4 text-[#A3B8AC] font-medium transition-all duration-300 border-l-4 border-transparent hover:bg-white/5 hover:text-white ${
                       (isSidebarReduced && (!isHovered)) ? 'justify-center px-0! py-4' : ''
                   }`}
