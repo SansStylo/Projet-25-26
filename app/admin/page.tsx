@@ -32,7 +32,7 @@ export default async function AdminPage() {
                 Bienvenue sur l'interface d'administrateur.
               </h2>
               <p className="text-[#53665A] leading-[1.6]">
-                Gérez les accès utilisateurs, configurez les structures des classes et matières et suivez en temps réel l'activité du système.</p>
+                Gérez les accès utilisateurs, configurez les promotions et matières et suivez en temps réel l'activité du système.</p>
             </section>
           </div>
         </main>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateUserAction, deleteUserAction, createUserAction } from "../actions";
 
@@ -16,6 +16,11 @@ interface UserType {
 export default function UsersTableClient({ initialUsers }: { initialUsers: UserType[] }) {
   const router = useRouter();
   const [users, setUsers] = useState<UserType[]>(initialUsers);
+
+  const [userToDelete, setUserToDelete] = useState<UserType | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   
   // États pour le formulaire de création de compte
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -23,6 +28,24 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
   const [newSurname, setNewSurname] = useState("");
   const [newMail, setNewMail] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [sortField, setSortField] = useState<"firstname" | "surname" | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(null);
+
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 3000);
+      return () => clearTimeout(timer); // Annule le timer si le composant est démonté
+    }
+  }, [toast]);
+
+  // Fonction pour afficher le toast
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+  };
+
 
   // Gérer le changement de texte dans les lignes du tableau
   const handleInputChange = (userId: string, field: keyof UserType, value: string) => {
@@ -41,31 +64,41 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
     });
 
     if (res.success) {
-      alert(`Compte de ${user.firstname} mis à jour avec succès !`);
+      showToast(`Le compte de ${user.firstname} a été mis à jour avec succès !`, 'success');
       router.refresh();
     } else {
-      alert(`Erreur lors de la modification : ${res.error}`);
+      showToast(`Erreur : ${res.error}`, 'error');
     }
   };
 
-  // Supprimer un compte
-  const handleDelete = async (userId: string, name: string) => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le compte de ${name} ?`)) {
-      const res = await deleteUserAction(userId);
-      if (res.success) {
-        setUsers(prev => prev.filter(u => u.userId !== userId));
-        router.refresh();
-      } else {
-        alert(`Erreur de suppression : ${res.error}`);
-      }
+  // Supprimer un compte 
+  const handleDelete = (user: UserType) => {
+    setUserToDelete(user);
+    setShowDeleteConfirm(true);
+  };
+  // Fonction pour exécuter la suppression (appelée par le bouton de la modale)
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+    const res = await deleteUserAction(userToDelete.userId.toString());
+    if (res.success) {
+      setUsers(prev => prev.filter(u => u.userId !== userToDelete.userId));
+      router.refresh();
+      showToast("Le compte a été supprimé avec succès.", "success");
+    } else {
+      showToast(`Erreur lors de la suppression : ${res.error}`, "error");
     }
+    // Fermeture et reset
+    setShowDeleteConfirm(false);  
+    setUserToDelete(null);
   };
 
   // Soumettre la création d'un compte
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    setHasAttemptedSubmit(true);
+
     if (!newFirstname || !newSurname || !newMail || !newPassword) {
-      alert("Veuillez remplir tous les champs.");
+      showToast("Veuillez remplir tous les champs.", "error");
       return;
     }
 
@@ -77,7 +110,18 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
     });
 
     if (res.success) {
-      alert("Compte créé avec succès !");
+      const newUser: UserType = {
+        userId: res.userId || Math.random().toString(), // Assure-toi d'avoir l'ID réel ici
+        firstname: newFirstname,
+        surname: newSurname,
+        mail: newMail,
+        password: newPassword,
+        level: 1 // Ou la valeur par défaut
+      };
+      
+      setUsers(prev => [...prev, newUser]);
+      
+      showToast("Compte créé avec succès !", "success");
       // Réinitialiser le formulaire
       setNewFirstname("");
       setNewSurname("");
@@ -86,11 +130,40 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
       setShowCreateForm(false);
       
       // Forcer le rafraîchissement des données serveur
-      window.location.reload(); 
+      router.refresh(); 
     } else {
-      alert(`Erreur lors de la création : ${res.error}`);
+      showToast(`Erreur lors de la création : ${res.error}`, "error");
+    }
+    setHasAttemptedSubmit(false);
+  };
+
+  const handleSort = (field: "firstname" | "surname") => {
+    if (sortField !== field) {
+      // Étape 1 : Si on change de colonne, on commence par trier de A à Z
+      setSortField(field);
+      setSortDirection("asc");
+    } else if (sortDirection === "asc") {
+      // Étape 2 : Deuxième clic sur la même colonne -> On passe de Z à A
+      setSortDirection("desc");
+    } else {
+      // Étape 3 : Troisième clic -> On réinitialise tout à l'état initial (Sans tri)
+      setSortField(null);
+      setSortDirection(null);
     }
   };
+
+  const sortedUsers = [...users].sort((a, b) => {
+    if (!sortField || !sortDirection) return 0; // 🌟 Si sortDirection est null, on garde l'ordre initial BDD
+
+    const valueA = a[sortField].toLowerCase();
+    const valueB = b[sortField].toLowerCase();
+
+    if (sortDirection === "asc") {
+      return valueA.localeCompare(valueB);
+    } else {
+      return valueB.localeCompare(valueA);
+    }
+  });
 
   return (
     <div>
@@ -113,7 +186,12 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
               type="text"
               value={newFirstname}
               onChange={(e) => setNewFirstname(e.target.value)}
-              className="w-full bg-white border border-[#E2EAE5] rounded-lg p-2 text-sm focus:outline-none focus:border-[#047857]"
+              // Utilise {` ... `} au lieu de " ... "
+              className={`w-full bg-white border rounded-lg p-2 text-sm focus:outline-none ${
+                hasAttemptedSubmit && !newFirstname 
+                  ? 'border-red-500' 
+                  : 'border-[#E2EAE5] focus:border-[#047857]'
+              }`}
               placeholder="Jean"
             />
           </div>
@@ -123,7 +201,11 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
               type="text"
               value={newSurname}
               onChange={(e) => setNewSurname(e.target.value)}
-              className="w-full bg-white border border-[#E2EAE5] rounded-lg p-2 text-sm focus:outline-none focus:border-[#047857]"
+              className={`w-full bg-white border border-[#E2EAE5] rounded-lg p-2 text-sm focus:outline-none ${
+                hasAttemptedSubmit && !newSurname 
+                  ? 'border-red-500' 
+                  : 'border-[#E2EAE5] focus:border-[#047857]'
+              }`}
               placeholder="Dupont"
             />
           </div>
@@ -133,7 +215,11 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
               type="email"
               value={newMail}
               onChange={(e) => setNewMail(e.target.value)}
-              className="w-full bg-white border border-[#E2EAE5] rounded-lg p-2 text-sm focus:outline-none focus:border-[#047857]"
+              className={`w-full bg-white border border-[#E2EAE5] rounded-lg p-2 text-sm focus:outline-none ${
+                hasAttemptedSubmit && !newMail 
+                  ? 'border-red-500' 
+                  : 'border-[#E2EAE5] focus:border-[#047857]'
+              }`}
               placeholder="j.dupont@mail.com"
             />
           </div>
@@ -143,7 +229,11 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
               type="text"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full bg-white border border-[#E2EAE5] rounded-lg p-2 text-sm focus:outline-none focus:border-[#047857]"
+              className={`w-full bg-white border border-[#E2EAE5] rounded-lg p-2 text-sm focus:outline-none ${
+                hasAttemptedSubmit && !newPassword 
+                  ? 'border-red-500' 
+                  : 'border-[#E2EAE5] focus:border-[#047857]'
+              }`}
               placeholder="Mot de passe sécurisé"
             />
           </div>
@@ -162,15 +252,29 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
           <thead>
             <tr className="border-b border-[#F0F4F1] text-[#53665A] font-semibold">
               <th className="py-3 px-2 w-12">ID</th>
-              <th className="py-3 px-2">Prénom</th>
-              <th className="py-3 px-2">Nom</th>
+              <th title='Trier' onClick={() => handleSort("firstname")} className="py-3 px-2 cursor-pointer hover:text-[#047857] select-none transition-colors group/th">
+                <div className="flex items-center gap-1">
+                  <span>Prénom</span>
+                  <span className="text-[10px] text-[#A3B8AC] group-hover/th:text-[#047857]">
+                    {sortField === "firstname" && sortDirection === "asc" ? " ▲" : sortField === "firstname" && sortDirection === "desc" ? " ▼" : " ↕"}
+                  </span>
+                </div>
+              </th>
+              <th title='Trier' onClick={() => handleSort("surname")} className="py-3 px-2 cursor-pointer hover:text-[#047857] select-none transition-colors group/th">
+                <div className="flex items-center gap-1">
+                <span>Nom</span>
+                <span className="text-[10px] text-[#A3B8AC] group-hover/th:text-[#047857] ">
+                  {sortField === "surname" && sortDirection === "asc" ? " ▲" : sortField === "surname" && sortDirection === "desc" ? " ▼" : " ↕"}
+                </span>
+              </div>
+             </th>
               <th className="py-3 px-2">Email</th>
               <th className="py-3 px-2">Mot de Passe</th>
               <th className="py-3 px-2 text-center w-36">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#F0F4F1]">
-            {users.map((user) => (
+            {sortedUsers.map((user) => (
               <tr key={user.userId} className="hover:bg-[#F9FAF9] transition-colors">
                 {/* ID non modifiable (Label grisé) */}
                 <td className="py-3 px-2 font-mono text-xs text-[#8A9A8E]">
@@ -220,18 +324,36 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
                 {/* Boutons d'actions en fin de ligne */}
                 <td className="py-2 px-2 text-center flex justify-center space-x-2">
                   <button
-                    onClick={() => handleSave(user)}
-                    className="bg-green-50 text-green-600 hover:bg-green-600 hover:text-white px-2.5 py-1 rounded-lg text-xs font-medium transition duration-150"
-                    title="Sauvegarder les modifications"
-                  >
-                    Save
+                      onClick={() => handleSave(user)}
+                      className="w-8 h-8 inline-flex items-center justify-center text-[#A3B8AC] hover:text-green-600 bg-transparent hover:bg-green-50 rounded-full transition-all cursor-pointer border border-transparent hover:border-green-100"
+                      title="Sauvegarder les modifications"
+                    >
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      strokeWidth={2} 
+                      stroke="currentColor" 
+                      className="w-4 h-4"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
                   </button>
                   <button
-                    onClick={() => handleDelete(user.userId, `${user.firstname} ${user.surname}`)}
-                    className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-2.5 py-1 rounded-lg text-xs font-medium transition duration-150"
-                    title="Supprimer définitivement ce compte"
-                  >
-                    X
+                    onClick={() => handleDelete(user)}
+                      className="w-8 h-8 inline-flex items-center justify-center text-[#A3B8AC] hover:text-red-600 bg-transparent hover:bg-red-50 rounded-full transition-all cursor-pointer border border-transparent hover:border-red-100"
+                      title="Supprimer définitivement ce compte"
+                    >
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        strokeWidth={2} 
+                        stroke="currentColor" 
+                        className="w-4 h-4"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
                   </button>
                 </td>
               </tr>
@@ -240,9 +362,73 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
         </table>
       </div>
       
-      {users.length === 0 && (
+      {sortedUsers.length === 0 && (
         <p className="text-center text-sm text-[#8A9A8E] py-8">Aucun utilisateur trouvé.</p>
       )}
+    
+      {showDeleteConfirm && userToDelete && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-white p-6 rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200">
+            
+            {/* Icône d'avertissement */}
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+
+            <h3 className="text-lg font-bold text-[#1E2E24] text-center mb-2">Supprimer ce compte ?</h3>
+            <p className="text-sm text-[#53665A] text-center mb-6">
+              Êtes-vous sûr de vouloir supprimer le compte de <strong>{userToDelete.firstname} {userToDelete.surname}</strong> ? Cette action est irréversible.
+            </p>
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowDeleteConfirm(false)} 
+                className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button 
+                onClick={confirmDelete} 
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
+      {toast && (
+        <div className={`fixed bottom-10 right-10 border-l-4 p-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] flex items-center gap-3 z-[20000] animate-fadeIn transition-all bg-white cursor-pointer ${
+            toast.type === "error" ? "border-red-500" : toast.type === "success" ? "border-[#10B981]" : "border-[#F97316]"
+            }`} onClick={() => setToast(null)}>
+
+              <div className={`p-2 rounded-full ${
+                  toast.type === "error" ? "bg-red-50 text-red-500" : toast.type === "success" ? "bg-[#E6F4EE] text-[#10B981]" : "bg-[#F97316]/10 text-[#F97316]"
+              }`}>
+                {toast.type === "error" ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                ) : toast.type === "success" ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                )}
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-[#1E2E24]">
+                  {toast.type === "error" ? "Erreur" : toast.type === "success" ? "Succès" : "Action requise"}
+                </h4>
+                <p className="text-xs text-[#53665A] mt-0.5">{toast.message}</p>
+              </div>
+          </div>
+        )}
+
+
+
     </div>
   );
 }

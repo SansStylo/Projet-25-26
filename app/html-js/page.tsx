@@ -16,7 +16,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import BlocDetails from './detail_teaching';
 import BlocGroups from './detail_groups';
 import BlocClasses from './detail_class';
@@ -82,8 +82,19 @@ interface ClassesType{
 
 export default function DashboardPage() {
   const [activeBloc, setActiveBloc] = useState<SubjectType | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+
+  const [activeGroup, setActiveGroup] = useState<GroupType | null>(null);
+  const [activeClass, setActiveClass] = useState<ClassesType | null>(null);
+
   const [showGroupsManager, setShowGroupsManager] = useState(false);
   const [showClassesManager, setShowClassesManager] = useState(false);
+
+  
+
+  const [showSubjectCreator, setShowSubjectCreator] = useState(false);
+  const [newSubjectName, setNewSubjectName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [subjects, setSubjects] = useState<SubjectType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,6 +108,9 @@ export default function DashboardPage() {
 
 
   const refreshAssignments = async () => {
+    const subjectsData = await getSubjects();
+    setSubjects(subjectsData);
+    
     const [teachersData, studentsData, studentData, groupsData, classesData, updatedStudents] = await Promise.all([
       getTeacherAssignments(),
       getSubjectAssignments(),
@@ -143,123 +157,193 @@ export default function DashboardPage() {
     loadInitialData();
   }, []);
 
-  const handleAddDebugSubject = async () => {
-    const listMock = ['Mathématiques', 'Physique', 'Algorithme', 'Base de données', 'Réseau', 'Anglais'];
-    const randomLabel = listMock[Math.floor(Math.random() * listMock.length)];
-    const uniqueLabel = `${randomLabel} #${subjects.length + 1}`;
-
-    // On envoie à PostgreSQL via notre action serveur
-    const newSubject = await addDebugSubject(uniqueLabel);
+  const sortedSubjects = useMemo(() => {
+    if (!sortOrder) return subjects; // Si aucun tri, on garde l'ordre de la BDD
     
-    setSubjects([...subjects, newSubject]);
-  };
+    return [...subjects].sort((a, b) => {
+      const labelA = a.label.toLowerCase();
+      const labelB = b.label.toLowerCase();
+      
+      if (sortOrder === 'asc') {
+        return labelA.localeCompare(labelB);
+      } else {
+        return labelB.localeCompare(labelA);
+      }
+    });
+  }, [subjects, sortOrder]);
 
-const handleAddDebugUser = async () => {
-    const listMock = ['a', 'b', 'c', 'd', 'e', 'f'];
-    const randomName = listMock[Math.floor(Math.random() * listMock.length)];
-    const uniqueName = `${randomName} #${users.length + 1}`;
-    const debugMail = `user.${Date.now()}@junia.com`;
-    const debugPwd = "pwd";
-    const dSn = "oui";
+  const handleCreateSubject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedName = newSubjectName.trim();
 
-    // On envoie à PostgreSQL via notre action serveur
-    const newUser = await addDebugUser(debugMail, debugPwd, uniqueName, dSn, 0);
-    
-    setUsers([...users, newUser]);
-  };
+    if (!trimmedName) {
+      alert("Veuillez saisir un nom de matière valide.");
+      return;
+    }
 
-const handleAddDebugStudent = async () => {
-    const uniqueName = `user.${Date.now()}`;
-    const dSn = "oui";
+    const subjectExists = subjects.some(s => s.label.toLowerCase() === trimmedName.toLowerCase());
+    if (subjectExists) {
+      alert("Cette matière existe déjà dans votre catalogue.");
+      return;
+    }
 
-    // On envoie à PostgreSQL via notre action serveur
-    const newStudent = await addDebugStudent(null, uniqueName, dSn);
-    
-    setStudents([...students, newStudent]);
+    try {
+      setIsSubmitting(true);
+      // On envoie à PostgreSQL via notre action serveur préexistante
+      const newSubject = await addDebugSubject(trimmedName);
+      
+      // Mise à jour de l'état local pour un affichage instantané
+      setSubjects([...subjects, newSubject]);
+      
+      // Reset et fermeture de la modal
+      setNewSubjectName("");
+      setShowSubjectCreator(false);
+    } catch (error) {
+      console.error(error);
+      alert("Une erreur est survenue lors de la création de la matière.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex bg-b text-gray-800">
 
-      <nav className="w-64 min-h-screen bg-blue border-r border-gray-200 p-6 flex flex-col gap-3">
-        <div className="font-bold text-lg mb-4 text-gray-800">Junia'lytics</div>
+      <main className="p-6 md:p-10 flex-1 overflow-auto bg-[#F8FAFC]">
+        <div className="max-w-6xl mx-auto">
+          
+          {/* 1. En-tête de la page + Boutons d'actions alignés */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-2xl font-bold text-[#1E2E24] mb-1">
+                Gestion des Matières
+              </h1>
+              <p className="text-sm text-[#53665A]">
+                Consultez, ajoutez et organisez les modules d'enseignement.
+              </p>
+            </div>
 
-        <button className="w-full text-left px-4 py-3 border border-gray-300 rounded-lg bg-gray-900 text-white font-medium transition-colors">
-          Option 1 (Actif)
-        </button>
-        <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-          Option 2
-        </button>
-        <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-          Option 3
-        </button>
-        <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-          Option 4
-        </button>
-
-        <div className="mt-auto pt-4 border-t border-gray-200">
-          <button 
-            onClick={handleAddDebugSubject}
-            className="w-full text-center px-4 py-3 border border-dashed border-red-400 rounded-lg bg-red-50 text-red-700 font-bold hover:bg-red-100 transition-colors text-sm"
-          >
-            Debug : +1 Matière
-          </button>
-        </div>
-        <div className="mt-auto pt-4">
-          <button 
-            onClick={handleAddDebugUser}
-            className="w-full text-center px-4 py-3 border border-dashed border-red-400 rounded-lg bg-red-50 text-red-700 font-bold hover:bg-red-100 transition-colors text-sm"
-          >
-            Debug : +1 Utilisateur
-          </button>
-        </div>
-        <div className="mt-auto pt-4">
-          <button 
-            onClick={handleAddDebugStudent}
-            className="w-full text-center px-4 py-3 border border-dashed border-red-400 rounded-lg bg-red-50 text-red-700 font-bold hover:bg-red-100 transition-colors text-sm"
-          >
-            Debug : +1 Etudiant
-          </button>
-        </div>
-      </nav>
-
-      <main className="flex-1 p-10 bg-white overflow-y-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Matières</h1>
-        
-        {isLoading ? (
-          <p className="text-gray-500 italic">Connexion à PostgreSQL en cours...</p>
-        ) : subjects.length === 0 ? (
-          <p className="text-gray-500 italic">Aucune matière en base de données. Utilisez le bouton de debug à gauche !</p>
-        ) : (
-          <div className="flex flex-row flex-wrap items-center justify-center flex-shrink-0 gap-1 border border-black-200 [&>*]:w-[150px] [&>*]:h-[150px] [&>*]:flex [&>*]:flex-shrink-0 [&>*]:items-center [&>*]:justify-center [&>*]:border [&>*]:border-black-200 [&>*]:mt-[2px] [&>*]:mb-[2px]">
-
-            {subjects.map((subject) => (
-              <div 
-                key={subject.subjectId} 
-                className="cursor-pointer bg-gray-50 hover:bg-blue-50 hover:border-blue-300 transition-all rounded-md p-4 text-center font-medium shadow-sm"
-                onClick={() => setActiveBloc(subject)}
+            {/* Boutons d'actions */}
+            <div className="flex items-center gap-3 relative z-10">
+              <button
+                onClick={() => setSortOrder(prev => prev === null ? 'asc' : prev === 'asc' ? 'desc' : null)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs flex items-center gap-2 h-9 w-23 ${
+                  sortOrder
+                    ? 'bg-[#F4F7F5] text-[#0F5E3D] border-[#0F5E3D]'
+                    : 'bg-white text-[#53665A] border-[#E2EAE5] hover:bg-[#F4F7F5]'
+                }`}>
+                {/* Icône qui change de sens selon le tri en cours */}
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  strokeWidth={2.5} 
+                  stroke="currentColor" 
+                  className={`w-3.5 h-3.5 transition-transform ${sortOrder === 'desc' ? 'rotate-180' : ''}`}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v10.5" />
+                </svg>
+                <span>
+                  {sortOrder === 'asc' ? 'A → Z' : sortOrder === 'desc' ? 'Z → A' : 'Trier'}
+                </span>
+              </button>
+              <button 
+                onClick={() => setActiveBloc({ subjectId: 0, label: "" })}
+                className="px-4 py-2 rounded-xl bg-white hover:bg-[#F4F7F5] text-[#0F5E3D] font-bold text-sm transition-colors shadow-xs border border-[#E2EAE5] cursor-pointer h-9"
               >
-                {subject.label}
-              </div>
-            ))}
-
+                + Ajouter une matière
+              </button>
+            </div>
           </div>
-        )}
-        <div className="mt-12 pt-8 border-t border-slate-200 flex gap-4">
-          <button 
-            onClick={() => setShowGroupsManager(true)}
-            className="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg shadow-md transition-all flex items-center gap-2"
-          >
-            Manage Groups
-          </button>
-          <button 
-            onClick={() => setShowClassesManager(true)}
-            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-md transition-all flex items-center gap-2"
-          >
-            Manage Proms
-          </button>
+
+          {/* 2. Grille de cartes pour les matières*/}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {isLoading ? (
+              <p className="text-sm text-slate-400 italic">Chargement des matières...</p>
+            ) : sortedSubjects.length === 0 ? (
+              <p className="text-sm text-slate-400 italic">Aucune matière enregistrée. Utilisez les boutons de debug à gauche.</p>
+            ) : (
+              sortedSubjects.map((subject) => (
+                <div 
+                  key={subject.subjectId}
+                  onClick={() => setActiveBloc(subject)}
+                  className="bg-white p-5 rounded-2xl border border-[#E2EAE5] shadow-[0_4px_20px_rgba(18,38,30,0.02)] hover:shadow-[0_8px_30px_rgba(18,38,30,0.05)] transition-all flex flex-col justify-between min-h-36 group cursor-pointer"
+                >
+                  {/* Petit carré icône : prend automatiquement les 2 premières lettres de la matière */}
+                  <div className="w-10 h-10 bg-[#F4F7F5] rounded-xl flex items-center justify-center text-[#0F5E3D] mb-3 font-bold group-hover:bg-[#0F5E3D] group-hover:text-white transition-colors">
+                    {subject.label.substring(0, 2).toUpperCase()}
+                  </div>
+                  
+                  <div>
+                    {/* Nom de la matière dynamique */}
+                    <h3 className="font-bold text-[#1E2E24] text-sm leading-snug mb-1 line-clamp-2">
+                      {subject.label}
+                    </h3>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
         </div>
       </main>
+      {showSubjectCreator && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-[#F8FAFC] w-full max-w-md rounded-2xl shadow-2xl border border-[#E2EAE5] flex flex-col max-h-[90vh] overflow-hidden">
+            
+            {/* Header */}
+            <div className="p-5 border-b border-[#E2EAE5] flex justify-between items-center bg-white rounded-t-xl">
+              <div>
+                <h3 className="text-lg font-bold text-[#1E2E24]">Créer une matière</h3>
+                <p className="text-xs text-[#53665A]">Ajouter une nouvelle matière au catalogue</p>
+              </div>
+              <button 
+                onClick={() => { setShowSubjectCreator(false); setNewSubjectName(""); }} 
+                className="w-8 h-8 flex items-center justify-center bg-[#F4F7F5] border border-[#E2EAE5] text-[#53665A] hover:text-red-600 hover:bg-red-50 hover:border-red-100 rounded-xl font-bold cursor-pointer transition-all"
+              >
+              <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  strokeWidth={2} 
+                  stroke="currentColor" 
+                  className="w-4 h-4"
+                >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Formulaire */}
+            <form onSubmit={handleCreateSubject}>
+              <div className="p-6 flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#1E2E24] uppercase tracking-wider">Nom de la nouvelle matière</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ex: Intelligence Artificielle, Big Data..." 
+                    value={newSubjectName}
+                    onChange={(e) => setNewSubjectName(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-[#E2EAE5] rounded-xl bg-white mb-1 focus:outline-none focus:ring-2 focus:ring-[#0F5E3D]/20 focus:border-[#0F5E3D]"
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-[#E2EAE5] bg-white flex justify-center rounded-b-xl">
+                <button 
+                  type="submit"
+                  disabled={isSubmitting || !newSubjectName.trim()}
+                  className="w-full px-6 py-2.5 bg-[#0F5E3D] hover:bg-[#0A4A31] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl shadow-md transition-colors cursor-pointer"
+                >
+                  {isSubmitting ? "Création..." : "Créer la Matière"}
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
 
       {activeBloc && (
         <BlocDetails 
@@ -277,21 +361,21 @@ const handleAddDebugStudent = async () => {
         />
       )}
 
-      {showGroupsManager && (
+      {activeGroup && (
         <BlocGroups 
+          currentGroup={activeGroup} 
           students={students}
-          groups={groups}
           studentAssignments={studentAssignments}
-          onClose={() => setShowGroupsManager(false)}
+          onClose={() => setActiveGroup(null)}
           onRefreshAssignments={refreshAssignments}
         />
       )}
 
-      {showClassesManager && (
+      {activeClass && (
         <BlocClasses 
+          currentClass={activeClass}
           students={students}
-          classes={classes}
-          onClose={() => setShowClassesManager(false)}
+          onClose={() => setActiveClass(null)}
           onRefreshAssignments={refreshAssignments}
         />
       )}

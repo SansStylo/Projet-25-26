@@ -87,13 +87,13 @@ export default function AdminClientLayout({ children, user }: { children: React.
           )}
         </div>
 
-        {/* liens de navigation A MODIFIER */}
+        {/* liens de navigation */}
         <ul className="list-none p-0 m-0">
           {[
             { name:'Accueil', href: '/admin', icon: (
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             ), extraIcon : <polyline points="9 22 9 12 15 12 15 22"></polyline>},
-            { name: 'Classes', href: '/dashboard/notes', icon : (
+            { name: 'Classes', href: '/html-js/classes', icon : (
                 <>
                     <path d="M2 3h20" />
                     <path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" />
@@ -125,7 +125,9 @@ export default function AdminClientLayout({ children, user }: { children: React.
                 </>
             )}
           ].map((item, index) => {
-            const isActive = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
+            const isActive = item.href === '/html-js' 
+              ? pathname === '/html-js' 
+              : pathname.startsWith(item.href);
             return (
             <li key={index}>
               <Link href={item.href} className={`flex items-center gap-3 px-6 py-4 text-[#A3B8AC] font-medium transition-all duration-300 border-l-4 border-transparent hover:bg-white/5 hover:text-white ${
@@ -207,7 +209,9 @@ export default function AdminClientLayout({ children, user }: { children: React.
                                   className="text-[#718579] hover:text-red-600 bg-transparent border-none cursor-pointer text-xs p-0 w-4 h-4 flex items-center justify-center rounded hover:bg-slate-100"
                                   title="Supprimer"
                                 >
-                                  ✕
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3 h-3">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
                                 </button>
                               </li>
                             ))}
