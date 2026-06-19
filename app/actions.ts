@@ -1374,6 +1374,8 @@ export async function deleteLogAction(logIdStr: string) {
   }
 }
 
+       
+
 export async function searchStudentsForTeacher(
   query: string,
   teacherId: bigint
@@ -1614,6 +1616,135 @@ export async function getTeacherDashboardStats(teacherId: bigint) {
     };
   }
 }
+
+
+// n'afficher que les matières dispensées par l'enseignant dans la session enseignant
+export async function getTeacherStudentsBySubject(subjectId: number, teacherId: bigint) {
+  try {
+    const targetTeacherId = BigInt(teacherId);
+
+    // 1. Trouver toutes les classes où ce prof enseigne cette matière précise
+    const teacherAssignments = await prisma.teacherAssignments.findMany({
+      where: {
+        teacherId: targetTeacherId,
+        subjectId: subjectId,
+      },
+      include: {
+        subject: {
+          include: {
+            subjectAssignments: {
+              include: {
+                student: {
+                  include: {
+                    grades: {
+                      where: {
+                        assessment: { subjectId: subjectId }
+                      },
+                      include: {
+                        assessment: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const studentMap = new Map<string, any>();
+
+    // 2. Extraire les étudiants et calculer leur moyenne sur cette matière
+    teacherAssignments.forEach(ta => {
+      ta.subject.subjectAssignments.forEach(sa => {
+        if (sa.student) {
+          const student = sa.student;
+          
+          let totalWeighted = 0;
+          let totalWeights = 0;
+          
+          student.grades.forEach(g => {
+            if (g.assessment) {
+              const gradeOn20 = (Number(g.value) / Number(g.assessment.maxGrade)) * 20;
+              totalWeighted += gradeOn20 * g.assessment.weight;
+              totalWeights += g.assessment.weight;
+            }
+          });
+
+          const finalGrade = totalWeights > 0 ? totalWeighted / totalWeights : null;
+
+          studentMap.set(student.studentId.toString(), {
+            firstname: student.firstname,
+            surname: student.surname,
+            grade: finalGrade !== null ? parseFloat(finalGrade.toFixed(2)) : null
+          });
+        }
+      });
+    });
+
+    return Array.from(studentMap.values()).sort((a, b) => a.surname.localeCompare(b.surname));
+
+  } catch (error) {
+    console.error("Erreur [getTeacherStudentsBySubject]:", error);
+    return [];
+  }
+}
+
+// n'afficher que les matières dispensées par l'enseignant dans la session enseignant
+export async function getTeacherStudentsByClass(classId: number, teacherId: bigint) {
+  try {
+    const targetTeacherId = BigInt(teacherId);
+
+    // 1. Trouver les matières que le prof enseigne
+    const assignments = await prisma.teacherAssignments.findMany({
+      where: { teacherId: targetTeacherId },
+      include: { subject: true }
+    });
+    
+    const teacherSubjectIds = assignments.map(a => a.subjectId);
+
+    // 2. Récupérer les étudiants de la classe
+    const students = await prisma.student.findMany({
+      where: { classId: classId },
+      include: {
+        grades: {
+          where: { assessment: { subjectId: { in: teacherSubjectIds } } },
+          include: { assessment: true }
+        }
+      },
+      orderBy: { surname: 'asc' }
+    });
+
+    // 3. Calculer la moyenne de chaque étudiant uniquement sur le périmètre du prof
+    return students.map(student => {
+      let totalWeighted = 0;
+      let totalWeights = 0;
+
+      student.grades.forEach(g => {
+        if (g.assessment) {
+          const gradeOn20 = (Number(g.value) / Number(g.assessment.maxGrade)) * 20;
+          totalWeighted += gradeOn20 * g.assessment.weight;
+          totalWeights += g.assessment.weight;
+        }
+      });
+
+      const globalAverage = totalWeights > 0 ? totalWeighted / totalWeights : null;
+
+      return {
+        firstname: student.firstname,
+        surname: student.surname,
+        globalAverage: globalAverage !== null ? parseFloat(globalAverage.toFixed(2)) : null
+      };
+    });
+
+  } catch (error) {
+    console.error("Erreur [getTeacherStudentsByClass]:", error);
+    return [];
+  }
+}
+
+
 
 // ====== RAPPORT DE CLASSE ======
 export async function getClassReportData(classId: number) {

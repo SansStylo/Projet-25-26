@@ -92,7 +92,7 @@ export default function EnseignantClientLayout({ children, user }: { children: R
           )}
         </div>
 
-        {/* liens de navigation A MODIFIER */}
+        {/* liens de navigation */}
         <ul className="list-none p-0 m-0">
           {[
             { name:'Accueil', href: '/dashboard', icon: (
@@ -104,6 +104,21 @@ export default function EnseignantClientLayout({ children, user }: { children: R
                 <circle cx="9" cy="7" r="4"></circle>
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </>
+            )},
+            { name: 'Groupes', href: '/dashboard/groupes', icon: (
+              <>
+                <rect width="7" height="7" x="3" y="3" rx="1"></rect>
+                <rect width="7" height="7" x="14" y="3" rx="1"></rect>
+                <rect width="7" height="7" x="14" y="14" rx="1"></rect>
+                <rect width="7" height="7" x="3" y="14" rx="1"></rect>
+              </>
+            )},
+            { name: 'Matières', href: '/dashboard/matieres', icon: (
+              <>
+                <rect width="8" height="18" x="3" y="3" rx="1"></rect>
+                <path d="M7 3v18"></path>
+                <path d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z"></path>
               </>
             )},
             { name: 'Saisie des notes', href: '/dashboard/notes', icon : (

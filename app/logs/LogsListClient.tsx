@@ -59,18 +59,15 @@ export default function LogsListClient({ initialLogs }: { initialLogs: LogType[]
                 <td className="py-3 px-4 font-mono text-xs text-[#8A9A8E]">
                   #{log.logsId}
                 </td>
-                
                 {/* Date */}
                 <td className="py-3 px-4 text-xs font-medium text-[#53665A]">
                   {formattedDate}
                 </td>
-
                 {/* Le message (Label) */}
                 <td className="py-3 px-4 text-[#1E2E24]">
                   {log.label}
                 </td>
-
-                {/* Bouton Supprimer (La croix) */}
+                {/* Bouton Supprimer */}
                 <td className="py-3 px-4 text-center">
                   <button
                     onClick={() => handleDelete(log.logsId)}

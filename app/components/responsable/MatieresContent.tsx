@@ -17,7 +17,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { getStudentsBySubject } from '@/app/actions';
 
 interface MatiereStats {
@@ -32,9 +32,10 @@ interface MatiereStats {
 
 interface MatieresContentProps {
   matieresStats: MatiereStats[];
+  teacherId?: string;
 }
 
-export default function MatieresContent({ matieresStats }: MatieresContentProps) {
+export default function MatieresContent({ matieresStats, teacherId }: MatieresContentProps) {
   const [selectedSubjects, setSelectedSubjects] = useState<Set<number>>(
     new Set(matieresStats.map(m => m.subjectId))
   );
@@ -117,34 +118,38 @@ export default function MatieresContent({ matieresStats }: MatieresContentProps)
                       </span>
                     </div>
                   </div>
-                  
                   <div className="p-6">
                     <div className="h-28 mb-4">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                           data={[
-                            { name: 'Min', value: matiere.minGrade },
-                            { name: 'Moy.', value: matiere.average },
-                            { name: 'Max', value: matiere.maxGrade },
+                            {
+                              name: 'Stats',
+                              min: matiere.minGrade,
+                              average: matiere.average,
+                              max: matiere.maxGrade,
+                            }
                           ]}
-                          margin={{ top: 5, right: 5, left: -30, bottom: 0 }}
-                        >
+                          margin={{ top: 15, right: 5, left: -30, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2EAE5" />
-                          <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                          <XAxis dataKey="name" hide tickLine={false} axisLine={false} />
                           <YAxis domain={[0, 20]} tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
-                          <Tooltip
-                            formatter={(value: number) => [`${value.toFixed(2)}/20`]}
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                          <Tooltip 
+                            content={() => null} 
+                            cursor={false}
                           />
-                          <Bar dataKey="value" radius={[3, 3, 0, 0]}>
-                            <Cell fill="#F97316" />
-                            <Cell fill="#0F5E3D" />
-                            <Cell fill="#3B82F6" />
+                          <Bar dataKey="min" name="Min" fill="#F97316" radius={[3, 3, 0, 0]}>
+                            <LabelList dataKey="min" position="top" fontSize={10} fontWeight="bold" fill="#C2410C" formatter={(v) => Number(v).toFixed(1)} />
+                          </Bar>
+                          <Bar dataKey="average" name="Moyenne" fill="#0F5E3D" radius={[3, 3, 0, 0]}>
+                            <LabelList dataKey="average" position="top" fontSize={10} fontWeight="bold" fill="#0F5E3D" formatter={(v) => Number(v).toFixed(1)} />
+                          </Bar>
+                          <Bar dataKey="max" name="Max" fill="#3B82F6" radius={[3, 3, 0, 0]}>
+                            <LabelList dataKey="max" position="top" fontSize={10} fontWeight="bold" fill="#1D4ED8" formatter={(v) => Number(v).toFixed(1)} />
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-
                     <button
                       onClick={() => {
                         setSelectedSubjectForStudents(matiere.subjectId);
@@ -172,29 +177,48 @@ export default function MatieresContent({ matieresStats }: MatieresContentProps)
           subjectId={selectedSubjectForStudents}
           onClose={() => setShowStudentModal(false)}
           subjectName={matieresStats.find(m => m.subjectId === selectedSubjectForStudents)?.name || ''}
+          teacherId={teacherId}
         />
       )}
     </>
   );
 }
 
+interface StudentsModalProps {
+  subjectId: number;
+  onClose: () => void;
+  subjectName: string;
+  teacherId?: string;
+}
+
 // Composant Modal pour afficher les étudiants
-function StudentsModal({ subjectId, onClose, subjectName }: { subjectId: number; onClose: () => void; subjectName: string }) {
+function StudentsModal({ subjectId, onClose, subjectName, teacherId }: StudentsModalProps) {
   const [students, setStudents] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc' | null>(null);
 
   React.useEffect(() => {
-    getStudentsBySubject(subjectId)
-      .then(data => {
+    const loadData = async () => {
+      try {
+        let data;
+        if (teacherId) {
+          // Si prof, on utilise la version prof
+          const { getTeacherStudentsBySubject } = await import('@/app/actions');
+          data = await getTeacherStudentsBySubject(subjectId, BigInt(teacherId));
+        } else {
+          // Sinon, respo
+          data = await getStudentsBySubject(subjectId);
+        }
         setStudents(data);
-        setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error('Erreur chargement étudiants:', err);
+      } finally {
         setLoading(false);
-      });
-  }, [subjectId]);
+      }
+    };
+
+    loadData();
+  }, [subjectId, teacherId]);
 
   const sortedStudents = React.useMemo(() => {
     if (!sortOrder) return students;
