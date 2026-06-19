@@ -20,6 +20,7 @@ import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import { hashPassword } from '../app/lib/password';
 
 // Setup de connexion identique à ton db.ts
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -54,7 +55,7 @@ async function main() {
   const profJean = await prisma.user.create({
     data: {
       mail: 'prof@isen.fr',
-      password: 'password123',
+      password: await hashPassword('password123'),
       firstname: 'Jean',
       surname: 'Dupont',
       level: 0, // Enseignant
@@ -64,7 +65,7 @@ async function main() {
   const profMarie = await prisma.user.create({
     data: {
       mail: 'marie.martin@isen.fr',
-      password: 'secure123',
+      password: await hashPassword('secure123'),
       firstname: 'Marie',
       surname: 'Martin',
       level: 0, // Enseignant
@@ -74,7 +75,7 @@ async function main() {
   const responsable = await prisma.user.create({
     data: {
       mail: 'responsable@isen.fr',
-      password: 'resp123',
+      password: await hashPassword('resp123'),
       firstname: 'Sophie',
       surname: 'Rousseau',
       level: 1, // Responsable pédagogique
@@ -84,7 +85,7 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       mail: 'admin@isen.fr',
-      password: 'admin123',
+      password: await hashPassword('admin123'),
       firstname: 'Pierre',
       surname: 'Legrand',
       level: 2, // Administrateur
