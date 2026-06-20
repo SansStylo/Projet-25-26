@@ -17,7 +17,7 @@ interface GroupStats {
 async function getTeacherGroupsStats(userId: bigint): Promise<GroupStats[]> {
   const targetTeacherId = BigInt(userId);
 
-  // 1. Trouver toutes les matières et classes associées à ce professeur
+  // Trouver toutes les matières et classes associées à ce professeur
   const teacherAssignments = await prisma.teacherAssignments.findMany({
     where: { teacherId: targetTeacherId },
     include: {
@@ -39,7 +39,7 @@ async function getTeacherGroupsStats(userId: bigint): Promise<GroupStats[]> {
     }
   });
 
-  // 2. Extraire les classes uniques et les matières du prof par classe
+  // Extraire les classes uniques et les matières du prof par classe
   const classesMap = new Map<number, { classId: number; label: string; studentCount: number }>();
   const teacherSubjectsByClass = new Map<number, Set<number>>(); // classId -> Set of subjectIds
   const allSubjectsMap = new Map<number, string>(); // subjectId -> label
@@ -72,7 +72,7 @@ async function getTeacherGroupsStats(userId: bigint): Promise<GroupStats[]> {
 
   const uniqueClasses = Array.from(classesMap.values());
 
-  // 3. Calculer les statistiques uniquement sur le périmètre du prof
+  // Calculer les statistiques uniquement sur le périmètre du prof
   const groupsStats: GroupStats[] = await Promise.all(
     uniqueClasses.map(async (cls) => {
       const subjectIds = Array.from(teacherSubjectsByClass.get(cls.classId) || []);
@@ -102,7 +102,7 @@ async function getTeacherGroupsStats(userId: bigint): Promise<GroupStats[]> {
         })
       );
 
-      // Moyenne globale de la classe MAIS restreinte aux seules matières de ce prof !
+      // Moyenne globale de la classe mais restreinte aux matières que dispense l'enseignant
       const globalResult = await prisma.grade.aggregate({
         where: {
           student: { classId: cls.classId },

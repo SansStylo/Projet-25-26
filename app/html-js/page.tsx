@@ -208,7 +208,7 @@ export default function DashboardPage() {
       <main className="p-6 md:p-10 flex-1 overflow-auto bg-[#F8FAFC] dark:bg-[#050A08]">
         <div className="max-w-6xl mx-auto">
           
-          {/* 1. En-tête de la page + Boutons d'actions alignés */}
+          {/* En-tête de la page + Boutons d'actions */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-2xl font-bold text-[#1E2E24] dark:text-emerald-50 mb-1">
@@ -251,7 +251,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 2. Grille de cartes pour les matières*/}
+          {/* Grille de cartes pour les matières*/}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {isLoading ? (
               <p className="text-sm text-slate-400 italic">Chargement des matières...</p>

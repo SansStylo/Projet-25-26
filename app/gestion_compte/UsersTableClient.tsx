@@ -208,7 +208,6 @@ export default function UsersTableClient({ initialUsers }: { initialUsers: UserT
               type="text"
               value={newFirstname}
               onChange={(e) => setNewFirstname(e.target.value)}
-              // Utilise {` ... `} au lieu de " ... "
               className={`w-full bg-white dark:bg-[#0E1B16] border rounded-lg p-2 text-sm dark:text-emerald-50 focus:outline-none ${
                 hasAttemptedSubmit && !newFirstname 
                   ? 'border-red-500' 

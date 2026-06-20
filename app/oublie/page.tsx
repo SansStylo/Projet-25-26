@@ -77,7 +77,6 @@ export default function MotDePasseOublie() {
           
           {/* Étape 1 */}
           <div className="flex flex-col items-center flex-1 relative">
-            {/* Ligne reliant l'étape 1 à 2 */}
             <div className={`absolute h-[2px] top-4 left-1/2 right-0 z-0 -translate-y-1/2 transition-colors duration-300 ${
               step >= 2 ? 'bg-emerald-700' : 'bg-stone-100'
             }`} />
@@ -94,7 +93,6 @@ export default function MotDePasseOublie() {
 
           {/* Étape 2 */}
           <div className="flex flex-col items-center flex-1 relative">
-            {/* Lignes associées à l'étape 2 */}
             <div className={`absolute h-[2px] top-4 left-0 right-1/2 z-0 -translate-y-1/2 transition-colors duration-300 ${step >= 2 ? 'bg-emerald-700' : 'bg-stone-100'}`} />
             <div className={`absolute h-[2px] top-4 left-1/2 right-0 z-0 -translate-y-1/2 transition-colors duration-300 ${step >= 3 ? 'bg-emerald-700' : 'bg-stone-100'}`} />
             
@@ -110,7 +108,6 @@ export default function MotDePasseOublie() {
 
           {/* Étape 3 */}
           <div className="flex flex-col items-center flex-1 relative">
-            {/* Ligne arrivant à l'étape 3 */}
             <div className={`absolute h-[2px] top-4 left-0 right-1/2 z-0 -translate-y-1/2 transition-colors duration-300 ${step >= 3 ? 'bg-emerald-700' : 'bg-stone-100'}`} />
             
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 transition-colors duration-300 ${

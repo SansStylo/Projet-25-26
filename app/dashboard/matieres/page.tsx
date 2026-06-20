@@ -13,7 +13,7 @@ interface MatiereStats {
 }
 
 async function getTeacherSubjectsStats(userId: bigint): Promise<MatiereStats[]> {
-  // 1. On récupère UNIQUEMENT les matières assignées à CE professeur
+  // On récupère uniquement les matières assignées à ce professeur
   const assignments = await prisma.teacherAssignments.findMany({
     where: { teacherId: userId },
     include: { subject: true },
@@ -23,7 +23,7 @@ async function getTeacherSubjectsStats(userId: bigint): Promise<MatiereStats[]> 
   // Extraction des matières uniques
   const teacherSubjects = assignments.map(a => a.subject);
 
-  // 2. On calcule les statistiques uniquement sur le périmètre de ses matières
+  // On calcule les statistiques uniquement sur ses matières
   const matieresStats: MatiereStats[] = await Promise.all(
     teacherSubjects.map(async (subject) => {
       // Notes uniquement pour cette matière

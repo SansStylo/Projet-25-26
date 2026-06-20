@@ -1,5 +1,5 @@
 import { prisma } from "@/app/lib/db";
-import { requireAuth } from "@/app/lib/auth"; // Ta fonction pour récupérer la session
+import { requireAuth } from "@/app/lib/auth";
 import { ROLE_LABELS } from "@/app/lib/auth-constants";
 import React from "react";
 
@@ -44,22 +44,6 @@ export default async function ProfilPage() {
       cardGradient: "from-slate-50 to-[#F4F7F5]/30 dark:from-emerald-900/20 dark:to-[#0E1B16]",
       moduleBadge: "bg-gradient-to-r from-[#F4F7F5] to-slate-50 dark:from-emerald-900/20 dark:to-emerald-950/20 text-[#128455] dark:text-emerald-300 border-[#E2EAE5] dark:border-emerald-800"
     }
-    // 1: { // Responsable : Ambre
-    //   titleText: "text-amber-700",
-    //   iconColor: "text-amber-600",
-    //   badge: "bg-amber-50 text-amber-800 border-amber-200",
-    //   gradient: "from-orange-600 to-amber-500",
-    //   cardGradient: "from-slate-50 to-orange-50/10",
-    //   moduleBadge: "bg-gradient-to-r from-purple-50 to-slate-50 text-purple-800 border-purple-200"
-    // },
-    // 2: { // Admin : Violet
-    //   titleText: "text-purple-700",
-    //   iconColor: "text-purple-600",
-    //   badge: "bg-purple-50 text-purple-700 border-purple-200",
-    //   gradient: "from-purple-600 to-indigo-500",
-    //   cardGradient: "from-slate-50 to-purple-50/10",
-    //   moduleBadge: "bg-gradient-to-r from-purple-50 to-slate-50 text-purple-800 border-purple-200"
-    // }
   }[user.level as 0 ] || {
     titleText: "text-[#0F5E3D] dark:text-emerald-400",
     iconColor: "text-[#128455] dark:text-emerald-500", 

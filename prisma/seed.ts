@@ -22,7 +22,6 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import { hashPassword } from '../app/lib/password';
 
-// Setup de connexion identique à ton db.ts
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
@@ -30,14 +29,14 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log(' Nettoyage complet de la base de données...');
   
-  // 1. On supprime d'abord les tables dépendantes (tables enfants / pivots)
+  // On supprime d'abord les tables dépendantes (tables enfants / pivots)
   await prisma.grade.deleteMany({});
   await prisma.assessment.deleteMany({});
   await prisma.teacherAssignments.deleteMany({});
   await prisma.subjectAssignments.deleteMany({});
   await prisma.studentAssignments.deleteMany({});
   
-  // 2. On supprime ensuite les tables principales (tables parents)
+  // On supprime ensuite les tables principales (tables parents)
   await prisma.student.deleteMany({});
   await prisma.subject.deleteMany({});
   await prisma.group.deleteMany({});
@@ -48,7 +47,7 @@ async function main() {
   console.log('Injection des données de test...');
 
   // ═══════════════════════════════════════════════════════════════════
-  // STEP 1 : CRÉATION DES UTILISATEURS (COMPTES APPLICATIFS)
+  // CRÉATION DES UTILISATEURS (COMPTES APPLICATIFS)
   // ═══════════════════════════════════════════════════════════════════
 
   const profJean = await prisma.user.create({
@@ -94,7 +93,7 @@ async function main() {
   console.log('   └─ Comptes utilisateurs créés !');
 
   // ═══════════════════════════════════════════════════════════════════
-  // STEP 2 : CLASSES & GROUPES
+  // CLASSES & GROUPES
   // ═══════════════════════════════════════════════════════════════════
 
   const classCSI3 = await prisma.class.create({ data: { label: 'CSI 3 - Informatique' } });
@@ -118,7 +117,7 @@ async function main() {
   console.log('   └─ Classes et groupes configurés !');
 
   // ═══════════════════════════════════════════════════════════════════
-  // STEP 3 : ÉTUDIANTS (MANUELS + FAKER MASSIF)
+  // ÉTUDIANTS (MANUELS + FAKER MASSIF)
   // ═══════════════════════════════════════════════════════════════════
 
   // Création des 3 étudiants fixes pour tes tests de liaison
@@ -147,7 +146,7 @@ async function main() {
   console.log(`   └─ ${allStudents.length} étudiants enregistrés (Usine Faker OK) !`);
 
   // ═══════════════════════════════════════════════════════════════════
-  // STEP 4 : AFFECTATION DES ÉTUDIANTS DANS LES GROUPES (TABLE PIVOT)
+  // AFFECTATION DES ÉTUDIANTS DANS LES GROUPES (TABLE PIVOT)
   // ═══════════════════════════════════════════════════════════════════
 
   const studentAssignmentsBuffer = allStudents.map((student, index) => {
@@ -162,14 +161,14 @@ async function main() {
   await prisma.studentAssignments.createMany({ data: studentAssignmentsBuffer });
 
   // ═══════════════════════════════════════════════════════════════════
-  // STEP 5 : MATIÈRES
+  //  MATIÈRES
   // ═══════════════════════════════════════════════════════════════════
 
   const subjectDevWeb = await prisma.subject.create({ data: { label: 'Développement Web Avancé (Next.js)' } });
   const subjectDatabase = await prisma.subject.create({ data: { label: 'Bases de données relationnelles & SQL' } });
 
   // ═══════════════════════════════════════════════════════════════════
-  // STEP 6 : AFFECTATION DES PROFS ET DES ÉLÈVES AUX MATIÈRES
+  //  AFFECTATION DES PROFS ET DES ÉLÈVES AUX MATIÈRES
   // ═══════════════════════════════════════════════════════════════════
 
   await prisma.teacherAssignments.createMany({
@@ -190,10 +189,10 @@ async function main() {
   console.log('   └─ Cartographie des cours et matières validée !');
 
   // ═══════════════════════════════════════════════════════════════════
-  // STEP 7 : ÉVALUATIONS ET INJECTION AUTOMATIQUE DE NOTES
+  // ÉVALUATIONS ET INJECTION AUTOMATIQUE DE NOTES
   // ═══════════════════════════════════════════════════════════════════
 
-  // 1. Évaluations officielles pour l'historique (Mars, Avril, Mai)
+  // Évaluations officielles pour l'historique (Mars, Avril, Mai)
   const examProject = await prisma.assessment.create({
     data: {
       subject: { connect: { subjectId: subjectDevWeb.subjectId } },
@@ -230,9 +229,9 @@ async function main() {
   const allAssessments = [examProject, examSql, examFinal];
   const gradesBuffer: { assessmentId: bigint; studentId: bigint; value: number; feedback: string }[] = [];
 
-  // 2. Génération des notes pour TOUS les étudiants sur TOUTES les évaluations
+  // Génération des notes pour TOUS les étudiants sur TOUTES les évaluations
   allStudents.forEach((student) => {
-    // Pour rendre les alertes de ton dashboard vivantes, on force environ 15% des élèves à être en difficulté
+    // Pour montrer les alertes, on force environ 15% des élèves à être en difficulté
     const isStudentAtRisk = Math.random() < 0.15;
 
     allAssessments.forEach((assessment) => {

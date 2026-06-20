@@ -409,7 +409,7 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                       </div>
                     </div>
                   </div>
-                  {/* Bouton export PDF - en dehors du div capturé */}
+                  {/* Bouton export PDF */}
                   <div className="mt-4 flex justify-end">
                     <button
                       onClick={exportStudentPdf}

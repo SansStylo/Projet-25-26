@@ -381,10 +381,10 @@ export default function ClassesAndGroupsPage() {
 
       {activeGroup && (
         <BlocGroups 
-          currentGroup={activeGroup}  // On passe l'objet
+          currentGroup={activeGroup} 
           students={students}
           studentAssignments={studentAssignments}
-          onClose={() => setActiveGroup(null)} // C'est ici que tu appelles le setter du parent
+          onClose={() => setActiveGroup(null)}
           onRefreshAssignments={refreshAssignments}
         />
         

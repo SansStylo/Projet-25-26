@@ -153,13 +153,12 @@ export default function LogsListClient({ initialLogs }: { initialLogs: LogType[]
               </th>
               <th className="py-3 px-4 w-16">ID</th>
               <th className="py-3 px-4 w-48">Date & Heure</th>
-              <th className="py-3 px-4 w-28">Type</th> {/* Nouvelle colonne pour le badge */}
+              <th className="py-3 px-4 w-28">Type</th>
               <th className="py-3 px-4">Événement</th>
               <th className="py-3 px-4 text-center w-16"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#F0F4F1] dark:divide-emerald-900/20">
-            {/* Utilise paginatedLogs ici pour que la pagination fonctionne ! */}
             {paginatedLogs.map((log) => {
               const badge = getLogBadge(log.label);
               return (

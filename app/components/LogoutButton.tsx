@@ -16,10 +16,10 @@ import { logoutAction } from "@/app/actions";
 
 export function LogoutButton() {
   const handleLogout = async () => {
-    // 1. Nettoyage du cache côté client (immédiat)
+    // Nettoyage du cache côté client (immédiat)
     localStorage.removeItem("theme");
     document.documentElement.classList.remove("dark");
-    // 2. Appel de l'action serveur (qui gère la BDD et la redirection)
+    // Appel de l'action serveur (qui gère la BDD et la redirection)
     await logoutAction();
   };
   return (

@@ -16,15 +16,15 @@ export default function ParametresContentWrapper({ theme, userTheme }: { theme: 
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"theme" | "securite">("theme");
   
-  // 1. On initialise DIRECTEMENT avec la valeur de la BDD (on ne lit plus le localStorage ici)
+  // On initialise avec la valeur de la BDD
   const [themeMode, setThemeMode] = useState<"light" | "dark">(userTheme);
 
-  // 2. Si l'utilisateur change (nouvelle session), on force le composant à se mettre à jour
+  // Si l'utilisateur change, on force le composant à se mettre à jour
   useEffect(() => {
     setThemeMode(userTheme);
   }, [userTheme]);
 
-  // 3. Ce useEffect applique le thème au DOM et garde le localStorage à jour pour le F5
+  // Ce useEffect applique le thème au DOM et garde le localStorage à jour
   useEffect(() => {
     if (themeMode === "dark") {
       document.documentElement.classList.add("dark");
@@ -34,7 +34,7 @@ export default function ParametresContentWrapper({ theme, userTheme }: { theme: 
     localStorage.setItem("theme", themeMode);
   }, [themeMode]);
 
-  // 4. Le handler de changement au clic
+  // Le handler de changement au clic
   const handleThemeChange = async (newTheme: "light" | "dark") => {
     setThemeMode(newTheme); 
     
@@ -45,32 +45,6 @@ export default function ParametresContentWrapper({ theme, userTheme }: { theme: 
       setThemeMode(newTheme === "light" ? "dark" : "light");
     }
   };
-
-
-  
-  
-
-  // useEffect(() => {
-  //   if (themeMode === "dark") {
-  //     document.documentElement.classList.add("dark");
-  //   } else {
-  //     document.documentElement.classList.remove("dark");
-  //   }
-  //   localStorage.setItem("theme", themeMode);
-  // }, [themeMode]);
-
-  // // ÉTAPE 5 : Le handler de changement propre
-  // const handleThemeChange = async (newTheme: "light" | "dark") => {
-  //   setThemeMode(newTheme); // Changement visuel INSTANTANÉ à l'écran
-    
-  //   try {
-  //     await updateThemeAction(newTheme); // Sauvegarde en BDD
-  //     router.refresh(); // <--- Met à jour les données du serveur en douce (plus besoin de F5 !)
-  //   } catch (error) {
-  //     // En cas d'erreur réseau, on remet l'ancien thème
-  //     setThemeMode(newTheme === "light" ? "dark" : "light");
-  //   }
-  // };
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -109,7 +83,7 @@ export default function ParametresContentWrapper({ theme, userTheme }: { theme: 
     <div className="p-6 md:p-10 flex-1 overflow-y-auto bg-[#F8FAFC] dark:bg-[#050A08] min-h-screen transition-colors duration-300">
       <div className="max-w-5xl bg-white dark:bg-[#0B1511] rounded-2xl border border-[#E2EAE5] dark:border-emerald-900/30 shadow-[0_4px_20px_rgba(0,0,0,0.015)] mx-auto flex flex-col md:flex-row overflow-hidden min-h-[600px]">
         
-        {/* COLONNE GAUCHE : Menu des onglets */}
+        {/* Menu des onglets */}
         <div className="w-full md:w-64 bg-slate-50/50 dark:bg-[#0A120F] border-r border-[#E2EAE5] dark:border-emerald-900/30 p-4 space-y-1 shrink-0">
 
           <button
@@ -137,10 +111,10 @@ export default function ParametresContentWrapper({ theme, userTheme }: { theme: 
           </button>
         </div>
 
-        {/* COLONNE DROITE : Zone de formulaire adaptative */}
+        {/* Zone de formulaire */}
         <div className="flex-1 p-6 md:p-10">
 
-          {/* ONGLET 2 : Thèmes */}
+          {/* Thèmes */}
           {activeTab === "theme" && (
             <div className="space-y-6">
               <div>
@@ -183,7 +157,7 @@ export default function ParametresContentWrapper({ theme, userTheme }: { theme: 
           )}
 
 
-          {/* ONGLET 3 : SÉCURITÉ */}
+          {/* Sécurité */}
           {activeTab === "securite" && (
             <div className="space-y-8 max-h-[650px] overflow-y-auto pr-2">
               <div>

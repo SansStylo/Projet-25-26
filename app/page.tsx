@@ -100,7 +100,7 @@ export default function LoginPage() {
             </label>
             <input
               type="email"
-              name="email" // Indispensable pour récupérer la valeur côté serveur
+              name="email"
               placeholder="prof@isen.fr"
               className="w-full px-4 py-3 rounded-xl bg-stone-50/50 border border-stone-200 text-stone-900 placeholder-stone-400 focus:bg-white focus:ring-4 focus:ring-emerald-700/5 focus:border-emerald-700 outline-none transition text-sm font-medium"
               required
@@ -120,7 +120,7 @@ export default function LoginPage() {
             <div className="relative w-full">
               <input
                 id="password"
-                type={showPassword ? "text" : "password"}  /* pour savoir si le mdp est affiché ou masqué */
+                type={showPassword ? "text" : "password"} 
                 name="mot_de_passe"
                 placeholder="••••••••"
                 className="w-full px-4 py-3 rounded-xl bg-stone-50/50 border border-stone-200 text-stone-900 placeholder-stone-400 focus:bg-white focus:ring-4 focus:ring-emerald-700/5 focus:border-emerald-700 outline-none transition text-sm font-medium"
