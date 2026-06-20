@@ -11,13 +11,14 @@ import { getUserNotifications, deleteNotificationAction, getCurrentUserId } from
 interface UserProps {
   firstname: string;
   surname: string;
+  theme: string;
 }
 
 interface AlertType {
   id: string;        
   type: string;
   text: string;
-  returns: string;
+  returns: string | null;
 }
 
 export default function AdminClientLayout({ children, user }: { children: React.ReactNode; user: UserProps; }) {
@@ -30,6 +31,15 @@ export default function AdminClientLayout({ children, user }: { children: React.
   // On force l'état à accepter notre tableau d'Alertes (vide par défaut)
   const [alerts, setAlerts] = useState<AlertType[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+  if (user.theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("theme", user.theme);
+  }, [user.theme]);
 
   // fermeture de la sidebar sur téléphone quand on arrive sur le site
     useEffect(() => {

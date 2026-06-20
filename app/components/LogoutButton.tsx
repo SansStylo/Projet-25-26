@@ -15,10 +15,17 @@
 import { logoutAction } from "@/app/actions";
 
 export function LogoutButton() {
+  const handleLogout = async () => {
+    // 1. Nettoyage du cache côté client (immédiat)
+    localStorage.removeItem("theme");
+    document.documentElement.classList.remove("dark");
+    // 2. Appel de l'action serveur (qui gère la BDD et la redirection)
+    await logoutAction();
+  };
   return (
     <li>
       <button
-        onClick={() => logoutAction()}
+        onClick={() => handleLogout()}
         className="w-full flex items-center gap-2.5 px-4 py-3 text-stone-600 dark:text-emerald-200/60 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium text-sm transition-colors text-left bg-transparent border-none outline-none cursor-pointer"
       >
         <svg 

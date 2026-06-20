@@ -27,13 +27,14 @@ import { getUserNotifications, deleteNotificationAction, getCurrentUserId } from
 interface UserProps {
   firstname: string;
   surname: string;
+  theme: string;
 }
 
 interface AlertType {
   id: string;        
   type: string;
   text: string;
-  returns: string;
+  returns: string | null;
 }
 
 export default function EnseignantClientLayout({ children, user }: { children: React.ReactNode; user: UserProps; }) {
@@ -42,6 +43,15 @@ export default function EnseignantClientLayout({ children, user }: { children: R
   const [isSidebarReduced, setSidebarReduced] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  useEffect(() => {
+  if (user.theme === "dark") {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+  localStorage.setItem("theme", user.theme);
+}, [user.theme]);
   
   // On force l'état à accepter notre tableau d'Alertes (vide par défaut)
   const [alerts, setAlerts] = useState<AlertType[]>([]);

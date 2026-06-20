@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { changePasswordAction, updateThemeAction } from '../actions';
+import { useRouter } from "next/navigation";
 
 interface ThemeProps {
   primaryBtn: string;
@@ -10,33 +11,66 @@ interface ThemeProps {
   iconColor: string;
 }
 
-export default function ParametresContentWrapper({ theme }: { theme: ThemeProps }) {
-  const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
+export default function ParametresContentWrapper({ theme, userTheme }: { theme: ThemeProps, userTheme: "light" | "dark" }) {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"theme" | "securite">("theme");
+  
+  // 1. On initialise DIRECTEMENT avec la valeur de la BDD (on ne lit plus le localStorage ici)
+  const [themeMode, setThemeMode] = useState<"light" | "dark">(userTheme);
 
-  // On attend que le composant soit monté côté client pour afficher le thème
+  // 2. Si l'utilisateur change (nouvelle session), on force le composant à se mettre à jour
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setThemeMode(userTheme);
+  }, [userTheme]);
 
+  // 3. Ce useEffect applique le thème au DOM et garde le localStorage à jour pour le F5
   useEffect(() => {
-    const saved = localStorage.getItem("theme") as "light" | "dark" || "light";
-    setThemeMode(saved);
-  }, []);
-
-  const handleThemeChange = async (newTheme: "light" | "dark") => {
-    // 1. Mise à jour visuelle immédiate
-    setThemeMode(newTheme);
-    localStorage.setItem("theme", newTheme);
-    
-    if (newTheme === "dark") {
+    if (themeMode === "dark") {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
-    await updateThemeAction(newTheme);
+    localStorage.setItem("theme", themeMode);
+  }, [themeMode]);
+
+  // 4. Le handler de changement au clic
+  const handleThemeChange = async (newTheme: "light" | "dark") => {
+    setThemeMode(newTheme); 
+    
+    try {
+      await updateThemeAction(newTheme); 
+      router.refresh(); 
+    } catch (error) {
+      setThemeMode(newTheme === "light" ? "dark" : "light");
+    }
   };
+
+
+  
+  
+
+  // useEffect(() => {
+  //   if (themeMode === "dark") {
+  //     document.documentElement.classList.add("dark");
+  //   } else {
+  //     document.documentElement.classList.remove("dark");
+  //   }
+  //   localStorage.setItem("theme", themeMode);
+  // }, [themeMode]);
+
+  // // ÉTAPE 5 : Le handler de changement propre
+  // const handleThemeChange = async (newTheme: "light" | "dark") => {
+  //   setThemeMode(newTheme); // Changement visuel INSTANTANÉ à l'écran
+    
+  //   try {
+  //     await updateThemeAction(newTheme); // Sauvegarde en BDD
+  //     router.refresh(); // <--- Met à jour les données du serveur en douce (plus besoin de F5 !)
+  //   } catch (error) {
+  //     // En cas d'erreur réseau, on remet l'ancien thème
+  //     setThemeMode(newTheme === "light" ? "dark" : "light");
+  //   }
+  // };
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -111,7 +145,7 @@ export default function ParametresContentWrapper({ theme }: { theme: ThemeProps 
             <div className="space-y-6">
               <div>
                 <h2 className="text-2xl font-bold text-[#1E2E24] dark:text-emerald-50 mb-1">Thèmes</h2>
-                <p className="text-sm text-slate-500 dark:text-emerald-200/60">Personnalisez l'espace de travail et les styles visuels de la plateforme.</p>
+                <p className="text-sm text-slate-500 dark:text-emerald-200/60">Personnalisez le style visuel de la plateforme.</p>
               </div>
               <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
                 <div className="flex flex-col gap-2">

@@ -28,18 +28,14 @@ export const metadata: Metadata = {
     icon:"/logo.png?v=2"},
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({children,}: {children: React.ReactNode;}) {
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark') {
+            var theme = localStorage.getItem('theme');
+            if (theme === 'dark') {
               document.documentElement.classList.add('dark');
             } else {
               document.documentElement.classList.remove('dark');

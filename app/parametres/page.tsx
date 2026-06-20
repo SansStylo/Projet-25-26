@@ -6,6 +6,8 @@ import ResponsableClientLayout from "@/app/components/responsable/ResponsableLay
 import AdminClientLayout from "@/app/components/admin/AdminLayout";
 import ParametresContentWrapper from "@/app/parametres/ParametresContentWrapper";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ParametresPage() {
   const user = await requireAuth();
 
@@ -37,7 +39,11 @@ export default async function ParametresPage() {
   };
 
   const pageContent = (
-    <ParametresContentWrapper theme={sessionThemes} />
+    <ParametresContentWrapper 
+      key={user.userId.toString()} // Recrée proprement le composant si on change d'utilisateur
+      userTheme={user.theme as "light" | "dark"} // Envoie le thème stocké dans ton schéma Prisma
+      theme={sessionThemes} 
+    />
   );
 
   // Injection du bon Layout global

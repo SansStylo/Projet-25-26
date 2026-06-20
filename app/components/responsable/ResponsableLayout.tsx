@@ -11,13 +11,14 @@ import { getUserNotifications, deleteNotificationAction, getCurrentUserId } from
 interface UserProps {
   firstname: string;
   surname: string;
+  theme: string;
 }
 
 interface AlertType {
   id: string;        
   type: string;
   text: string;
-  returns: string;
+  returns: string | null;
 }
 
 
@@ -34,6 +35,15 @@ export default function ResponsableClientLayout({ children, user }: { children: 
 
   // Alertes
   const [alerts, setAlerts] = useState<AlertType[]>([]);
+
+   useEffect(() => {
+    if (user.theme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+      localStorage.setItem("theme", user.theme);
+    }, [user.theme]);
   
   // fermeture de la sidebar sur téléphone quand on arrive sur le site
     useEffect(() => {
