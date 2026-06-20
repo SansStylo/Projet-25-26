@@ -1,7 +1,14 @@
 
-# ISEN Suivi - Plateforme Pédagogique
+# Junia'lytics- Plateforme Pédagogique
 
-Application web de suivi pédagogique et d'aide à la décision pour ISEN.
+Application web de suivi pédagogique des étudiants et d'aide à la décision pour JUNIA.
+
+Projet réalisé par :
+- Logan Comble
+- Florian Desrousseaux
+- Kylian Opel
+- Noé Portenart
+- Audrey Vasseur
 
 ---
 
@@ -55,7 +62,7 @@ DATABASE_URL="postgresql://postgres:root@localhost:5432/suivi_pedago?schema=publ
 npx prisma generate
 ```
 
-### 4. Créer les tables dans la BDD ( ne pas hésiter a reset si demandé puis refaire la commande push)
+### 4. Créer les tables dans la BDD ( ne pas hésiter à reset si demandé puis refaire la commande push)
 ```bash
 npx prisma db push
 ```
@@ -67,7 +74,7 @@ npx prisma db seed
 *(optionnel, pour avoir des utilisateurs de test)*
 
 ---
-Installations supplémentaires :
+### 6. Installations supplémentaires :
 Pour la gestion des mots de passe oubliés sur la page de connexion
 ```bash
 npm install nodemailer
@@ -79,6 +86,7 @@ npm install --save-dev @types/nodemailer
 
 Rajouter dans votre .env cette ligne avec le mot de passe de l'adresse email correspondant
 pour configurer l'adresse qui enverra les mails automatiques de récupération de mots de passe
+(ici le mot de passe est déjà donné)
 ```env
 GMAIL_PASS=dlbdzqwgpcdkweeh
 ```
@@ -89,65 +97,11 @@ npm install bcryptjs
 npm install -D @types/bcryptjs
 ```
 
-Pour ajouter la modulation des thèmes
+Pour ajouter la modulation entre thème clair et sombre
 ```bash
 npm install next-themes
 ```
 
----
-
-## 📊 Comprendre Prisma, SQL et PostgreSQL
-
-### **PostgreSQL** 
-- **Base de données relationnelle** : stocke les données de manière structurée
-- Utilise le langage **SQL** pour les requêtes
-
-### **SQL** 
-- Langage standard pour interroger les bases de données
-- Exemple : `SELECT * FROM utilisateur WHERE email = 'prof@isen.fr';`
-- Voir : [prisma/migrations/](prisma/migrations/) pour les scripts SQL
-
-### **Prisma** 
-- **ORM** (Object-Relational Mapping) : traduit automatiquement vos données en objets JavaScript
-- Vous n'écrivez **pas de SQL brut**, Prisma génère les requêtes pour vous
-- Fichier de config : [prisma/schema.prisma](prisma/schema.prisma)
-- Types TypeScript générés automatiquement pour la sécurité
-
-**Exemple avec Prisma :**
-```typescript
-// Au lieu d'écrire SQL brut, vous écrivez :
-const user = await prisma.utilisateur.findUnique({
-  where: { email: 'prof@isen.fr' }
-});
-```
-
----
-
-## 🛠️ Commandes Prisma utiles
-
-| Commande | Utilité |
-|----------|---------|
-| `npx prisma generate` | Génère le client Prisma et les types TypeScript |
-| `npx prisma db push` | Crée/met à jour les tables selon le schéma |
-| `npx prisma studio` | **Ouvre une interface graphique** pour visualiser et modifier la BDD |
-| `npx prisma db seed` | Exécute le script seed.ts pour peupler les données de test |
-| `npx prisma migrate dev --name <nom>` | Crée une nouvelle migration (changement de schéma) |
-
----
-
-## 🔑 Données de test
-
-Les identifiants de test sont dans [prisma/seed.ts](prisma/seed.ts) :
-
-| Email | Mot de passe | Rôle |
-|-------|-------------|------|
-| `prof@isen.fr` | `password123` | Enseignant |
-| `admin@isen.fr` | `admin123` | Administrateur |
-| `responsable@isen.fr` | `resp123` | Responsable Pédagogique |
-
- **Les mots de passe sont en clair** (non hachés) pour faciliter les tests. À sécuriser plus tard
-
----
 
 ## Démarrer l'application
 
@@ -159,12 +113,34 @@ Ouvrir : [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## 📚 Ressources utiles
+## Commandes Prisma utiles
+
+| Commande | Utilité |
+|----------|---------|
+| `npx prisma generate` | Génère le client Prisma et les types TypeScript |
+| `npx prisma db push` | Crée/met à jour les tables selon le schéma |
+| `npx prisma studio` | **Ouvre une interface graphique** pour visualiser et modifier la BDD |
+| `npx prisma db seed` | Exécute le script seed.ts pour peupler les données de test |
+| `npx prisma migrate dev --name <nom>` | Crée une nouvelle migration (changement de schéma) |
+
+---
+
+## Données de test
+
+Les identifiants de test sont dans [prisma/seed.ts](prisma/seed.ts) :
+
+|         Email        |  Mot de passe  |          Rôle           |
+|----------------------|----------------|-------------------------|
+| `prof@isen.fr`       | `password123`  | Enseignant              |
+| `admin@isen.fr`      | `admin123`     | Administrateur          |
+| `responsable@isen.fr`| `resp123`      | Responsable Pédagogique |
+
+ **Attention : Les mots de passe sont hachés dans la bdd**
+
+
+## Documentation
 
 - [Next.js Documentation](https://nextjs.org/docs) - Fonctionnalités Next.js
 - [Prisma Documentation](https://www.prisma.io/docs) - Guide complet Prisma
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/) - Référence PostgreSQL
-
-
-
 

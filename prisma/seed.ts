@@ -28,12 +28,11 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('🗑️ Nettoyage complet de la base de données...');
+  console.log(' Nettoyage complet de la base de données...');
   
   // 1. On supprime d'abord les tables dépendantes (tables enfants / pivots)
   await prisma.grade.deleteMany({});
   await prisma.assessment.deleteMany({});
-  await prisma.subjectAddingCache.deleteMany({});
   await prisma.teacherAssignments.deleteMany({});
   await prisma.subjectAssignments.deleteMany({});
   await prisma.studentAssignments.deleteMany({});
@@ -127,7 +126,7 @@ async function main() {
   const studentEmma = await prisma.student.create({ data: { firstname: 'Emma', surname: 'Bernard', classId: classCSI3.classId } });
   const studentThomas = await prisma.student.create({ data: { firstname: 'Thomas', surname: 'Petit', classId: classCSI4.classId } });
 
-  // Usine Faker : Préparation de 100 étudiants supplémentaires
+  // Préparation de 100 étudiants supplémentaires
   const fakeStudentsBuffer = [];
   for (let i = 0; i < 100; i++) {
     const randomClass = allAvailableClasses[Math.floor(Math.random() * allAvailableClasses.length)];

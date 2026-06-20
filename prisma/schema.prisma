@@ -17,7 +17,6 @@ model User {
 
   // Relations
   managedClasses Class[] @relation("ClassResponsable")
-  subjectAddingCaches SubjectAddingCache[]
   teacherAssignments  TeacherAssignments[]
   sessions            Session[]
   assessments         Assessment[]
@@ -71,7 +70,6 @@ model Subject {
 
   // Relations
   subjectAssignments  SubjectAssignments[]
-  subjectAddingCaches SubjectAddingCache[]
   teacherAssignments  TeacherAssignments[]
   assessments         Assessment[]
 
@@ -122,17 +120,6 @@ model TeacherAssignments {
   @@map("teacher_assignments")
 }
 
-model SubjectAddingCache {
-  userId    BigInt @map("user_id")
-  subjectId Int    @map("subject_id") @db.SmallInt
-  students  String @db.Text // Zone de texte pour stocker le cache
-
-  user    User    @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  subject Subject @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade)
-
-  @@id([userId, subjectId])
-  @@map("subject_adding_cache")
-}
 
 model Assessment {
   assessmentId BigInt   @id @default(autoincrement()) @map("assessment_id")
