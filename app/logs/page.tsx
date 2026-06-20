@@ -7,14 +7,14 @@ export default async function GestionLogsPage() {
   const initialLogs = await getSerializableLogs();
 
   return (
-    <div className="min-h-screen bg-[#F4F7F5] p-8 font-sans">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-[#E2EAE5] shadow-sm p-6">
+    <div className="min-h-screen bg-[#F4F7F5] dark:bg-[#050A08] p-8 font-sans transition-colors duration-300">
+      <div className="max-w-4xl mx-auto bg-white dark:bg-[#0B1511] rounded-2xl border border-[#E2EAE5] dark:border-emerald-900/30 shadow-sm p-6">
         
         {/* En-tête de la page */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-[#F0F4F1] pb-6 mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-[#F0F4F1] dark:border-emerald-900/30 pb-6 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-[#12261E]">Historique des Logs</h1>
-            <p className="text-sm text-[#53665A] mt-1">
+            <h1 className="text-2xl font-bold text-[#12261E] dark:text-emerald-50">Historique des Logs</h1>
+            <p className="text-sm text-[#53665A] dark:text-emerald-200/60 mt-1">
               Consultez les événements système récents ou supprimez-les.
             </p>
           </div>

@@ -525,915 +525,897 @@ export default function GradesPageContent () {;
   };
 
   return (
-          <main className="p-10 flex-1 flex flex-col gap-8">
-            <div className="flex flex-col xl:flex-row gap-8 items-start w-full shrink-0">
+  <main className="p-10 flex-1 flex flex-col gap-8 bg-[#F4F7F5] dark:bg-[#050A08] transition-colors duration-300">
+    <div className="flex flex-col xl:flex-row gap-8 items-start w-full shrink-0">
 
-              {/* Critère de notation */}
-              <section className="flex-1 w-full bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5]">
-                <h2 className="text-xl font-bold mb-6 text-[#0F5E3D]">Critères de notation</h2>
-                <div className="flex flex-col sm:flex-row items-end gap-6">
+      {/* Critère de notation */}
+      <section className="flex-1 w-full bg-white dark:bg-[#0B1511] p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] dark:border-emerald-900/30">
+        <h2 className="text-xl font-bold mb-6 text-[#0F5E3D] dark:text-emerald-400">Critères de notation</h2>
+        <div className="flex flex-col sm:flex-row items-end gap-6">
 
-                  {/* Menu : Matière */}
-                  <div className="flex-1 w-full">
-                    <label htmlFor="matiere" className="block text-sm font-semibold text-[#1E2E24] mb-2">
-                      Matière
-                    </label>
-                    <select
-                        id="matiere"
-                        value={selectedMatiere}
-                        onChange={(e) => {
-                          setSelectedMatiere(e.target.value);
-                          setSelectedTable("");
-                        }}
-                        disabled={isLoadingDB}
-                        className="w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      <option value="">
-                        {isLoadingDB ? "Chargement des matières..." : "Sélectionner une matière..."}
-                      </option>
+          {/* Menu : Matière */}
+          <div className="flex-1 w-full">
+            <label htmlFor="matiere" className="block text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 mb-2">
+              Matière
+            </label>
+            <select
+              id="matiere"
+              value={selectedMatiere}
+              onChange={(e) => {
+                setSelectedMatiere(e.target.value);
+                setSelectedTable("");
+              }}
+              disabled={isLoadingDB}
+              className="w-full bg-[#F4F7F5] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <option value="">
+                {isLoadingDB ? "Chargement des matières..." : "Sélectionner une matière..."}
+              </option>
 
-                      {subjects.map((subject) => (
-                          <option key={subject.subjectId} value={subject.subjectId}>
-                            {subject.label}
-                          </option>
-                      ))}
-                    </select>
-                  </div>
+              {subjects.map((subject) => (
+                <option key={subject.subjectId} value={subject.subjectId}>
+                  {subject.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-                  {/* Menu : Table de note */}
-                  <div className="flex-1 w-full">
-                    <label htmlFor="table-note" className="block text-sm font-semibold text-[#1E2E24] mb-2">
-                      Table de note
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <select
-                          id="table-note"
-                          value={selectedTable}
-                          onChange={(e) => setSelectedTable(e.target.value)}
-                          disabled={selectedMatiere === "" || isLoadingDB}
-                          className={`w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors ${
-                              selectedMatiere === "" ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
-                          }`}
-                      >
-                        <option value="">
-                          {selectedMatiere === ""
-                              ? "Sélectionnez d'abord une matière..."
-                              : filteredAssessments.length === 0
-                                  ? "Aucune table pour cette matière"
-                                  : "Sélectionner une table..."}
-                        </option>
+          {/* Menu : Table de note */}
+          <div className="flex-1 w-full">
+            <label htmlFor="table-note" className="block text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 mb-2">
+              Table de note
+            </label>
+            <div className="flex items-center gap-3">
+              <select
+                id="table-note"
+                value={selectedTable}
+                onChange={(e) => setSelectedTable(e.target.value)}
+                disabled={selectedMatiere === "" || isLoadingDB}
+                className={`w-full bg-[#F4F7F5] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors ${
+                  selectedMatiere === "" ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                }`}
+              >
+                <option value="">
+                  {selectedMatiere === ""
+                    ? "Sélectionnez d'abord une matière..."
+                    : filteredAssessments.length === 0
+                      ? "Aucune table pour cette matière"
+                      : "Sélectionner une table..."}
+                </option>
 
-                        {filteredAssessments.map((assessment) => (
-                            <option key={assessment.assessmentId} value={assessment.assessmentId}>
-                              {assessment.label} (sur {assessment.maxGrade})
-                            </option>
-                        ))}
-                      </select>
+                {filteredAssessments.map((assessment) => (
+                  <option key={assessment.assessmentId} value={assessment.assessmentId}>
+                    {assessment.label} (sur {assessment.maxGrade})
+                  </option>
+                ))}
+              </select>
 
-                      {/* Bouton de création */}
-                      <button
-                          onClick={handleAddTableClick}
-                          title="Créer une nouvelle table de note"
-                          className="shrink-0 w-[46px] h-[46px] flex items-center justify-center bg-[#F4F7F5] text-[#0F5E3D] border border-[#E2EAE5] rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 shadow-sm focus:outline-none"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="12" y1="5" x2="12" y2="19"></line>
-                          <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Vue d'ensemble */}
-              <section className="w-full xl:w-[400px] shrink-0 bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] flex flex-col justify-center">
-                <h2 className="text-xl font-bold mb-6 text-[#0F5E3D]">Vue d'ensemble</h2>
-                <div className="flex items-stretch justify-between bg-[#F4F7F5] rounded-xl border border-[#E2EAE5] py-3 px-1 sm:px-2 min-h-[74px]">
-
-                  {/* Moyenne */}
-                  <div className="flex flex-col items-center justify-between flex-1 border-r border-[#E2EAE5] px-1">
-                    <span className="text-[9px] sm:text-[10px] text-[#718579] font-bold uppercase tracking-normal sm:tracking-wider mb-1 text-center">Moyenne</span>
-                    <span className="text-lg sm:text-2xl font-bold text-[#1E2E24]">{stats.moyenne}</span>
-                  </div>
-
-                  {/* Écart-Type */}
-                  <div className="flex flex-col items-center justify-between flex-1 border-r border-[#E2EAE5] px-1">
-                    <span className="text-[9px] sm:text-[10px] text-[#718579] font-bold uppercase tracking-normal sm:tracking-wider mb-1 text-center">Écart-Type</span>
-                    <span className="text-lg sm:text-2xl font-bold text-[#1E2E24]">{stats.ecartType}</span>
-                  </div>
-
-                  {/* Médiane */}
-                  <div className="flex flex-col items-center justify-between flex-1 px-1">
-                    <span className="text-[9px] sm:text-[10px] text-[#718579] font-bold uppercase tracking-normal sm:tracking-wider mb-1 text-center">Médiane</span>
-                    <span className="text-lg sm:text-2xl font-bold text-[#1E2E24]">{stats.mediane}</span>
-                  </div>
-                </div>
-              </section>
+              {/* Bouton de création */}
+              <button
+                onClick={handleAddTableClick}
+                title="Créer une nouvelle table de note"
+                className="shrink-0 w-[46px] h-[46px] flex items-center justify-center bg-[#F4F7F5] dark:bg-[#0E1B16] text-[#0F5E3D] dark:text-emerald-400 border border-[#E2EAE5] dark:border-emerald-800 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 shadow-sm focus:outline-none"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Tableau des étudiants */}
-            <div className="flex flex-col xl:flex-row gap-8 items-start w-full shrink-0">
-              <section className="flex-1 min-w-0 w-full bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] flex flex-col">
-                <h2 className="text-xl font-bold mb-6 text-[#0F5E3D]">Liste des étudiants</h2>
+      {/* Vue d'ensemble */}
+      <section className="w-full xl:w-[400px] shrink-0 bg-white dark:bg-[#0B1511] p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] dark:border-emerald-900/30 flex flex-col justify-center">
+        <h2 className="text-xl font-bold mb-6 text-[#0F5E3D] dark:text-emerald-400">Vue d'ensemble</h2>
+        <div className="flex items-stretch justify-between bg-[#F4F7F5] dark:bg-[#0E1B16] rounded-xl border border-[#E2EAE5] dark:border-emerald-900/30 py-3 px-1 sm:px-2 min-h-[74px]">
 
-                {selectedTable === "" ? (
+          {/* Moyenne */}
+          <div className="flex flex-col items-center justify-between flex-1 border-r border-[#E2EAE5] dark:border-emerald-900/30 px-1">
+            <span className="text-[9px] sm:text-[10px] text-[#718579] dark:text-emerald-200/60 font-bold uppercase tracking-normal sm:tracking-wider mb-1 text-center">Moyenne</span>
+            <span className="text-lg sm:text-2xl font-bold text-[#1E2E24] dark:text-emerald-50">{stats.moyenne}</span>
+          </div>
 
-                    // État vide
-                    <div className="w-full flex items-center justify-center bg-[#F4F7F5] rounded-xl border-2 border-dashed border-[#A3B8AC] min-h-[236px]">
-                      <p className="text-[#53665A] font-medium flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A3B8AC]">
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <line x1="12" y1="8" x2="12" y2="12"></line>
-                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                        Veuillez d'abord sélectionner une table de notation.
-                      </p>
-                    </div>
+          {/* Écart-Type */}
+          <div className="flex flex-col items-center justify-between flex-1 border-r border-[#E2EAE5] dark:border-emerald-900/30 px-1">
+            <span className="text-[9px] sm:text-[10px] text-[#718579] dark:text-emerald-200/60 font-bold uppercase tracking-normal sm:tracking-wider mb-1 text-center">Écart-Type</span>
+            <span className="text-lg sm:text-2xl font-bold text-[#1E2E24] dark:text-emerald-50">{stats.ecartType}</span>
+          </div>
 
-                ) : isStudentsLoading ? (
-                    // État de récupération
-                    <div className="w-full flex flex-col items-center justify-center bg-[#F4F7F5] rounded-xl border border-[#E2EAE5] min-h-[236px]">
-                      <div className="w-8 h-8 border-4 border-[#10B981] border-t-transparent rounded-full animate-spin mb-4"></div>
-                      <p className="text-[#53665A] font-medium">Récupération des étudiants...</p>
-                    </div>
-                ) : (
+          {/* Médiane */}
+          <div className="flex flex-col items-center justify-between flex-1 px-1">
+            <span className="text-[9px] sm:text-[10px] text-[#718579] dark:text-emerald-200/60 font-bold uppercase tracking-normal sm:tracking-wider mb-1 text-center">Médiane</span>
+            <span className="text-lg sm:text-2xl font-bold text-[#1E2E24] dark:text-emerald-50">{stats.mediane}</span>
+          </div>
+        </div>
+      </section>
+    </div>
 
-                    // État non vide
-                    <>
-                      {/* Page ordinateur */}
-                      <div className="hidden md:block w-full overflow-hidden border border-[#E2EAE5] rounded-xl">
-                        <div className="max-h-[400px] xl:max-h-[500px] overflow-y-auto overflow-x-hidden overscroll-none bg-white">
-                          <table className="w-full table-fixed text-left border-separate border-spacing-0">
+    {/* Tableau des étudiants */}
+    <div className="flex flex-col xl:flex-row gap-8 items-start w-full shrink-0">
+      <section className="flex-1 min-w-0 w-full bg-white dark:bg-[#0B1511] p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] dark:border-emerald-900/30 flex flex-col">
+        <h2 className="text-xl font-bold mb-6 text-[#0F5E3D] dark:text-emerald-400">Liste des étudiants</h2>
 
-                            {/* En-tête du tableau */}
-                            <thead>
-                            <tr className="text-xs uppercase tracking-wider text-[#718579]">
-                              <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-4 font-bold w-[22%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Nom</th>
-                              <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-4 font-bold w-[20%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Prénom</th>
-                              <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-2 font-bold text-center w-[13%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Note</th>
-                              <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-4 font-bold w-[33%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Feedback</th>
-                              <th className="sticky top-0 z-20 bg-[#F4F7F5] py-4 px-2 font-bold text-center w-[12%] border-b border-[#E2EAE5] shadow-[0_1px_0_#E2EAE5]">Éditer</th>
-                            </tr>
-                            </thead>
+        {selectedTable === "" ? (
 
-                            {/* Corps du tableau */}
-                            <tbody className="divide-y divide-[#EAEFEA]">
-                            {filteredAndSortedStudents.map((student, index) => {
-                              const showTooltipDownward = index < 2;
+          // État vide
+          <div className="w-full flex items-center justify-center bg-[#F4F7F5] dark:bg-[#0E1B16] rounded-xl border-2 border-dashed border-[#A3B8AC] dark:border-emerald-800 min-h-[236px]">
+            <p className="text-[#53665A] dark:text-emerald-200/60 font-medium flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A3B8AC] dark:text-emerald-800">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              Veuillez d'abord sélectionner une table de notation.
+            </p>
+          </div>
+
+        ) : isStudentsLoading ? (
+          // État de récupération
+          <div className="w-full flex flex-col items-center justify-center bg-[#F4F7F5] dark:bg-[#0E1B16] rounded-xl border border-[#E2EAE5] dark:border-emerald-900/30 min-h-[236px]">
+            <div className="w-8 h-8 border-4 border-[#10B981] border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-[#53665A] dark:text-emerald-200/60 font-medium">Récupération des étudiants...</p>
+          </div>
+        ) : (
+
+          // État non vide
+          <>
+            {/* Page ordinateur */}
+            <div className="hidden md:block w-full overflow-hidden border border-[#E2EAE5] dark:border-emerald-900/30 rounded-xl">
+              <div className="max-h-[400px] xl:max-h-[500px] overflow-y-auto overflow-x-hidden overscroll-none bg-white dark:bg-[#0B1511]">
+                <table className="w-full table-fixed text-left border-separate border-spacing-0">
+
+                  {/* En-tête du tableau */}
+                  <thead>
+                  <tr className="text-xs uppercase tracking-wider text-[#718579] dark:text-emerald-200/60">
+                    <th className="sticky top-0 z-20 bg-[#F4F7F5] dark:bg-[#0E1B16] py-4 px-4 font-bold w-[22%] border-b border-[#E2EAE5] dark:border-emerald-900/30 shadow-[0_1px_0_#E2EAE5] dark:shadow-none">Nom</th>
+                    <th className="sticky top-0 z-20 bg-[#F4F7F5] dark:bg-[#0E1B16] py-4 px-4 font-bold w-[20%] border-b border-[#E2EAE5] dark:border-emerald-900/30 shadow-[0_1px_0_#E2EAE5] dark:shadow-none">Prénom</th>
+                    <th className="sticky top-0 z-20 bg-[#F4F7F5] dark:bg-[#0E1B16] py-4 px-2 font-bold text-center w-[13%] border-b border-[#E2EAE5] dark:border-emerald-900/30 shadow-[0_1px_0_#E2EAE5] dark:shadow-none">Note</th>
+                    <th className="sticky top-0 z-20 bg-[#F4F7F5] dark:bg-[#0E1B16] py-4 px-4 font-bold w-[33%] border-b border-[#E2EAE5] dark:border-emerald-900/30 shadow-[0_1px_0_#E2EAE5] dark:shadow-none">Feedback</th>
+                    <th className="sticky top-0 z-20 bg-[#F4F7F5] dark:bg-[#0E1B16] py-4 px-2 font-bold text-center w-[12%] border-b border-[#E2EAE5] dark:border-emerald-900/30 shadow-[0_1px_0_#E2EAE5] dark:shadow-none">Éditer</th>
+                  </tr>
+                  </thead>
+
+                  {/* Corps du tableau */}
+                  <tbody className="divide-y divide-[#EAEFEA] dark:divide-emerald-900/30">
+                  {filteredAndSortedStudents.map((student, index) => {
+                    const showTooltipDownward = index < 2;
+
+                    return (
+                      <tr key={student.id} className="hover:bg-[#F9FAFA] dark:hover:bg-emerald-900/10 transition-colors group">
+                        <td className="py-4 px-4 font-semibold text-[#1E2E24] dark:text-emerald-50">{student.nom}</td>
+                        <td className="py-4 px-4 text-[#53665A] dark:text-emerald-200/70">{student.prenom}</td>
+                        <td className="py-4 px-2 text-center">
+                          {student.note === "--" ? (
+                            <span className="text-[#A3B8AC] dark:text-emerald-800 font-medium">--</span>
+                          ) : (
+                            (() => {
+                              const note = parseFloat(student.note);
+                              const classAverage = parseFloat(stats.moyenne);
+                              const max = parseFloat(maxScore as string);
+
+                              // Gestion des couleurs de la note
+                              let bgColor = "bg-[#E6F4EE] dark:bg-emerald-900/30";
+                              let textColor = "text-[#0F5E3D] dark:text-emerald-400";
+
+                              if (!isNaN(note) && !isNaN(max)) {
+                                const globalAverage = max / 2;
+                                if (note < globalAverage) {
+                                  bgColor = "bg-red-50 dark:bg-red-900/30";
+                                  textColor = "text-red-500 dark:text-red-400";
+                                } else if (!isNaN(classAverage) && note < classAverage) {
+                                  bgColor = "bg-[#F97316]/10 dark:bg-orange-900/30";
+                                  textColor = "text-[#F97316] dark:text-orange-400";
+                                }
+                              }
 
                               return (
-                                  <tr key={student.id} className="hover:bg-[#F9FAFA] transition-colors group">
-                                    <td className="py-4 px-4 font-semibold text-[#1E2E24]">{student.nom}</td>
-                                    <td className="py-4 px-4 text-[#53665A]">{student.prenom}</td>
-                                    <td className="py-4 px-2 text-center">
-                                      {student.note === "--" ? (
-                                          <span className="text-[#A3B8AC] font-medium">--</span>
-                                      ) : (
-                                          (() => {
-                                            const note = parseFloat(student.note);
-                                            const classAverage = parseFloat(stats.moyenne);
-                                            const max = parseFloat(maxScore as string);
-
-                                            // Gestion des couleurs de la note
-                                            let bgColor = "bg-[#E6F4EE]";
-                                            let textColor = "text-[#0F5E3D]";
-
-                                            if (!isNaN(note) && !isNaN(max)) {
-                                              const globalAverage = max / 2;
-                                              if (note < globalAverage) {
-                                                bgColor = "bg-red-50";
-                                                textColor = "text-red-500";
-                                              } else if (!isNaN(classAverage) && note < classAverage) {
-                                                bgColor = "bg-[#F97316]/10";
-                                                textColor = "text-[#F97316]";
-                                              }
-                                            }
-
-                                            return (
-                                                <span className={`inline-flex items-center justify-center font-bold py-1 px-3 rounded-lg ${bgColor} ${textColor}`}> {student.note} </span>
-                                            );
-                                          })()
-                                      )}
-                                    </td>
-
-                                    {/* Feedback */}
-                                    <td className="py-4 px-4 relative">
-                                      {student.feedback ? (
-                                          <>
-                                            <div
-                                                className={`w-full truncate text-sm text-[#53665A] ${
-                                                    overflowingFeedbackId === student.id ? 'cursor-zoom-in' : 'cursor-default'
-                                                }`}
-                                                onMouseEnter={(e) => {
-                                                  if (e.currentTarget.scrollWidth > e.currentTarget.clientWidth) {
-                                                    setOverflowingFeedbackId(student.id);
-                                                  }
-                                                }}
-                                                onMouseLeave={() => setOverflowingFeedbackId(null)}
-                                            >
-                                              {student.feedback}
-                                            </div>
-
-                                            {/* Bulle du feedback */}
-                                            {overflowingFeedbackId === student.id && (
-                                                <div className={`absolute left-4 z-[9999] w-max max-w-[250px] sm:max-w-[350px] p-3 bg-[#1E2E24] text-[#F4F7F5] text-xs font-medium rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.2)] whitespace-normal break-words pointer-events-none ${
-                                                    showTooltipDownward ? 'top-full mt-2' : 'bottom-full mb-2'
-                                                }`}>
-                                                  {student.feedback}
-                                                  <div className={`absolute left-4 w-3 h-3 bg-[#1E2E24] rotate-45 ${
-                                                      showTooltipDownward ? 'bottom-full -mb-1.5' : 'top-full -mt-1.5'
-                                                  }`}></div>
-                                                </div>
-                                            )}
-                                          </>
-                                      ) : (
-                                          <span className="text-sm text-[#A3B8AC] italic">Aucun feedback</span>
-                                      )}
-                                    </td>
-                                    <td className="py-4 px-2 text-center">
-                                      <button
-                                          type="button"
-                                          onClick={() => handleOpenGradeModal(student)}
-                                          title="Modifier la note de cet étudiant"
-                                          className="text-[#A3B8AC] hover:text-[#10B981] hover:bg-[#E6F4EE] transition-all p-2 rounded-lg cursor-pointer flex mx-auto">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                        </svg>
-                                      </button>
-                                    </td>
-                                  </tr>
+                                <span className={`inline-flex items-center justify-center font-bold py-1 px-3 rounded-lg ${bgColor} ${textColor}`}> {student.note} </span>
                               );
-                            })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+                            })()
+                          )}
+                        </td>
 
-                      {/* Page mobile */}
-                      <div className="flex md:hidden flex-col gap-5">
-                        {filteredAndSortedStudents.map((student, index) => {
-                          const showTooltipDownward = index < 2;
-                          const note = parseFloat(student.note);
-                          const max = parseFloat(maxScore as string);
-                          const classAverage = parseFloat(stats.moyenne);
-
-                          // Gestion des couleurs de la note
-                          let bgColor = "bg-[#E6F4EE]";
-                          let textColor = "text-[#0F5E3D]";
-
-                          if (!isNaN(note) && !isNaN(max)) {
-                            const globalAverage = max / 2;
-                            if (note < globalAverage) {
-                              bgColor = "bg-red-50";
-                              textColor = "text-red-500";
-                            } else if (!isNaN(classAverage) && note < classAverage) {
-                              bgColor = "bg-[#F97316]/10";
-                              textColor = "text-[#F97316]";
-                            }
-                          }
-
-                          return (
-                              <div key={student.id} className="bg-[#F9FAFA] border border-[#EAEFEA] rounded-2xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-lg transition-shadow duration-300">
-
-                                {/* Header */}
-                                <div className="flex items-center justify-between gap-4">
-                                  <div className="flex flex-col flex-1 min-w-0">
-                                    <span className="text-base tracking-tight font-bold text-[#1E2E24] uppercase leading-tight truncate block w-full">{student.nom}</span>
-                                    <span className="text-sm text-[#53665A] leading-normal truncate block w-full">{student.prenom}</span>
-                                  </div>
-                                  <button
-                                      type="button"
-                                      onClick={() => handleOpenGradeModal(student)}
-                                      title="Modifier la note de cet étudiant"
-                                      className="text-[#A3B8AC] hover:text-[#10B981] hover:bg-[#E6F4EE] transition-all p-3 rounded-xl cursor-pointer shrink-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                    </svg>
-                                  </button>
-                                </div>
-                                <hr className="border-[#EAEFEA]" />
-
-                                {/* Section Note */}
-                                <div className="flex items-center justify-between gap-4">
-                                  <span className="text-sm font-semibold text-[#1E2E24]">Note actuelle</span>
-                                  {student.note === "--" ? (
-                                      <span className="text-sm font-medium text-[#A3B8AC]">--</span>
-                                  ) : (
-                                      <span className={`inline-flex items-center justify-center font-bold text-lg py-1 px-4 rounded-lg ${bgColor} ${textColor}`}>{student.note}</span>
-                                  )}
-                                </div>
-
-                                {/* Section Feedback */}
-                                <div className="flex flex-col gap-2">
-                                  <span className="text-sm font-semibold text-[#1E2E24]">Dernier feedback</span>
-                                  {student.feedback ? (
-
-                                      <div className="relative bg-white border border-[#E2EAE5] px-4 py-3 rounded-xl shadow-inner-sm">
-                                        <div
-                                            className={`w-full truncate text-sm text-[#53665A] ${
-                                                overflowingFeedbackId === student.id ? 'cursor-zoom-in' : 'cursor-pointer'
-                                            }`}
-                                            onClick={(e) => {
-                                              if (e.currentTarget.scrollWidth > e.currentTarget.clientWidth) {
-                                                setOverflowingFeedbackId(overflowingFeedbackId === student.id ? null : student.id);
-                                              }
-                                            }}
-                                            onMouseEnter={(e) => {
-                                              if (e.currentTarget.scrollWidth > e.currentTarget.clientWidth) {
-                                                setOverflowingFeedbackId(student.id);
-                                              }
-                                            }}
-                                            onMouseLeave={() => setOverflowingFeedbackId(null)}
-                                        >
-                                          {student.feedback}
-                                        </div>
-
-                                        {/* Bulle de feedback */}
-                                        {overflowingFeedbackId === student.id && (
-                                            <div className={`absolute left-0 z-[9999] w-full p-3 bg-[#1E2E24] text-[#F4F7F5] text-xs font-medium rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.2)] whitespace-normal break-words pointer-events-none ${
-                                                showTooltipDownward ? 'top-full mt-2' : 'bottom-full mb-2'
-                                            }`}>
-                                              {student.feedback}
-                                              <div className={`absolute left-6 w-3 h-3 bg-[#1E2E24] rotate-45 ${
-                                                  showTooltipDownward ? 'bottom-full -mb-1.5' : 'top-full -mt-1.5'
-                                              }`}></div>
-                                            </div>
-                                        )}
-                                      </div>
-
-                                  ) : (
-                                      <span className="text-sm text-[#A3B8AC] italic leading-relaxed bg-white border border-[#E2EAE5] px-4 py-3 rounded-xl shadow-inner-sm">Aucun feedback</span>
-                                  )}
-                                </div>
+                        {/* Feedback */}
+                        <td className="py-4 px-4 relative">
+                          {student.feedback ? (
+                            <>
+                              <div
+                                className={`w-full truncate text-sm text-[#53665A] dark:text-emerald-200/70 ${
+                                  overflowingFeedbackId === student.id ? 'cursor-zoom-in' : 'cursor-default'
+                                }`}
+                                onMouseEnter={(e) => {
+                                  if (e.currentTarget.scrollWidth > e.currentTarget.clientWidth) {
+                                    setOverflowingFeedbackId(student.id);
+                                  }
+                                }}
+                                onMouseLeave={() => setOverflowingFeedbackId(null)}
+                              >
+                                {student.feedback}
                               </div>
-                          );
-                        })}
-                      </div>
-                    </>
 
-                )}
-              </section>
-
-              {/* Triage */}
-              <div className="w-full xl:w-[400px] shrink-0 flex flex-col gap-8">
-                <section className="w-full shrink-0 bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] flex flex-col min-h-[349px] xl:h-[349px]">
-                  <h2 className="text-xl font-bold mb-10 text-[#0F5E3D] shrink-0">Trier</h2>
-                  <div className="flex flex-col flex-1 gap-9">
-
-                    {/* Boutons */}
-                    <div className="flex items-center gap-2 sm:gap-4">
-
-                      {/* Alphabétique */}
-                      <button
-                          type="button"
-                          onClick={() => {
-                            setAlphaSort(alphaSort === "A-Z" ? "Z-A" : "A-Z");
-                            setActiveSortType("alpha");
-                          }}
-                          className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 border font-bold py-3 px-2 sm:px-4 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 group ${
-                              activeSortType === "alpha"
-                                  ? "bg-[#E6F4EE] border-[#10B981] text-[#0F5E3D]"
-                                  : "bg-[#F4F7F5] border-[#E2EAE5] text-[#1E2E24]"
-                          }`}
-                      >
-                        <span className="whitespace-nowrap text-sm sm:text-base">{alphaSort}</span>
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
-                            className={`shrink-0 transition-transform duration-300 ${alphaSort === "Z-A" ? "rotate-180" : ""}`}
-                        >
-                          <path d="M12 5v14"></path>
-                          <path d="m19 12-7 7-7-7"></path>
-                        </svg>
-                      </button>
-
-                      {/* Numérique (Note) */}
-                      <button
-                          type="button"
-                          onClick={() => {
-                            setScoreSort(scoreSort === "0-X" ? "X-0" : "0-X");
-                            setActiveSortType("score");
-                          }}
-                          className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 border font-bold py-3 px-2 sm:px-4 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 group ${
-                              activeSortType === "score"
-                                  ? "bg-[#E6F4EE] border-[#10B981] text-[#0F5E3D]"
-                                  : "bg-[#F4F7F5] border-[#E2EAE5] text-[#1E2E24]"
-                          }`}
-                      >
-                        <span className="whitespace-nowrap text-sm sm:text-base">{scoreSort === "0-X" ? `0 - ${maxScore}` : `${maxScore} - 0`}</span>
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
-                            className={`shrink-0 transition-transform duration-300 ${scoreSort === "X-0" ? "rotate-180" : ""}`}
-                        >
-                          <path d="M12 5v14"></path>
-                          <path d="m19 12-7 7-7-7"></path>
-                        </svg>
-                      </button>
-
-                    </div>
-
-                    {/* Recherche */}
-                    <hr className="border-[#EAEFEA] w-full" />
-                    <div>
-                      <label htmlFor="search" className="block text-sm font-semibold text-[#1E2E24] mb-3">
-                        Rechercher un étudiant
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A3B8AC]">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                          </svg>
-                        </div>
-                        <input
-                            id="search"
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Nom ou prénom..."
-                            className="w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] text-sm rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors placeholder:text-[#A3B8AC]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Gestion de la table */}
-                {selectedTable !== "" && (
-                    <section className="w-full shrink-0 bg-white p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] flex flex-col animate-fadeIn">
-                      <h2 className="text-xl font-bold mb-6 text-[#0F5E3D]">Gestion de la table</h2>
-                      <div className="flex items-center gap-2 sm:gap-4 w-full">
-
-                        {/* Import */}
-                        <input
-                            id="csv-upload"
-                            type="file"
-                            accept=".csv, .xlsx"
-                            className="hidden"
-                            onChange={handleImportCSV}
-                        />
-
-                        {/* Bouton */}
-                        <button
-                            type="button"
-                            onClick={() => document.getElementById('csv-upload')?.click()}
-                            className="flex-1 flex items-center justify-center gap-2 sm:gap-3 bg-[#F4F7F5] border border-[#E2EAE5] py-3 px-2 sm:px-4 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 min-w-0 group"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#1E2E24] group-hover:text-white">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                          </svg>
-                          <span className="font-bold text-[#1E2E24] group-hover:text-white text-sm sm:text-base whitespace-nowrap"> Import <span className="hidden sm:inline">CSV</span></span>
-                        </button>
-
-                        {/* Bouton Export */}
-                        <button
-                            type="button"
-                            onClick={handleExportCSV}
-                            className="flex-1 flex items-center justify-center gap-2 sm:gap-3 bg-[#F4F7F5] border border-[#E2EAE5] py-3 px-2 sm:px-4 rounded-xl hover:bg-[#10B981] hover:text-white hover:border-[#10B981] transition-all duration-300 min-w-0"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#1E2E24] group-hover:text-white">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                          </svg>
-                          <span className="font-bold text-[#1E2E24] group-hover:text-white text-sm sm:text-base whitespace-nowrap">Export <span className="hidden sm:inline">CSV</span></span>
-                        </button>
-
-                      </div>
-
-                      {/* Paramètres de la table */}
-                      <div className="flex items-center justify-between pt-4 border-t border-[#EAEFEA]">
-                      <span className="text-xs text-[#A3B8AC] font-medium uppercase tracking-wider">Modification </span>
-
-                        <div className="flex items-center gap-1">
+                              {/* Bulle du feedback */}
+                              {overflowingFeedbackId === student.id && (
+                                <div className={`absolute left-4 z-[9999] w-max max-w-[250px] sm:max-w-[350px] p-3 bg-[#1E2E24] dark:bg-[#050A08] text-[#F4F7F5] dark:text-emerald-50 text-xs font-medium rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.2)] whitespace-normal break-words pointer-events-none ${
+                                  showTooltipDownward ? 'top-full mt-2' : 'bottom-full mb-2'
+                                }`}>
+                                  {student.feedback}
+                                  <div className={`absolute left-4 w-3 h-3 bg-[#1E2E24] dark:bg-[#050A08] rotate-45 ${
+                                    showTooltipDownward ? 'bottom-full -mb-1.5' : 'top-full -mt-1.5'
+                                  }`}></div>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-sm text-[#A3B8AC] dark:text-emerald-800 italic">Aucun feedback</span>
+                          )}
+                        </td>
+                        <td className="py-4 px-2 text-center">
                           <button
-                              type="button"
-                              onClick={handleEditTableClick}
-                              title="Modifier les propriétés de la table"
-                              className="p-2.5 text-[#A3B8AC] hover:text-[#10B981] hover:bg-[#E6F4EE] rounded-lg transition-all duration-300"
-                          >
+                            type="button"
+                            onClick={() => handleOpenGradeModal(student)}
+                            title="Modifier la note de cet étudiant"
+                            className="text-[#A3B8AC] dark:text-emerald-200/50 hover:text-[#10B981] dark:hover:text-emerald-400 hover:bg-[#E6F4EE] dark:hover:bg-emerald-900/30 transition-all p-2 rounded-lg cursor-pointer flex mx-auto">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                             </svg>
                           </button>
-
-                          <button
-                              type="button"
-                              onClick={handleOpenDeleteModal}
-                              title="Supprimer la table"
-                              className="p-2.5 text-[#A3B8AC] hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-300"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M3 6h18"></path>
-                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-
-                    </section>
-                )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  </tbody>
+                </table>
               </div>
             </div>
+
+            {/* Page mobile */}
+            <div className="flex md:hidden flex-col gap-5">
+              {filteredAndSortedStudents.map((student, index) => {
+                const showTooltipDownward = index < 2;
+                const note = parseFloat(student.note);
+                const max = parseFloat(maxScore as string);
+                const classAverage = parseFloat(stats.moyenne);
+
+                // Gestion des couleurs de la note
+                let bgColor = "bg-[#E6F4EE] dark:bg-emerald-900/30";
+                let textColor = "text-[#0F5E3D] dark:text-emerald-400";
+
+                if (!isNaN(note) && !isNaN(max)) {
+                  const globalAverage = max / 2;
+                  if (note < globalAverage) {
+                    bgColor = "bg-red-50 dark:bg-red-900/30";
+                    textColor = "text-red-500 dark:text-red-400";
+                  } else if (!isNaN(classAverage) && note < classAverage) {
+                    bgColor = "bg-[#F97316]/10 dark:bg-orange-900/30";
+                    textColor = "text-[#F97316] dark:text-orange-400";
+                  }
+                }
+
+                return (
+                  <div key={student.id} className="bg-[#F9FAFA] dark:bg-[#0B1511] border border-[#EAEFEA] dark:border-emerald-900/30 rounded-2xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-lg transition-shadow duration-300">
+
+                    {/* Header */}
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="text-base tracking-tight font-bold text-[#1E2E24] dark:text-emerald-50 uppercase leading-tight truncate block w-full">{student.nom}</span>
+                        <span className="text-sm text-[#53665A] dark:text-emerald-200/70 leading-normal truncate block w-full">{student.prenom}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenGradeModal(student)}
+                        title="Modifier la note de cet étudiant"
+                        className="text-[#A3B8AC] dark:text-emerald-200/50 hover:text-[#10B981] dark:hover:text-emerald-400 hover:bg-[#E6F4EE] dark:hover:bg-emerald-900/30 transition-all p-3 rounded-xl cursor-pointer shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    <hr className="border-[#EAEFEA] dark:border-emerald-900/30" />
+
+                    {/* Section Note */}
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-sm font-semibold text-[#1E2E24] dark:text-emerald-50">Note actuelle</span>
+                      {student.note === "--" ? (
+                        <span className="text-sm font-medium text-[#A3B8AC] dark:text-emerald-800">--</span>
+                      ) : (
+                        <span className={`inline-flex items-center justify-center font-bold text-lg py-1 px-4 rounded-lg ${bgColor} ${textColor}`}>{student.note}</span>
+                      )}
+                    </div>
+
+                    {/* Section Feedback */}
+                    <div className="flex flex-col gap-2">
+                      <span className="text-sm font-semibold text-[#1E2E24] dark:text-emerald-50">Dernier feedback</span>
+                      {student.feedback ? (
+                        <div className="relative bg-white dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 px-4 py-3 rounded-xl shadow-inner-sm">
+                          <div
+                            className={`w-full truncate text-sm text-[#53665A] dark:text-emerald-200/70 cursor-pointer`}
+                            onClick={(e) => {
+                              if (e.currentTarget.scrollWidth > e.currentTarget.clientWidth) {
+                                setOverflowingFeedbackId(overflowingFeedbackId === student.id ? null : student.id);
+                              }
+                            }}
+                          >
+                            {student.feedback}
+                          </div>
+                          {overflowingFeedbackId === student.id && (
+                            <div className={`absolute left-0 z-[9999] w-full p-3 bg-[#1E2E24] dark:bg-[#050A08] text-[#F4F7F5] dark:text-emerald-50 text-xs font-medium rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.2)] whitespace-normal break-words ${
+                              showTooltipDownward ? 'top-full mt-2' : 'bottom-full mb-2'
+                            }`}>
+                              {student.feedback}
+                              <div className={`absolute left-6 w-3 h-3 bg-[#1E2E24] dark:bg-[#050A08] rotate-45 ${
+                                showTooltipDownward ? 'bottom-full -mb-1.5' : 'top-full -mt-1.5'
+                              }`}></div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-[#A3B8AC] dark:text-emerald-800 italic leading-relaxed bg-white dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 px-4 py-3 rounded-xl shadow-inner-sm">Aucun feedback</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* Triage */}
+      <div className="w-full xl:w-[400px] shrink-0 flex flex-col gap-8">
+        <section className="w-full shrink-0 bg-white dark:bg-[#0B1511] p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] dark:border-emerald-900/30 flex flex-col min-h-[349px] xl:h-[349px]">
+          <h2 className="text-xl font-bold mb-10 text-[#0F5E3D] dark:text-emerald-400 shrink-0">Trier</h2>
+          <div className="flex flex-col flex-1 gap-9">
+
+            {/* Boutons */}
+            <div className="flex items-center gap-2 sm:gap-4">
+
+              {/* Alphabétique */}
+              <button
+                type="button"
+                onClick={() => {
+                  setAlphaSort(alphaSort === "A-Z" ? "Z-A" : "A-Z");
+                  setActiveSortType("alpha");
+                }}
+                className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 border font-bold py-3 px-2 sm:px-4 rounded-xl hover:bg-[#10B981] dark:hover:bg-emerald-700 hover:text-white hover:border-[#10B981] dark:hover:border-emerald-600 transition-all duration-300 group ${
+                  activeSortType === "alpha"
+                    ? "bg-[#E6F4EE] dark:bg-emerald-900/40 border-[#10B981] dark:border-emerald-600 text-[#0F5E3D] dark:text-emerald-300"
+                    : "bg-[#F4F7F5] dark:bg-[#0E1B16] border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50"
+                }`}
+              >
+                <span className="whitespace-nowrap text-sm sm:text-base">{alphaSort}</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+                  className={`shrink-0 transition-transform duration-300 ${alphaSort === "Z-A" ? "rotate-180" : ""}`}
+                >
+                  <path d="M12 5v14"></path>
+                  <path d="m19 12-7 7-7-7"></path>
+                </svg>
+              </button>
+
+              {/* Numérique (Note) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setScoreSort(scoreSort === "0-X" ? "X-0" : "0-X");
+                  setActiveSortType("score");
+                }}
+                className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 border font-bold py-3 px-2 sm:px-4 rounded-xl hover:bg-[#10B981] dark:hover:bg-emerald-700 hover:text-white hover:border-[#10B981] dark:hover:border-emerald-600 transition-all duration-300 group ${
+                  activeSortType === "score"
+                    ? "bg-[#E6F4EE] dark:bg-emerald-900/40 border-[#10B981] dark:border-emerald-600 text-[#0F5E3D] dark:text-emerald-300"
+                    : "bg-[#F4F7F5] dark:bg-[#0E1B16] border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50"
+                }`}
+              >
+                <span className="whitespace-nowrap text-sm sm:text-base">{scoreSort === "0-X" ? `0 - ${maxScore}` : `${maxScore} - 0`}</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+                  className={`shrink-0 transition-transform duration-300 ${scoreSort === "X-0" ? "rotate-180" : ""}`}
+                >
+                  <path d="M12 5v14"></path>
+                  <path d="m19 12-7 7-7-7"></path>
+                </svg>
+              </button>
+            </div>
+
+            {/* Recherche */}
+            <hr className="border-[#EAEFEA] dark:border-emerald-900/30 w-full" />
+            <div>
+              <label htmlFor="search" className="block text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 mb-3">
+                Rechercher un étudiant
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A3B8AC] dark:text-emerald-500">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </div>
+                <input
+                  id="search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Nom ou prénom..."
+                  className="w-full bg-[#F4F7F5] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50 text-sm rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors placeholder:text-[#A3B8AC] dark:placeholder:text-emerald-200/50"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Gestion de la table */}
+        {selectedTable !== "" && (
+          <section className="w-full shrink-0 bg-white dark:bg-[#0B1511] p-[30px] rounded-2xl shadow-[0_4px_20px_rgba(18,38,30,0.02),0_10px_30px_rgba(18,38,30,0.03)] border border-[#E2EAE5] dark:border-emerald-900/30 flex flex-col animate-fadeIn">
+            <h2 className="text-xl font-bold mb-6 text-[#0F5E3D] dark:text-emerald-400">Gestion de la table</h2>
+            <div className="flex items-center gap-2 sm:gap-4 w-full">
+
+              {/* Import */}
+              <input
+                id="csv-upload"
+                type="file"
+                accept=".csv, .xlsx"
+                className="hidden"
+                onChange={handleImportCSV}
+              />
+
+              {/* Bouton */}
+              <button
+                type="button"
+                onClick={() => document.getElementById('csv-upload')?.click()}
+                className="flex-1 flex items-center justify-center gap-2 sm:gap-3 bg-[#F4F7F5] dark:bg-emerald-900/10 border border-[#E2EAE5] dark:border-emerald-900/30 py-3 px-2 sm:px-4 rounded-xl hover:bg-[#10B981] dark:hover:bg-emerald-700 hover:text-white hover:border-[#10B981] transition-all duration-300 min-w-0 group cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#1E2E24] dark:text-emerald-100 group-hover:text-white">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <span className="font-bold text-[#1E2E24] dark:text-emerald-100 group-hover:text-white text-sm sm:text-base whitespace-nowrap"> Import <span className="hidden sm:inline">CSV</span></span>
+              </button>
+
+              {/* Bouton Export */}
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="flex-1 flex items-center justify-center gap-2 sm:gap-3 bg-[#F4F7F5] dark:bg-emerald-900/10 border border-[#E2EAE5] dark:border-emerald-900/30 py-3 px-2 sm:px-4 rounded-xl hover:bg-[#10B981] dark:hover:bg-emerald-700 hover:text-white hover:border-[#10B981] transition-all duration-300 min-w-0 cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#1E2E24] dark:text-emerald-100 group-hover:text-white">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span className="font-bold text-[#1E2E24] dark:text-emerald-100 group-hover:text-white text-sm sm:text-base whitespace-nowrap">Export <span className="hidden sm:inline">CSV</span></span>
+              </button>
+            </div>
+
+            {/* Paramètres de la table */}
+            <div className="flex items-center justify-between pt-4 border-t border-[#EAEFEA] dark:border-emerald-900/30">
+              <span className="text-xs text-[#A3B8AC] dark:text-emerald-200/50 font-medium uppercase tracking-wider">Modification </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={handleEditTableClick}
+                  title="Modifier les propriétés de la table"
+                  className="p-2.5 text-[#A3B8AC] dark:text-emerald-200/50 hover:text-[#10B981] dark:hover:text-emerald-400 hover:bg-[#E6F4EE] dark:hover:bg-emerald-900/30 rounded-lg transition-all duration-300"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenDeleteModal}
+                  title="Supprimer la table"
+                  className="p-2.5 text-[#A3B8AC] dark:text-emerald-200/50 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-300"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 6h18"></path>
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+
 
             {/* Modale : Création / Modification d'une Table de Notation */}
-            {showAddModal && (
-              <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-                <div
-                    className="absolute inset-0 bg-[#12261E]/40 backdrop-blur-sm transition-opacity cursor-pointer"
-                    onClick={() => setShowAddModal(false)}
-                ></div>
+    {showAddModal && (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div
+            className="absolute inset-0 bg-[#12261E]/40 backdrop-blur-sm transition-opacity cursor-pointer"
+            onClick={() => setShowAddModal(false)}
+        ></div>
 
-                <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-2xl relative z-10 animate-fadeIn flex flex-col overflow-hidden">
+        <div className="bg-white dark:bg-[#0B1511] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-2xl relative z-10 animate-fadeIn flex flex-col overflow-hidden border border-gray-100 dark:border-emerald-900/30">
 
-                  {/* En-tête */}
-                  <div className="px-6 py-5 border-b border-[#E2EAE5] flex justify-between items-center bg-[#F4F7F5]">
-                    <h3 className="text-lg font-bold text-[#0F5E3D] flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                      </svg>
-                      {editingTableId ? "Modifier l'évaluation" : "Nouvelle table de notation"}
-                    </h3>
-                    <button
-                        onClick={() => setShowAddModal(false)}
-                        className="text-[#A3B8AC] hover:text-[#F97316] transition-colors p-1 bg-white rounded-md shadow-sm border border-[#E2EAE5]"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                  </div>
+          {/* En-tête */}
+          <div className="px-6 py-5 border-b border-[#E2EAE5] dark:border-emerald-900/30 flex justify-between items-center bg-[#F4F7F5] dark:bg-[#0E1B16]">
+            <h3 className="text-lg font-bold text-[#0F5E3D] dark:text-emerald-400 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              {editingTableId ? "Modifier l'évaluation" : "Nouvelle table de notation"}
+            </h3>
+            <button
+                onClick={() => setShowAddModal(false)}
+                className="text-[#A3B8AC] dark:text-emerald-200/50 hover:text-[#F97316] transition-colors p-1 bg-white dark:bg-[#0E1B16] rounded-md shadow-sm border border-[#E2EAE5] dark:border-emerald-900/30"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
 
-                  {/* Corps */}
-                  <div className="p-6 flex flex-col gap-6 relative">
-                    {isModalLoading && (
-                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center rounded-b-2xl">
-                          <div className="w-8 h-8 border-4 border-[#10B981] border-t-transparent rounded-full animate-spin mb-3"></div>
-                          <p className="text-[#53665A] font-medium text-sm">Chargement des données...</p>
-                        </div>
-                    )}
-
-                    <div className="flex flex-col sm:flex-row gap-5">
-
-                      {/* Matière */}
-                      <div className="flex-1">
-                        <label className="block text-sm font-semibold text-[#1E2E24] mb-2">Matière</label>
-                        <select disabled className="w-full bg-[#EAEFEA] border border-[#E2EAE5] text-[#718579] text-sm rounded-xl px-4 py-2.5 cursor-not-allowed font-medium">
-                          <option>{subjects.find(s => s.subjectId.toString() === selectedMatiere)?.label || "Matière inconnue"}</option>
-                        </select>
-                      </div>
-
-                      {/* Professeur */}
-                      <div className="flex-1">
-                        <label htmlFor="teacher" className="block text-sm font-semibold text-[#1E2E24] mb-2">Professeur</label>
-                        <select
-                            id="teacher"
-                            value={addTableForm.userId}
-                            onChange={(e) => setAddTableForm({...addTableForm, userId: e.target.value})}
-                            className="w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors cursor-pointer"
-                        >
-                          <option value="">Sélectionner un professeur...</option>
-                          {dbTeachers.map(teacher => (
-                              <option key={teacher.id} value={teacher.id}>{teacher.prenom} {teacher.nom}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-5">
-
-                      {/* Note maximale */}
-                      <div className="w-full sm:w-1/3">
-                        <label htmlFor="maxGrade" className="block text-sm font-semibold text-[#1E2E24] mb-2">Noté sur</label>
-                        <input
-                            id="maxGrade" type="number" min="1"
-                            value={addTableForm.maxGrade}
-                            onChange={(e) => setAddTableForm({...addTableForm, maxGrade: e.target.value})}
-                            className="w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors"
-                        />
-                      </div>
-
-                      {/* Coefficient */}
-                      <div className="w-full sm:w-1/3">
-                        <label htmlFor="weight" className="block text-sm font-semibold text-[#1E2E24] mb-2">Coefficient</label>
-                        <input
-                            id="weight" type="number" min="1"
-                            value={addTableForm.weight}
-                            onChange={(e) => setAddTableForm({...addTableForm, weight: e.target.value})}
-                            className="w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors"
-                        />
-                      </div>
-
-                      {/* Date */}
-                      <div className="w-full sm:w-1/3">
-                        <label htmlFor="date" className="block text-sm font-semibold text-[#1E2E24] mb-2">Date</label>
-                        <input
-                            id="date" type="date"
-                            value={addTableForm.date}
-                            onChange={(e) => setAddTableForm({...addTableForm, date: e.target.value})}
-                            className="w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Nom de la table */}
-                    <div>
-                      <label htmlFor="label" className="block text-sm font-semibold text-[#1E2E24] mb-2">Nom de l'évaluation</label>
-                      <input
-                          id="label" type="text" placeholder="Ex: Partiel Semestre 1, Contrôle Continu..."
-                          value={addTableForm.label}
-                          onChange={(e) => setAddTableForm({...addTableForm, label: e.target.value})}
-                          className="w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors"
-                      />
-                    </div>
-
-                    {/* Gestion des groupes */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1E2E24] mb-3">Groupes évalués</label>
-                      <div className="flex flex-wrap items-center gap-2 p-3 bg-[#F4F7F5] border border-[#E2EAE5] rounded-xl min-h-[52px]">
-                        {addTableForm.groupIds.map((id) => {
-                          const group = dbGroups.find(g => g.id === id);
-                          if (!group) return null;
-                          return (
-                              <span key={id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E6F4EE] text-[#0F5E3D] text-sm font-medium rounded-lg border border-[#10B981]/30 transition-all group">
-                                {group.label}
-                                <button type="button" onClick={() => handleGroupToggle(id)} title="Retirer ce groupe" className="text-[#0F5E3D]/40 hover:text-red-500 hover:bg-red-100 rounded-full p-0.5 transition-colors focus:outline-none">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                </button>
-                              </span>
-                          );
-                        })}
-                        <button type="button" onClick={() => setShowGroupSelector(true)} title="Ajouter un groupe" className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-dashed border-[#A3B8AC] text-[#A3B8AC] hover:text-[#10B981] hover:border-[#10B981] hover:bg-white transition-all focus:outline-none">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        </button>
-                        {addTableForm.groupIds.length === 0 && <span className="text-sm text-[#A3B8AC] italic ml-1 select-none pointer-events-none">Aucun groupe sélectionné...</span>}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Boutons */}
-                  <div className="px-6 py-5 border-t border-[#E2EAE5] flex justify-end gap-3 bg-[#F4F7F5]/50">
-                    <button
-                        type="button" onClick={() => setShowAddModal(false)}
-                        className="px-5 py-2.5 text-sm font-bold text-[#53665A] bg-white border border-[#E2EAE5] hover:bg-[#EAEFEA] hover:text-[#1E2E24] rounded-xl transition-colors shadow-sm"
-                    >
-                      Annuler
-                    </button>
-                    <button
-                        type="button" onClick={handleSaveAssessment} disabled={isSaving}
-                        className="px-5 py-2.5 text-sm font-bold text-white bg-[#10B981] hover:bg-[#0A4A31] shadow-md shadow-[#10B981]/20 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                      {isSaving ? "Enregistrement..." : "Enregistrer"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-          )}
-
-          {/* Modale : Sélection de groupes */}
-          {showGroupSelector && (
-              <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
-                <div className="absolute inset-0 bg-[#12261E]/20 backdrop-blur-sm" onClick={() => setShowGroupSelector(false)}></div>
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm relative z-10 animate-fadeIn flex flex-col overflow-hidden border border-[#E2EAE5]">
-                  <div className="px-5 py-4 border-b border-[#E2EAE5] bg-[#F4F7F5] flex justify-between items-center">
-                    <h4 className="font-bold text-[#1E2E24] text-sm">Ajouter des groupes</h4>
-                    <button onClick={() => setShowGroupSelector(false)} className="text-[#A3B8AC] hover:text-[#F97316] transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                  </div>
-                  {/* Barre de recherche */}
-                  <div className="p-3 border-b border-[#EAEFEA]">
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A3B8AC]"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                      </div>
-                      <input
-                          type="text" value={groupSearchQuery} onChange={(e) => setGroupSearchQuery(e.target.value)}
-                          placeholder="Rechercher un groupe..."
-                          className="w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] text-sm rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Corps */}
-                  <div className="max-h-[250px] overflow-y-auto p-2">
-                    {filteredGroups.length > 0 ? (
-                        filteredGroups.map((group) => (
-                            <label key={group.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${addTableForm.groupIds.includes(group.id) ? 'bg-[#E6F4EE]/50' : 'hover:bg-[#F4F7F5]'}`}>
-                              <input
-                                  type="checkbox" className="w-4 h-4 text-[#10B981] border-gray-300 rounded focus:ring-[#10B981]"
-                                  checked={addTableForm.groupIds.includes(group.id)} onChange={() => handleGroupToggle(group.id)}
-                              />
-                              <span className={`text-sm ${addTableForm.groupIds.includes(group.id) ? 'text-[#0F5E3D] font-semibold' : 'text-[#53665A]'}`}>{group.label}</span>
-                            </label>
-                        ))
-                    ) : (
-                        <div className="text-center py-6 text-sm text-[#A3B8AC] italic">Aucun groupe trouvé.</div>
-                    )}
-                  </div>
-
-                  {/* Bouton */}
-                  <div className="p-4 border-t border-[#E2EAE5] bg-[#F4F7F5]/50 flex justify-end">
-                    <button type="button" onClick={() => { setShowGroupSelector(false); setGroupSearchQuery(""); }} className="px-5 py-2 bg-[#10B981] text-white text-sm font-bold rounded-lg hover:bg-[#0A4A31] shadow-md shadow-[#10B981]/20 transition-all">
-                      Valider
-                    </button>
-                  </div>
-                </div>
-              </div>
-          )}
-
-        {/* Modale : Saisie de note */}
-        {showGradeModal && (
-            <div className="fixed inset-0 z-[10010] flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-[#12261E]/40 backdrop-blur-sm" onClick={() => setShowGradeModal(false)}></div>
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 animate-fadeIn flex flex-col overflow-hidden border border-[#E2EAE5]">
-
-                {/* En-tête */}
-                <div className="px-6 py-4 border-b border-[#E2EAE5] bg-[#F4F7F5] flex justify-between items-center">
-                  <h4 className="font-bold text-[#1E2E24]">Noter {gradeForm.name}</h4>
-                  <button onClick={() => setShowGradeModal(false)} className="text-[#A3B8AC] hover:text-[#F97316]">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                  </button>
-                </div>
-
-                {/* Corps */}
-                <div className="p-6 flex flex-col gap-4">
-
-                  {/* Note */}
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1E2E24] mb-2">Note (sur {maxScore})</label>
-                    <input
-                        type="number"
-                        min="0"
-                        max={maxScore !== "--" ? maxScore : 100}
-                        step="any"
-                        value={gradeForm.note}
-                        onChange={(e) => setGradeForm({...gradeForm, note: e.target.value})}
-                        className="w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#10B981] outline-none"
-                        placeholder="Saisir la note..."
-                    />
-                  </div>
-
-                  {/* Feedback */}
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1E2E24] mb-2">Feedback (Optionnel)</label>
-                    <textarea
-                        rows={3}
-                        value={gradeForm.feedback}
-                        onChange={(e) => setGradeForm({...gradeForm, feedback: e.target.value})}
-                        className="w-full bg-[#F4F7F5] border border-[#E2EAE5] text-[#1E2E24] rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#10B981] outline-none resize-none"
-                        placeholder="Ajouter un commentaire ..."
-                    ></textarea>
-                  </div>
-                </div>
-
-                {/* Boutons */}
-                <div className="px-6 py-4 bg-[#F4F7F5]/50 border-t border-[#E2EAE5] flex justify-end gap-3">
-                  <button type="button" onClick={() => setShowGradeModal(false)} className="px-5 py-2 text-sm font-bold text-[#53665A] bg-white border border-[#E2EAE5] hover:bg-[#EAEFEA] rounded-xl">
-                    Annuler
-                  </button>
-                  <button type="button" onClick={handleSaveGrade} disabled={isSaving} className="px-5 py-2 text-sm font-bold text-white bg-[#10B981] hover:bg-[#0A4A31] shadow-md shadow-[#10B981]/20 rounded-xl disabled:opacity-70">
-                    {isSaving ? "Enregistrement..." : "Enregistrer"}
-                  </button>
-                </div>
-
-              </div>
-            </div>
-        )}
-
-        {/* Modale : Confirmation de suppression de la table */}
-        {showDeleteModal && (
-            <div className="fixed inset-0 z-[10005] flex items-center justify-center p-4">
-              <div
-                  className="absolute inset-0 bg-[#12261E]/40 backdrop-blur-sm transition-opacity"
-                  onClick={() => setShowDeleteModal(false)}
-              ></div>
-
-              <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-md relative z-10 animate-fadeIn flex flex-col overflow-hidden border border-[#E2EAE5]">
-
-                {/* Corps */}
-                <div className="p-6 flex flex-col items-center text-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0 border border-red-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                      <line x1="12" y1="9" x2="12" y2="13"></line>
-                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                    </svg>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-bold text-[#1E2E24]">Supprimer l'évaluation ?</h3>
-                    <p className="text-sm text-[#53665A] mt-2 leading-relaxed">
-                      Êtes-vous sûr de vouloir supprimer définitivement la table de note <strong className="text-[#1E2E24]">"{allAssessments.find(a => a.assessmentId === selectedTable)?.label}"</strong> ? <br />
-                      Cette action détruira définitivement toutes les notes et feedbacks des étudiants liés.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Boutons */}
-                <div className="px-6 py-4 bg-[#F4F7F5]/50 border-t border-[#E2EAE5] flex items-center justify-stretch gap-3">
-                  <button
-                      type="button"
-                      onClick={() => setShowDeleteModal(false)}
-                      className="flex-1 px-4 py-2.5 text-sm font-bold text-[#53665A] bg-white border border-[#E2EAE5] hover:bg-[#EAEFEA] hover:text-[#1E2E24] rounded-xl transition-colors shadow-sm focus:outline-none"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                      type="button"
-                      onClick={handleConfirmDelete}
-                      disabled={isSaving}
-                      className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-red-500/10 rounded-xl transition-colors focus:outline-none"
-                  >
-                    {isSaving ? "Suppression..." : "Supprimer"}
-                  </button>
-                </div>
-              </div>
-            </div>
-        )}
-
-            {/* Modale : Non importation des étudiants CSV */}
-            {showUnmatchedModal && (
-                <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4">
-                  <div className="absolute inset-0 bg-[#12261E]/40 backdrop-blur-sm transition-opacity" onClick={() => setShowUnmatchedModal(false)}></div>
-
-                  <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-lg relative z-10 animate-fadeIn flex flex-col overflow-hidden border border-[#E2EAE5]">
-
-                    {/* En-tête */}
-                    <div className="px-6 py-5 border-b border-[#F97316]/20 bg-[#F97316]/10 flex justify-between items-center">
-                      <h3 className="text-lg font-bold text-[#F97316] flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                        Étudiants non importés ({unmatchedStudents.length})
-                      </h3>
-                      <button onClick={() => setShowUnmatchedModal(false)} className="text-[#F97316] hover:text-red-500 transition-colors bg-white rounded-md p-1 shadow-sm border border-[#F97316]/20">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      </button>
-                    </div>
-
-                    {/* Corps */}
-                    <div className="p-6">
-                      <p className="text-sm text-[#53665A] mb-4 leading-relaxed">
-                        Les étudiants suivants n'ont pas pu être associés à cette table de notes car ils n'en font pas parti.
-                      </p>
-
-                      <div className="max-h-[250px] overflow-y-auto bg-[#F4F7F5] rounded-xl border border-[#E2EAE5] p-2">
-                        <ul className="divide-y divide-[#EAEFEA]">
-                          {unmatchedStudents.map((student, index) => (
-                              <li key={index} className="px-4 py-2.5 text-sm font-semibold text-[#1E2E24] flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#F97316]"></span>
-                                {student.nom} {student.prenom}
-                              </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-
-
-                    {/* Bouton */}
-                    <div className="px-6 py-4 bg-[#F4F7F5]/50 border-t border-[#E2EAE5] flex justify-end">
-                      <button
-                          type="button"
-                          onClick={() => setShowUnmatchedModal(false)}
-                          className="px-6 py-2.5 text-sm font-bold text-white bg-[#F97316] hover:bg-[#EA580C] shadow-md shadow-[#F97316]/20 rounded-xl transition-colors"
-                      >
-                        J'ai compris
-                      </button>
-                    </div>
-                  </div>
+          {/* Corps */}
+          <div className="p-6 flex flex-col gap-6 relative">
+            {isModalLoading && (
+                <div className="absolute inset-0 bg-white/80 dark:bg-[#0B1511]/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center rounded-b-2xl">
+                  <div className="w-8 h-8 border-4 border-[#10B981] border-t-transparent rounded-full animate-spin mb-3"></div>
+                  <p className="text-[#53665A] dark:text-emerald-200 font-medium text-sm">Chargement des données...</p>
                 </div>
             )}
 
-        {/* Toast */}
-        {toast && (
-            <div className={`fixed bottom-10 right-10 border-l-4 p-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] flex items-center gap-3 z-[20000] animate-fadeIn transition-all bg-white cursor-pointer ${
-                toast.type === "error" ? "border-red-500" : toast.type === "success" ? "border-[#10B981]" : "border-[#F97316]"
-            }`} onClick={() => setToast(null)}>
+            <div className="flex flex-col sm:flex-row gap-5">
 
-              <div className={`p-2 rounded-full ${
-                  toast.type === "error" ? "bg-red-50 text-red-500" : toast.type === "success" ? "bg-[#E6F4EE] text-[#10B981]" : "bg-[#F97316]/10 text-[#F97316]"
-              }`}>
-                {toast.type === "error" ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-                ) : toast.type === "success" ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                )}
+              {/* Matière */}
+              <div className="flex-1">
+                <label className="block text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 mb-2">Matière</label>
+                <select disabled className="w-full bg-[#EAEFEA] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-900/30 text-[#718579] dark:text-emerald-200/60 text-sm rounded-xl px-4 py-2.5 cursor-not-allowed font-medium">
+                  <option>{subjects.find(s => s.subjectId.toString() === selectedMatiere)?.label || "Matière inconnue"}</option>
+                </select>
+              </div>
+
+              {/* Professeur */}
+              <div className="flex-1">
+                <label htmlFor="teacher" className="block text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 mb-2">Professeur</label>
+                <select
+                    id="teacher"
+                    value={addTableForm.userId}
+                    onChange={(e) => setAddTableForm({...addTableForm, userId: e.target.value})}
+                    className="w-full bg-[#F4F7F5] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors cursor-pointer"
+                >
+                  <option value="">Sélectionner un professeur...</option>
+                  {dbTeachers.map(teacher => (
+                      <option key={teacher.id} value={teacher.id}>{teacher.prenom} {teacher.nom}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-5">
+
+              {/* Note maximale */}
+              <div className="w-full sm:w-1/3">
+                <label htmlFor="maxGrade" className="block text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 mb-2">Noté sur</label>
+                <input
+                    id="maxGrade" type="number" min="1"
+                    value={addTableForm.maxGrade}
+                    onChange={(e) => setAddTableForm({...addTableForm, maxGrade: e.target.value})}
+                    className="w-full bg-[#F4F7F5] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors"
+                />
+              </div>
+
+              {/* Coefficient */}
+              <div className="w-full sm:w-1/3">
+                <label htmlFor="weight" className="block text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 mb-2">Coefficient</label>
+                <input
+                    id="weight" type="number" min="1"
+                    value={addTableForm.weight}
+                    onChange={(e) => setAddTableForm({...addTableForm, weight: e.target.value})}
+                    className="w-full bg-[#F4F7F5] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors"
+                />
+              </div>
+
+              {/* Date */}
+              <div className="w-full sm:w-1/3">
+                <label htmlFor="date" className="block text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 mb-2">Date</label>
+                <input
+                    id="date" type="date"
+                    value={addTableForm.date}
+                    onChange={(e) => setAddTableForm({...addTableForm, date: e.target.value})}
+                    className="w-full bg-[#F4F7F5] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Nom de la table */}
+            <div>
+              <label htmlFor="label" className="block text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 mb-2">Nom de l'évaluation</label>
+              <input
+                  id="label" type="text" placeholder="Ex: Partiel Semestre 1, Contrôle Continu..."
+                  value={addTableForm.label}
+                  onChange={(e) => setAddTableForm({...addTableForm, label: e.target.value})}
+                  className="w-full bg-[#F4F7F5] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors"
+              />
+            </div>
+
+            {/* Gestion des groupes */}
+            <div>
+              <label className="block text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 mb-3">Groupes évalués</label>
+              <div className="flex flex-wrap items-center gap-2 p-3 bg-[#F4F7F5] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 rounded-xl min-h-[52px]">
+                {addTableForm.groupIds.map((id) => {
+                  const group = dbGroups.find(g => g.id === id);
+                  if (!group) return null;
+                  return (
+                      <span key={id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E6F4EE] dark:bg-emerald-900/50 text-[#0F5E3D] dark:text-emerald-300 text-sm font-medium rounded-lg border border-[#10B981]/30 dark:border-emerald-700 transition-all group">
+                        {group.label}
+                        <button type="button" onClick={() => handleGroupToggle(id)} title="Retirer ce groupe" className="text-[#0F5E3D]/40 dark:text-emerald-300/40 hover:text-red-500 rounded-full p-0.5 transition-colors focus:outline-none">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                      </span>
+                  );
+                })}
+                <button type="button" onClick={() => setShowGroupSelector(true)} title="Ajouter un groupe" className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-dashed border-[#A3B8AC] dark:border-emerald-700 text-[#A3B8AC] dark:text-emerald-500 hover:text-[#10B981] hover:border-[#10B981] hover:bg-white dark:hover:bg-emerald-900/20 transition-all focus:outline-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+                {addTableForm.groupIds.length === 0 && <span className="text-sm text-[#A3B8AC] dark:text-emerald-200/50 italic ml-1 select-none pointer-events-none">Aucun groupe sélectionné...</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Boutons */}
+          <div className="px-6 py-5 border-t border-[#E2EAE5] dark:border-emerald-900/30 flex justify-end gap-3 bg-[#F4F7F5]/50 dark:bg-[#050A08]">
+            <button
+                type="button" onClick={() => setShowAddModal(false)}
+                className="px-5 py-2.5 text-sm font-bold text-[#53665A] dark:text-emerald-100 bg-white dark:bg-[#0B1511] border border-[#E2EAE5] dark:border-emerald-800 hover:bg-[#EAEFEA] dark:hover:bg-emerald-900/30 hover:text-[#1E2E24] dark:hover:text-emerald-50 rounded-xl transition-colors shadow-sm cursor-pointer"
+            >
+              Annuler
+            </button>
+            <button
+                type="button" onClick={handleSaveAssessment} disabled={isSaving}
+                className="px-5 py-2.5 text-sm font-bold text-white bg-[#10B981] dark:bg-emerald-700 hover:bg-[#0A4A31] dark:hover:bg-emerald-600 shadow-md shadow-[#10B981]/20 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed"
+            >
+              {isSaving ? "Enregistrement..." : "Enregistrer"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Modale : Sélection de groupes */}
+    {showGroupSelector && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#12261E]/40 backdrop-blur-sm" onClick={() => setShowGroupSelector(false)}></div>
+          <div className="bg-white dark:bg-[#0B1511] rounded-xl shadow-2xl w-full max-w-sm relative z-10 animate-fadeIn flex flex-col overflow-hidden border border-[#E2EAE5] dark:border-emerald-900/30">
+            <div className="px-5 py-4 border-b border-[#E2EAE5] dark:border-emerald-900/30 bg-[#F4F7F5] dark:bg-[#0E1B16] flex justify-between items-center">
+              <h4 className="font-bold text-[#1E2E24] dark:text-emerald-50 text-sm">Ajouter des groupes</h4>
+              <button onClick={() => setShowGroupSelector(false)} className="text-[#A3B8AC] hover:text-[#F97316] transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            {/* Barre de recherche */}
+            <div className="p-3 border-b border-[#EAEFEA] dark:border-emerald-900/30">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A3B8AC]"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </div>
+                <input
+                    type="text" value={groupSearchQuery} onChange={(e) => setGroupSearchQuery(e.target.value)}
+                    placeholder="Rechercher un groupe..."
+                    className="w-full bg-[#F4F7F5] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50 text-sm rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Corps */}
+            <div className="max-h-[250px] overflow-y-auto p-2">
+              {filteredGroups.length > 0 ? (
+                  filteredGroups.map((group) => (
+                      <label key={group.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${addTableForm.groupIds.includes(group.id) ? 'bg-[#E6F4EE]/50 dark:bg-emerald-900/40' : 'hover:bg-[#F4F7F5] dark:hover:bg-emerald-900/10'}`}>
+                        <input
+                            type="checkbox" className="w-4 h-4 text-[#10B981] border-gray-300 dark:border-emerald-700 rounded focus:ring-[#10B981]"
+                            checked={addTableForm.groupIds.includes(group.id)} onChange={() => handleGroupToggle(group.id)}
+                        />
+                        <span className={`text-sm ${addTableForm.groupIds.includes(group.id) ? 'text-[#0F5E3D] dark:text-emerald-300 font-semibold' : 'text-[#53665A] dark:text-emerald-200'}`}>{group.label}</span>
+                      </label>
+                  ))
+              ) : (
+                  <div className="text-center py-6 text-sm text-[#A3B8AC] dark:text-emerald-200/50 italic">Aucun groupe trouvé.</div>
+              )}
+            </div>
+
+            {/* Bouton */}
+            <div className="px-6 py-4 border-t border-[#E2EAE5] dark:border-emerald-900/30 bg-[#F4F7F5]/50 dark:bg-[#050A08] flex justify-end">
+              <button type="button" onClick={() => { setShowGroupSelector(false); setGroupSearchQuery(""); }} className="px-5 py-2 bg-[#10B981] dark:bg-emerald-700 text-white text-sm font-bold rounded-lg hover:bg-[#0A4A31] dark:hover:bg-emerald-600 shadow-md shadow-[#10B981]/20 transition-all">
+                Valider
+              </button>
+            </div>
+          </div>
+        </div>
+    )}
+
+    {/* Modale : Saisie de note */}
+    {showGradeModal && (
+        <div className="fixed inset-0 z-[10010] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#12261E]/40 backdrop-blur-sm" onClick={() => setShowGradeModal(false)}></div>
+          <div className="bg-white dark:bg-[#0B1511] rounded-2xl shadow-2xl w-full max-w-md relative z-10 animate-fadeIn flex flex-col overflow-hidden border border-[#E2EAE5] dark:border-emerald-900/30">
+
+            {/* En-tête */}
+            <div className="px-6 py-4 border-b border-[#E2EAE5] dark:border-emerald-900/30 bg-[#F4F7F5] dark:bg-[#0E1B16] flex justify-between items-center">
+              <h4 className="font-bold text-[#1E2E24] dark:text-emerald-50">Noter {gradeForm.name}</h4>
+              <button onClick={() => setShowGradeModal(false)} className="text-[#A3B8AC] dark:text-emerald-200/50 hover:text-[#F97316] transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+
+            {/* Corps */}
+            <div className="p-6 flex flex-col gap-4">
+
+              {/* Note */}
+              <div>
+                <label className="block text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 mb-2">Note (sur {maxScore})</label>
+                <input
+                    type="number"
+                    min="0"
+                    max={maxScore !== "--" ? maxScore : 100}
+                    step="any"
+                    value={gradeForm.note}
+                    onChange={(e) => setGradeForm({...gradeForm, note: e.target.value})}
+                    className="w-full bg-[#F4F7F5] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#10B981] outline-none"
+                    placeholder="Saisir la note..."
+                />
+              </div>
+
+              {/* Feedback */}
+              <div>
+                <label className="block text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 mb-2">Feedback (Optionnel)</label>
+                <textarea
+                    rows={3}
+                    value={gradeForm.feedback}
+                    onChange={(e) => setGradeForm({...gradeForm, feedback: e.target.value})}
+                    className="w-full bg-[#F4F7F5] dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-800 text-[#1E2E24] dark:text-emerald-50 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#10B981] outline-none resize-none"
+                    placeholder="Ajouter un commentaire ..."
+                ></textarea>
+              </div>
+            </div>
+
+            {/* Boutons */}
+            <div className="px-6 py-4 bg-[#F4F7F5]/50 dark:bg-[#050A08] border-t border-[#E2EAE5] dark:border-emerald-900/30 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowGradeModal(false)} className="px-5 py-2 text-sm font-bold text-[#53665A] dark:text-emerald-100 bg-white dark:bg-[#0B1511] border border-[#E2EAE5] dark:border-emerald-800 hover:bg-[#EAEFEA] dark:hover:bg-emerald-900/30 rounded-xl transition-colors shadow-sm">
+                Annuler
+              </button>
+              <button type="button" onClick={handleSaveGrade} disabled={isSaving} className="px-5 py-2 text-sm font-bold text-white bg-[#10B981] dark:bg-emerald-700 hover:bg-[#0A4A31] dark:hover:bg-emerald-600 shadow-md shadow-[#10B981]/20 rounded-xl disabled:opacity-70">
+                {isSaving ? "Enregistrement..." : "Enregistrer"}
+              </button>
+            </div>
+
+          </div>
+        </div>
+    )}
+
+    {/* Modale : Confirmation de suppression de la table */}
+    {showDeleteModal && (
+        <div className="fixed inset-0 z-[10005] flex items-center justify-center p-4">
+          <div
+              className="absolute inset-0 bg-[#12261E]/40 backdrop-blur-sm transition-opacity"
+              onClick={() => setShowDeleteModal(false)}
+          ></div>
+
+          <div className="bg-white dark:bg-[#0B1511] rounded-2xl shadow-2xl w-full max-w-md relative z-10 animate-fadeIn flex flex-col overflow-hidden border border-[#E2EAE5] dark:border-emerald-900/30">
+
+            {/* Corps */}
+            <div className="p-6 flex flex-col items-center text-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center shrink-0 border border-red-100 dark:border-red-900/30">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
               </div>
 
               <div>
-                <h4 className="text-sm font-bold text-[#1E2E24]">
-                  {toast.type === "error" ? "Erreur" : toast.type === "success" ? "Succès" : "Action requise"}
-                </h4>
-                <p className="text-xs text-[#53665A] mt-0.5">{toast.message}</p>
+                <h3 className="text-lg font-bold text-[#1E2E24] dark:text-emerald-50">Supprimer l'évaluation ?</h3>
+                <p className="text-sm text-[#53665A] dark:text-emerald-200/60 mt-2 leading-relaxed">
+                  Êtes-vous sûr de vouloir supprimer définitivement la table de note <strong className="text-[#1E2E24] dark:text-emerald-100">"{allAssessments.find(a => a.assessmentId === selectedTable)?.label}"</strong> ? <br />
+                  Cette action détruira définitivement toutes les notes et feedbacks des étudiants liés.
+                </p>
               </div>
             </div>
-        )}
-      </main>
+
+            {/* Boutons */}
+            <div className="px-6 py-4 bg-[#F4F7F5]/50 dark:bg-[#050A08] border-t border-[#E2EAE5] dark:border-emerald-900/30 flex items-center justify-stretch gap-3">
+              <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 px-4 py-2.5 text-sm font-bold text-[#53665A] dark:text-emerald-100 bg-white dark:bg-[#0B1511] border border-[#E2EAE5] dark:border-emerald-800 hover:bg-[#EAEFEA] dark:hover:bg-emerald-900/30 rounded-xl transition-colors shadow-sm focus:outline-none cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-red-500/10 rounded-xl transition-colors focus:outline-none cursor-pointer"
+              >
+                {isSaving ? "Suppression..." : "Supprimer"}
+              </button>
+            </div>
+          </div>
+        </div>
+    )}
+
+    {/* Modale : Non importation des étudiants CSV */}
+    {showUnmatchedModal && (
+        <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#12261E]/40 backdrop-blur-sm transition-opacity" onClick={() => setShowUnmatchedModal(false)}></div>
+
+          <div className="bg-white dark:bg-[#0B1511] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-lg relative z-10 animate-fadeIn flex flex-col overflow-hidden border border-[#E2EAE5] dark:border-emerald-900/30">
+
+            {/* En-tête */}
+            <div className="px-6 py-5 border-b border-[#F97316]/20 bg-[#F97316]/10 dark:bg-[#F97316]/10 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-[#F97316] flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                Étudiants non importés ({unmatchedStudents.length})
+              </h3>
+              <button onClick={() => setShowUnmatchedModal(false)} className="text-[#F97316] hover:text-red-500 transition-colors bg-white dark:bg-[#0E1B16] rounded-md p-1 shadow-sm border border-[#F97316]/20">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+
+            {/* Corps */}
+            <div className="p-6">
+              <p className="text-sm text-[#53665A] dark:text-emerald-200/60 mb-4 leading-relaxed">
+                Les étudiants suivants n'ont pas pu être associés à cette table de notes car ils n'en font pas parti.
+              </p>
+
+              <div className="max-h-[250px] overflow-y-auto bg-[#F4F7F5] dark:bg-[#050A08] rounded-xl border border-[#E2EAE5] dark:border-emerald-900/30 p-2">
+                <ul className="divide-y divide-[#EAEFEA] dark:divide-emerald-900/30">
+                  {unmatchedStudents.map((student, index) => (
+                      <li key={index} className="px-4 py-2.5 text-sm font-semibold text-[#1E2E24] dark:text-emerald-50 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#F97316]"></span>
+                        {student.nom} {student.prenom}
+                      </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Bouton */}
+            <div className="px-6 py-4 bg-[#F4F7F5]/50 dark:bg-[#050A08] border-t border-[#E2EAE5] dark:border-emerald-900/30 flex justify-end">
+              <button
+                  type="button"
+                  onClick={() => setShowUnmatchedModal(false)}
+                  className="px-6 py-2.5 text-sm font-bold text-white bg-[#F97316] hover:bg-[#EA580C] shadow-md shadow-[#F97316]/20 rounded-xl transition-colors"
+              >
+                J'ai compris
+              </button>
+            </div>
+          </div>
+        </div>
+    )}
+
+    {/* Toast */}
+    {toast && (
+        <div className={`fixed bottom-10 right-10 border-l-4 p-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] flex items-center gap-3 z-[20000] animate-fadeIn transition-all bg-white dark:bg-[#0B1511] cursor-pointer ${
+            toast.type === "error" ? "border-red-500" : toast.type === "success" ? "border-[#10B981]" : "border-[#F97316]"
+        }`} onClick={() => setToast(null)}>
+
+          <div className={`p-2 rounded-full ${
+              toast.type === "error" ? "bg-red-50 dark:bg-red-900/20 text-red-500" : toast.type === "success" ? "bg-[#E6F4EE] dark:bg-emerald-900/30 text-[#10B981]" : "bg-[#F97316]/10 dark:bg-orange-900/20 text-[#F97316]"
+          }`}>
+            {toast.type === "error" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            ) : toast.type === "success" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            )}
+          </div>
+
+          <div>
+            <h4 className="text-sm font-bold text-[#1E2E24] dark:text-emerald-50">
+              {toast.type === "error" ? "Erreur" : toast.type === "success" ? "Succès" : "Action requise"}
+            </h4>
+            <p className="text-xs text-[#53665A] dark:text-emerald-200/70 mt-0.5">{toast.message}</p>
+          </div>
+        </div>
+    )}
+  </main>
   );
 }

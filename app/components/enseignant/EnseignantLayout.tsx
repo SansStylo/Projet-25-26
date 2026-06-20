@@ -1,3 +1,19 @@
+/**
+ * app/components/EnseignantClientLayout.tsx
+ * * Composant de recherche et consultation des fiches étudiants - Réutilisable
+ * * Rôle:
+ * - Interface complète de recherche d'étudiants avec détails et notes
+ * - Adapte la sidebar et la navigation selon le rôle (teacher ou responsable)
+ * - Gère l'état de la sidebar (collapse), notifications et profil utilisateur
+ * - Affiche les matières et notes de l'étudiant sélectionné
+ * * Fonctionnement:
+ * - Reçoit un prop 'role' pour adapter l'UI et les liens de navigation
+ * - Recherche en temps réel via searchStudents() de app/actions.ts
+ * - Charge les détails complets d'un étudiant via getStudentDetail()
+ * - Génère dynamiquement les items de navigation selon le rôle
+ * - Affiche les grades, matières et évaluations de l'étudiant
+ */
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -27,11 +43,24 @@ export default function EnseignantClientLayout({ children, user }: { children: R
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   
-  // 2. On force l'état à accepter notre tableau d'Alertes (vide par défaut)
+  // On force l'état à accepter notre tableau d'Alertes (vide par défaut)
   const [alerts, setAlerts] = useState<AlertType[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // 3. On charge les vraies notifs de la BDD au montage du composant
+  // fermeture de la sidebar sur téléphone quand on arrive sur le site
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSidebarReduced(true);
+      }
+    };
+    // Vérification initiale
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  //  On charge les vraies notifs de la BDD au montage du composant
   useEffect(() => {
     async function initSessionAndNotifs() {
       // Demande au serveur "Qui est connecté avec ce cookie ?"
@@ -54,19 +83,12 @@ export default function EnseignantClientLayout({ children, user }: { children: R
     await deleteNotificationAction(id);
   };
 
-  const links = [
-    { name: 'Accueil', href: '/dashboard' },
-    { name: 'Mes Étudiants', href: '/dashboard/etudiants' },
-    { name: 'Saisie des notes', href: '/dashboard/notes' },
-    { name: 'Rapports', href: '/dashboard/rapports' },
-  ];
-
   const initiales = `${user.firstname[0] || ''}${user.surname[0] || ''}`.toUpperCase();
 
   return (
-    <div className="flex min-h-screen bg-[#F4F7F5] text-[#1E2E24] font-sans antialiased">
+    <div className="flex min-h-screen bg-[#F4F7F5] dark:bg-[#050A08] text-[#1E2E24] dark:text-emerald-50 font-sans antialiased transition-colors duration-300">
       <aside
-        className={`bg-[#12261E] text-white flex flex-col py-5 transition-all duration-300 ease-in-out overflow-x-hidden shrink-0 select-none ${
+        className={`bg-[#12261E] dark:bg-[#0A120F] text-white flex flex-col py-5 transition-all duration-300 ease-in-out overflow-x-hidden shrink-0 select-none ${
           ((!isSidebarReduced) || isHovered) ? 'w-64' : 'w-20'
         }`}
         onMouseEnter={() => setHovered(true)}
@@ -78,7 +100,7 @@ export default function EnseignantClientLayout({ children, user }: { children: R
         }`}>
           <button
             onClick={() => setSidebarReduced(!isSidebarReduced)}
-            className="text-[#A3B8AC] hover:text-[#0F5E3D] transition-colors duration-300 p-0 bg-transparent border-none cursor-pointer flex items-center justify-center shrink-0 w-6 h-6"
+            className="text-[#A3B8AC] hover:text-[#0F5E3D] dark:hover:text-emerald-400 transition-colors duration-300 p-0 bg-transparent border-none cursor-pointer flex items-center justify-center shrink-0 w-6 h-6"
             style={{color: 'white'}}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -139,7 +161,7 @@ export default function EnseignantClientLayout({ children, user }: { children: R
             return (
             <li key={index}>
               <Link href={item.href} className={`flex items-center gap-3 px-6 py-4 text-[#A3B8AC] font-medium transition-all duration-300 border-l-4 border-transparent hover:bg-white/5 hover:text-white ${
-                  isActive ? 'bg-white/5 text-white! border-[#10B981]!' : ''
+                  isActive ? 'bg-white/5 dark:bg-emerald-900/40 text-white! border-[#10B981]!' : ''
                 } ${(isSidebarReduced && (!isHovered)) ? 'justify-center px-0! py-4' :''}`}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                     {item.icon}
@@ -152,7 +174,7 @@ export default function EnseignantClientLayout({ children, user }: { children: R
           })}
         </ul>
 
-        {/* bas de la sidebar ; attention links à changer !!! */}
+        {/* bas de la sidebar */}
         <div className="mt-auto flex flex-col">
           <Link href="/parametres"
             className={`flex items-center gap-3 px-6 py-4 text-[#A3B8AC] font-medium transition-all duration-300 border-l-4 border-transparent hover:bg-white/5 hover:text-white ${
@@ -166,97 +188,99 @@ export default function EnseignantClientLayout({ children, user }: { children: R
             {(!isSidebarReduced || isHovered) && <span className="whitespace-nowrap">Paramètres</span>}
           </Link>
           {(!isSidebarReduced || isHovered) && (
-            <footer className="px-6 py-4 text-xs text-[#53665A]">
+            <footer className="px-6 py-4 text-xs text-[#53665A] dark:text-emerald-200/60">
               <p>Junia'lytics 2026</p>
             </footer>
           )}
         </div>
       </aside>
 
-            <div className="flex-1 flex flex-col h-screen overflow-hidden">
-              
-              {/* HEADER */}
-              <header className="bg-white px-10 py-5 flex justify-between items-center border-b border-[#EAEFEA] shadow-[0_1px_3px_rgba(18,38,30,0.01)] h-[75px] shrink-0">
-                <h1 className="text-xl font-semibold text-[#1E2E24]">
-                  Espace Enseignant
-                </h1>
-                <div className="flex items-center gap-6">
-                  <div className="relative flex items-center justify-center">
-                    <button 
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      setShowNotifs(!showNotifs); 
-                      setShowProfileMenu(false); 
-                    }}
-                       className="relative z-50 w-9 h-9 flex items-center justify-center relative bg-transparent border-none cursor-pointer text-[#53665A] hover:text-[#0F5E3D]">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                      </svg>
-                      {alerts.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-[#F97316] rounded-full border-2 border-white"></span>}
-                    </button>
-                    {showNotifs && (
-                      <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[280px] z-[1000] overflow-hidden p-2 animate-fadeIn">
-                        <div className="text-xs font-bold text-[#1E2E24] border-b border-[#EAEFEA] pb-2 mb-2 px-2 flex justify-between items-center">
-                          <span>Notifications</span>
-                          <span className="bg-[#E2EAE5] text-[#0F5E3D] px-1.5 py-0.5 rounded-full text-[10px]">{alerts.length}</span>
-                        </div>
-                        
-                        {alerts.length === 0 ? (
-                          <p className="text-xs text-[#718579] p-4 italic text-center">Aucune notification</p>
-                        ) : (
-                          <ul className="list-none p-0 m-0 max-h-[240px] overflow-y-auto space-y-1">
-                            {alerts.map((alert) => (
-                              <li key={alert.id} className="text-xs p-2 hover:bg-[#F4F7F5] rounded-md flex justify-between items-start gap-3 border border-slate-50 transition-colors">
-                                <div className="flex-1">
-                                  <span className="font-bold text-[#0F5E3D] block text-[10px] uppercase tracking-wider mb-0.5">{alert.type}</span>
-                                  <span className="text-[#1E2E24] font-medium">{alert.text}</span>
-                                </div>
-                                <button 
-                                  onClick={() => deleteAlert(alert.id)}
-                                  className="text-[#718579] hover:text-red-600 bg-transparent border-none cursor-pointer text-xs p-0 w-4 h-4 flex items-center justify-center rounded hover:bg-slate-100"
-                                  title="Supprimer"
-                                >
-                                  ✕
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        {/* HEADER */}
+        <header className="bg-white dark:bg-[#0B1511] px-10 py-5 flex justify-between items-center border-b border-[#EAEFEA] dark:border-emerald-900/30 shadow-[0_1px_3px_rgba(18,38,30,0.01)] h-[75px] shrink-0 transition-colors duration-300">
+          <h1 className="text-xl font-semibold text-[#1E2E24] dark:text-emerald-50">
+            Espace Enseignant
+          </h1>
+          <div className="flex items-center gap-6">
+            <div className="relative flex items-center justify-center">
+              <button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setShowNotifs(!showNotifs); 
+                setShowProfileMenu(false); 
+              }}
+                  className="relative z-50 w-9 h-9 flex items-center justify-center relative bg-transparent border-none cursor-pointer text-[#53665A] dark:text-emerald-200/70 hover:text-[#0F5E3D] dark:hover:text-emerald-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                {alerts.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-[#F97316] rounded-full border-2 border-white dark:border-[#0B1511]"></span>}
+              </button>
+              {showNotifs && (
+                <div className="absolute top-[130%] right-0 bg-white dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-900/50 rounded-lg shadow-lg w-[280px] z-[1000] overflow-hidden p-2 animate-fadeIn">
+                  <div className="text-xs font-bold text-[#1E2E24] dark:text-emerald-50 border-b border-[#EAEFEA] dark:border-emerald-900/30 pb-2 mb-2 px-2 flex justify-between items-center">
+                    <span>Notifications</span>
+                    <span className="bg-[#E2EAE5] dark:bg-emerald-900/40 text-[#0F5E3D] dark:text-emerald-300 px-1.5 py-0.5 rounded-full text-[10px]">{alerts.length}</span>
                   </div>
-                  <div className="relative">
-                    <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifs(false); }}>
-                      <div className="flex flex-col text-right">
-                        <span className="text-xs text-[#718579] font-medium leading-none mb-1">{user?.firstname}</span>
-                        <span className="text-sm text-[#1E2E24] font-semibold leading-none">{user?.surname}</span>
-                      </div>
-                      <div className="w-[38px] h-[38px] rounded-full bg-[#0F5E3D] text-white flex items-center justify-center text-sm font-bold border border-[#E2EAE5]">
-                        {initiales}
-                      </div>
-                    </div>
-                    {showProfileMenu && (
-                      <>
-                        <div className="fixed inset-0 z-[999] bg-transparent" onClick={() => setShowProfileMenu(false)}/>
-                        <div className="absolute top-[130%] right-0 bg-white border border-[#E2EAE5] rounded-lg shadow-lg w-[180px] z-[1000] overflow-hidden">
-                          <ul className="list-none p-0 m-0 divide-y divide-[#EAEFEA]">
-                            <ProfilButton />
-                            <LogoutButton />
-                          </ul>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div> 
-              </header>
-      
-              {/* le contenu des pages (page.tsx) s'affiche ici */}
-              <div className="flex-1 overflow-y-auto">
-                {children}
-              </div>
-              
+                  
+                  {alerts.length === 0 ? (
+                    <p className="text-xs text-[#718579] dark:text-emerald-200/50 p-4 italic text-center">Aucune notification</p>
+                  ) : (
+                    <ul className="list-none p-0 m-0 max-h-[240px] overflow-y-auto space-y-1">
+                      {alerts.map((alert) => (
+                        <li key={alert.id} className="text-xs p-2 hover:bg-[#F4F7F5] dark:hover:bg-emerald-900/20 rounded-md flex justify-between items-start gap-3 border border-slate-50 dark:border-transparent transition-colors">
+                          <div className="flex-1">
+                            <span className="font-bold text-[#0F5E3D] dark:text-emerald-400 block text-[10px] uppercase tracking-wider mb-0.5">{alert.type}</span>
+                            <span className="text-[#1E2E24] dark:text-emerald-50 font-medium">{alert.text}</span>
+                          </div>
+                          <button 
+                            onClick={() => deleteAlert(alert.id)}
+                            className="text-[#718579] dark:text-emerald-200/50 hover:text-red-600 dark:hover:text-red-400 bg-transparent border-none cursor-pointer text-xs p-0 w-4 h-4 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-emerald-900/30"
+                            title="Supprimer"
+                          >
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                          </svg>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
+            <div className="relative">
+              <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifs(false); }}>
+                <div className="flex flex-col text-right">
+                  <span className="text-xs text-[#718579] dark:text-emerald-200/60 font-medium leading-none mb-1">{user?.firstname}</span>
+                  <span className="text-sm text-[#1E2E24] dark:text-emerald-50 font-semibold leading-none">{user?.surname}</span>
+                </div>
+                <div className="w-[38px] h-[38px] rounded-full bg-[#0F5E3D] dark:bg-emerald-700 text-white flex items-center justify-center text-sm font-bold border border-[#E2EAE5] dark:border-emerald-900">
+                  {initiales}
+                </div>
+              </div>
+              {showProfileMenu && (
+                <>
+                  <div className="fixed inset-0 z-[999] bg-transparent" onClick={() => setShowProfileMenu(false)}/>
+                  <div className="absolute top-[130%] right-0 bg-white dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-900 rounded-lg shadow-lg w-[180px] z-[1000] overflow-hidden">
+                    <ul className="list-none p-0 m-0 divide-y divide-[#EAEFEA] dark:divide-emerald-900/30">
+                      <ProfilButton />
+                      <LogoutButton />
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
+          </div> 
+        </header>
+
+        {/* le contenu des pages (page.tsx) s'affiche ici */}
+        <div className="flex-1 overflow-y-auto">
+          {children}
+        </div>
+        
       </div>
+    </div>
   );
 }

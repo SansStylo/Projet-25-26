@@ -1,15 +1,12 @@
 /**
  * app/components/StudentSearchContent.tsx
- * 
- * Composant de recherche et consultation des fiches étudiants - Réutilisable
- * 
- * Rôle:
+ * * Composant de recherche et consultation des fiches étudiants - Réutilisable
+ * * Rôle:
  * - Interface complète de recherche d'étudiants avec détails et notes
  * - Adapte la sidebar et la navigation selon le rôle (teacher ou responsable)
  * - Gère l'état de la sidebar (collapse), notifications et profil utilisateur
  * - Affiche les matières et notes de l'étudiant sélectionné
- * 
- * Fonctionnement:
+ * * Fonctionnement:
  * - Reçoit un prop 'role' pour adapter l'UI et les liens de navigation
  * - Recherche en temps réel via searchStudents() de app/actions.ts
  * - Charge les détails complets d'un étudiant via getStudentDetail()
@@ -127,8 +124,6 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
     setIsLoading(false);
   };
 
-  // window.print() : le navigateur gère nativement les couleurs oklch de Tailwind v4,
-  // contrairement à html2canvas qui ne sait pas les parser.
   const exportStudentPdf = () => {
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
     const name = `rapport-${selectedStudent.surname}-${selectedStudent.firstname}-${ts}`.replace(/\s+/g, '_');
@@ -170,40 +165,40 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
       <div className="flex-1 flex flex-col">
 
         {/* contenu principal */}
-        <main className="flex-1 overflow-y-auto bg-[#F4F7F5]">
+        <main className="flex-1 overflow-y-auto bg-[#F4F7F5] dark:bg-[#050A08] transition-colors duration-300">
           <div className="p-10">
 
             {/* Barre de recherche */}
-            <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] p-6 mb-8">
+            <div className="bg-white dark:bg-[#0B1511] rounded-lg shadow-sm border border-[#EAEFEA] dark:border-emerald-900/30 p-6 mb-8">
               <input
                 type="text"
                 placeholder="Rechercher un étudiant par nom ou prénom..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full px-4 py-3 border border-[#E2EAE5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent text-[#1E2E24] placeholder-[#718579]"
+                className="w-full px-4 py-3 border border-[#E2EAE5] dark:border-emerald-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent text-[#1E2E24] dark:text-emerald-50 dark:bg-[#0E1B16] placeholder-[#718579] dark:placeholder-emerald-200/50"
               />
             </div>
 
             <div className="grid grid-cols-3 gap-8">
               {/* Colonne gauche : résultats de recherche */}
               <div className="col-span-1">
-                <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] overflow-hidden">
-                  <div className="px-6 py-4 border-b border-[#EAEFEA] bg-[#F4F7F5]">
-                    <h3 className="text-sm font-semibold text-[#1E2E24]">
+                <div className="bg-white dark:bg-[#0B1511] rounded-lg shadow-sm border border-[#EAEFEA] dark:border-emerald-900/30 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-[#EAEFEA] dark:border-emerald-900/30 bg-[#F4F7F5] dark:bg-[#0E1B16]">
+                    <h3 className="text-sm font-semibold text-[#1E2E24] dark:text-emerald-50">
                       Résultats ({searchResults.length})
                     </h3>
                   </div>
 
                   {isLoading ? (
-                    <div className="p-6 text-center text-[#718579]">
+                    <div className="p-6 text-center text-[#718579] dark:text-emerald-200/60">
                       <p>Chargement...</p>
                     </div>
                   ) : searchResults.length === 0 && searchQuery.trim().length > 0 ? (
-                    <div className="p-6 text-center text-[#718579]">
+                    <div className="p-6 text-center text-[#718579] dark:text-emerald-200/60">
                       <p>Aucun étudiant trouvé pour "{searchQuery}"</p>
                     </div>
                   ) : searchResults.length === 0 ? (
-                    <div className="p-6 text-center text-[#718579]">
+                    <div className="p-6 text-center text-[#718579] dark:text-emerald-200/60">
                       <p>Commencez à taper pour chercher un étudiant</p>
                     </div>
                   ) : (
@@ -212,16 +207,16 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                         <li
                           key={student.studentId}
                           onClick={() => handleSelectStudent(student.studentId)}
-                          className={`px-6 py-3 border-b border-[#EAEFEA] cursor-pointer transition-colors hover:bg-[#10B981]/10 ${
+                          className={`px-6 py-3 border-b border-[#EAEFEA] dark:border-emerald-900/20 cursor-pointer transition-colors hover:bg-[#10B981]/10 dark:hover:bg-emerald-900/20 ${
                             selectedStudent?.studentId === student.studentId
-                              ? 'bg-[#10B981]/20 border-l-4 border-[#10B981]'
+                              ? 'bg-[#10B981]/20 border-l-4 border-[#10B981] dark:bg-emerald-900/40'
                               : ''
                           }`}
                         >
-                          <p className="font-medium text-[#1E2E24]">
+                          <p className="font-medium text-[#1E2E24] dark:text-emerald-50">
                             {student.surname} {student.firstname}
                           </p>
-                          <p className="text-xs text-[#718579] mt-1">
+                          <p className="text-xs text-[#718579] dark:text-emerald-200/60 mt-1">
                             {student.class?.label || 'Aucune classe'}
                           </p>
                         </li>
@@ -235,7 +230,7 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
               <div className="col-span-2">
                 {selectedStudent ? (
                   <div>
-                  <div id="student-report-card" className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] overflow-hidden">
+                  <div id="student-report-card" className="bg-white dark:bg-[#0B1511] rounded-lg shadow-sm border border-[#EAEFEA] dark:border-emerald-900/30 overflow-hidden">
                     {/* En-tête de la fiche */}
                     <div className="bg-gradient-to-r from-[#10B981] to-[#0F5E3D] text-white px-6 py-8">
                       <div className="flex items-start justify-between">
@@ -267,7 +262,7 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                     <div className="p-6">
                       {/* Infos principales */}
                       <div className="mb-8">
-                        <h3 className="text-lg font-semibold text-[#1E2E24] mb-4 flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-[#1E2E24] dark:text-emerald-50 mb-4 flex items-center gap-2">
                           <span className="w-6 h-6 bg-[#10B981]/20 rounded-full flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2">
                               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -276,15 +271,15 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                           Informations Générales
                         </h3>
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-[#F4F7F5] rounded-lg p-4">
-                            <p className="text-xs text-[#718579] font-medium">Classe</p>
-                            <p className="text-[#1E2E24] font-semibold mt-1">
+                          <div className="bg-[#F4F7F5] dark:bg-emerald-900/10 rounded-lg p-4">
+                            <p className="text-xs text-[#718579] dark:text-emerald-200/60 font-medium">Classe</p>
+                            <p className="text-[#1E2E24] dark:text-emerald-50 font-semibold mt-1">
                               {selectedStudent.class?.label || 'Non attribué'}
                             </p>
                           </div>
-                          <div className="bg-[#F4F7F5] rounded-lg p-4">
-                            <p className="text-xs text-[#718579] font-medium">Nombre de matières</p>
-                            <p className="text-[#1E2E24] font-semibold mt-1">
+                          <div className="bg-[#F4F7F5] dark:bg-emerald-900/10 rounded-lg p-4">
+                            <p className="text-xs text-[#718579] dark:text-emerald-200/60 font-medium">Nombre de matières</p>
+                            <p className="text-[#1E2E24] dark:text-emerald-50 font-semibold mt-1">
                               {selectedStudent.subjectAssignments?.length || 0}
                             </p>
                           </div>
@@ -294,8 +289,8 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                       {/* Score de risque */}
                       {riskProfile && (
                         <div className="mb-8">
-                          <h3 className="text-lg font-semibold text-[#1E2E24] mb-4 flex items-center gap-2">
-                            <span className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                          <h3 className="text-lg font-semibold text-[#1E2E24] dark:text-emerald-50 mb-4 flex items-center gap-2">
+                            <span className="w-6 h-6 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center">
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2">
                                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                                 <line x1="12" y1="9" x2="12" y2="13"></line>
@@ -304,11 +299,11 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                             </span>
                             Analyse de risque
                           </h3>
-                          <div className="bg-[#F4F7F5] rounded-lg p-4 border border-[#E2EAE5]">
+                          <div className="bg-[#F4F7F5] dark:bg-emerald-900/10 rounded-lg p-4 border border-[#E2EAE5] dark:border-emerald-900/30">
                             {/* Barre de progression */}
                             <div className="flex items-center gap-3 mb-3">
-                              <span className="text-xs text-[#718579] font-medium w-20 shrink-0">Score risque</span>
-                              <div className="flex-1 bg-[#E2EAE5] rounded-full h-2.5">
+                              <span className="text-xs text-[#718579] dark:text-emerald-200/60 font-medium w-20 shrink-0">Score risque</span>
+                              <div className="flex-1 bg-[#E2EAE5] dark:bg-emerald-900/30 rounded-full h-2.5">
                                 <div
                                   className={`h-2.5 rounded-full transition-all ${
                                     riskProfile.riskLevel === 'CRITIQUE' ? 'bg-red-500' :
@@ -317,21 +312,21 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                                   style={{ width: `${riskProfile.riskScore}%` }}
                                 />
                               </div>
-                              <span className="text-sm font-bold text-[#1E2E24] w-12 text-right shrink-0">
+                              <span className="text-sm font-bold text-[#1E2E24] dark:text-emerald-50 w-12 text-right shrink-0">
                                 {riskProfile.riskScore}/100
                               </span>
                             </div>
                             {/* Moyenne générale */}
                             {riskProfile.globalAverage !== null && (
-                              <p className="text-xs text-[#718579] mb-3">
-                                Moyenne générale pondérée : <span className="font-semibold text-[#1E2E24]">{riskProfile.globalAverage.toFixed(2)}/20</span>
+                              <p className="text-xs text-[#718579] dark:text-emerald-200/60 mb-3">
+                                Moyenne générale pondérée : <span className="font-semibold text-[#1E2E24] dark:text-emerald-50">{riskProfile.globalAverage.toFixed(2)}/20</span>
                               </p>
                             )}
                             {/* Flags */}
                             {riskProfile.flags.length > 0 ? (
                               <ul className="list-none p-0 m-0 space-y-1">
                                 {riskProfile.flags.map((flag, i) => (
-                                  <li key={i} className="flex items-center gap-2 text-xs text-[#53665A]">
+                                  <li key={i} className="flex items-center gap-2 text-xs text-[#53665A] dark:text-emerald-200/70">
                                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                       riskProfile.riskLevel === 'CRITIQUE' ? 'bg-red-500' :
                                       riskProfile.riskLevel === 'MODERE' ? 'bg-orange-400' : 'bg-emerald-400'
@@ -341,7 +336,7 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                                 ))}
                               </ul>
                             ) : (
-                              <p className="text-xs text-emerald-600 font-medium">Aucun signal d'alerte détecté.</p>
+                              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Aucun signal d'alerte détecté.</p>
                             )}
                           </div>
                         </div>
@@ -349,7 +344,7 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
 
                       {/* Matières suivies */}
                       <div className="mb-8">
-                        <h3 className="text-lg font-semibold text-[#1E2E24] mb-4 flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-[#1E2E24] dark:text-emerald-50 mb-4 flex items-center gap-2">
                           <span className="w-6 h-6 bg-[#10B981]/20 rounded-full flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2">
                               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
@@ -361,21 +356,21 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                         {selectedStudent.subjectAssignments && selectedStudent.subjectAssignments.length > 0 ? (
                           <div className="grid grid-cols-2 gap-3">
                             {selectedStudent.subjectAssignments.map((assignment: any) => (
-                              <div key={assignment.subjectId} className="bg-[#F4F7F5] rounded-lg p-3 border border-[#E2EAE5]">
-                                <p className="text-[#1E2E24] font-medium text-sm">
+                              <div key={assignment.subjectId} className="bg-[#F4F7F5] dark:bg-emerald-900/10 rounded-lg p-3 border border-[#E2EAE5] dark:border-emerald-900/30">
+                                <p className="text-[#1E2E24] dark:text-emerald-100 font-medium text-sm">
                                   {assignment.subject.label}
                                 </p>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-[#718579] text-sm">Aucune matière assignée</p>
+                          <p className="text-[#718579] dark:text-emerald-200/60 text-sm">Aucune matière assignée</p>
                         )}
                       </div>
 
                       {/* Notes et évaluations */}
                       <div>
-                        <h3 className="text-lg font-semibold text-[#1E2E24] mb-4 flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-[#1E2E24] dark:text-emerald-50 mb-4 flex items-center gap-2">
                           <span className="w-6 h-6 bg-[#10B981]/20 rounded-full flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2">
                               <polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"></polyline>
@@ -386,13 +381,13 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                         {selectedStudent.grades && selectedStudent.grades.length > 0 ? (
                           <div className="space-y-3">
                             {selectedStudent.grades.map((grade: any) => (
-                              <div key={`${grade.assessmentId}-${grade.studentId}`} className="bg-[#F4F7F5] rounded-lg p-4 border border-[#E2EAE5]">
+                              <div key={`${grade.assessmentId}-${grade.studentId}`} className="bg-[#F4F7F5] dark:bg-emerald-900/10 rounded-lg p-4 border border-[#E2EAE5] dark:border-emerald-900/30">
                                 <div className="flex justify-between items-start mb-2">
                                   <div>
-                                    <p className="font-medium text-[#1E2E24]">
+                                    <p className="font-medium text-[#1E2E24] dark:text-emerald-50">
                                       {grade.assessment.label}
                                     </p>
-                                    <p className="text-xs text-[#718579] mt-1">
+                                    <p className="text-xs text-[#718579] dark:text-emerald-200/60 mt-1">
                                       Matière: {grade.assessment.subject.label}
                                     </p>
                                   </div>
@@ -401,7 +396,7 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                                   </span>
                                 </div>
                                 {grade.feedback && (
-                                  <p className="text-xs text-[#53665A] bg-white rounded p-2 mt-2">
+                                  <p className="text-xs text-[#53665A] dark:text-emerald-200/70 bg-white dark:bg-[#0E1B16] rounded p-2 mt-2">
                                     {grade.feedback}
                                   </p>
                                 )}
@@ -409,7 +404,7 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                             ))}
                           </div>
                         ) : (
-                          <p className="text-[#718579] text-sm">Aucune note enregistrée</p>
+                          <p className="text-[#718579] dark:text-emerald-200/60 text-sm">Aucune note enregistrée</p>
                         )}
                       </div>
                     </div>
@@ -418,7 +413,7 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                   <div className="mt-4 flex justify-end">
                     <button
                       onClick={exportStudentPdf}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#0F5E3D] hover:bg-[#10B981] text-white text-sm font-medium rounded-lg transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 bg-[#0F5E3D] dark:bg-emerald-700 hover:bg-[#10B981] dark:hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -430,7 +425,7 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                   </div>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] h-96 flex items-center justify-center">
+                  <div className="bg-white dark:bg-[#0B1511] rounded-lg shadow-sm border border-[#EAEFEA] dark:border-emerald-900/30 h-96 flex items-center justify-center">
                     <div className="text-center">
                       <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#A3B8AC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -438,7 +433,7 @@ export function StudentSearchContent({ role, teacherIdStr }: StudentSearchConten
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                       </svg>
-                      <p className="text-[#718579] font-medium">Sélectionnez un étudiant pour voir sa fiche complète</p>
+                      <p className="text-[#718579] dark:text-emerald-200/60 font-medium">Sélectionnez un étudiant pour voir sa fiche complète</p>
                     </div>
                   </div>
                 )}

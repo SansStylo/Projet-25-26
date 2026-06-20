@@ -1,12 +1,9 @@
 /**
  * app/components/ProfilButton.tsx
- * 
- * Composant bouton de profil
- * 
- * Rôle:
+ * * Composant bouton de profil
+ * * Rôle:
  * - Fournit un bouton pour accéder au profil de l'utilisateur
- * 
- * Fonctionnement:
+ * * Fonctionnement:
  * - Redirige vers l'interface de profil
  */
 
@@ -24,7 +21,7 @@ export function ProfilButton() {
 
     <Link
       href={profilHref}
-        className="w-full flex items-center gap-2.5 px-4 py-3 text-stone-600 hover:bg-[#F4F7F5] font-medium text-sm transition-colors text-left bg-transparent border-none outline-none cursor-pointer"
+        className="w-full flex items-center gap-2.5 px-4 py-3 text-stone-600 dark:text-emerald-200/60 hover:bg-[#F4F7F5] dark:hover:bg-emerald-900/30 hover:text-stone-900 dark:hover:text-emerald-50 font-medium text-sm transition-colors text-left bg-transparent border-none outline-none cursor-pointer"
     >
         <svg 
             xmlns="http://www.w3.org/2000/svg" 
@@ -44,5 +41,3 @@ export function ProfilButton() {
     </Link>
   );
 }
-
-

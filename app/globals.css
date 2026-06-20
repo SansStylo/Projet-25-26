@@ -22,6 +22,9 @@
   --foreground: #171717;
 }
 
+/* Configuration pour le mode sombre */
+@variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

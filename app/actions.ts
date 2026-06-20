@@ -164,6 +164,14 @@ export async function getClass() {
   try {
     return await prisma.class.findMany({
       orderBy: { classId: 'asc' },
+      include: {
+        responsable: { 
+          select: {
+            firstname: true,
+            surname: true,
+          },
+        },
+      },
     });
   } catch (error) {
     console.error("Erreur lors de la récupération des classes :", error);
@@ -300,7 +308,7 @@ export async function getStudentDetail(studentId: bigint) {
 
 export async function addGroup(label: string, studentIds: bigint[]) {
   try {
-    // 1. On crée d'abord le groupe en BDD
+    // On crée d'abord le groupe en BDD
     const userId = await getCurrentUserId();
     const newGroup = await prisma.group.create({
       data: {
@@ -308,11 +316,11 @@ export async function addGroup(label: string, studentIds: bigint[]) {
       },
     });
 
-    // 2. Si on a des étudiants sélectionnés, on crée les liaisons dans StudentAssignments
+    // Si on a des étudiants sélectionnés, on crée les liaisons dans StudentAssignments
     if (studentIds.length > 0) {
       await prisma.studentAssignments.createMany({
         data: studentIds.map((id) => ({
-          groupId: newGroup.groupId, // ID du groupe fraîchement créé
+          groupId: newGroup.groupId, // ID du groupe créé
           studentId: id,
         })),
       });
@@ -328,7 +336,7 @@ export async function addGroup(label: string, studentIds: bigint[]) {
 
 export async function addClass(label: string, studentIds: bigint[]) {
   try {
-    // 1. On crée d'abord la classe en BDD
+    // On crée d'abord la classe en BDD
     const userId = await getCurrentUserId();
     const newClass = await prisma.class.create({
       data: {
@@ -336,14 +344,14 @@ export async function addClass(label: string, studentIds: bigint[]) {
       },
     });
 
-    // 2. Si on a des étudiants sélectionnés, on met à jour leur classId direct
+    // Si on a des étudiants sélectionnés, on met à jour leur classId direct
     if (studentIds.length > 0) {
       await prisma.student.updateMany({
         where: {
           studentId: { in: studentIds },
         },
         data: {
-          classId: newClass.classId, // ID de la classe fraîchement créée
+          classId: newClass.classId, // ID de la classe créée
         },
       });
     }
@@ -404,11 +412,11 @@ export async function updateStudentAssignments(studentIds: bigint[], groupId: nu
   try {
     // On utilise une transaction pour s'assurer que tout s'exécute ou que tout s'annule en cas d'erreur
     return await prisma.$transaction([
-      // 1. On supprime TOUS les anciens assignements pour cette matière précise
+      // On supprime TOUS les anciens assignements pour cette matière précise
       prisma.studentAssignments.deleteMany({
         where: { groupId: groupId },
       }),
-      // 2. On ré-insère la nouvelle liste propre de profs sélectionnés
+      // On ré-insère la nouvelle liste propre de profs sélectionnés
       prisma.studentAssignments.createMany({
         data: studentIds.map((id) => ({
           groupId: groupId,
@@ -425,12 +433,12 @@ export async function updateStudentAssignments(studentIds: bigint[], groupId: nu
 export async function updateStudentClass(studentIds: bigint[], classId: number) {
   try {
     await prisma.$transaction([
-      // 1. On retire de cette classe tous les étudiants qui y étaient
+      // On retire de cette classe tous les étudiants qui y étaient
       prisma.student.updateMany({
         where: { classId: classId },
         data: { classId: null },
       }),
-      // 2. On assigne la classe aux nouveaux étudiants sélectionnés dans la liste
+      // On assigne la classe aux nouveaux étudiants sélectionnés dans la liste
       prisma.student.updateMany({
         where: {
           studentId: { in: studentIds },
@@ -514,7 +522,6 @@ export async function updateSubject(subjectId: number, newLabel: string) {
       where: { subjectId },
       data: { label: newLabel },
     });
-    // Optionnel : Ajouter un log si tu le souhaites
     writeLogAction(`Matière ${subjectId} (${oldLabel}) renommée en : ${newLabel}`);
     return { success: true, data: result };
   } catch (error) {
@@ -650,18 +657,140 @@ export async function logoutAction() {
 
 
 /**
+ * Permet à un utilisateur de changer de mot de passe dans ses paramètres
+ */
+export async function changePasswordAction(currentPassword: string, newPassword: string) {
+  try {
+    const userId = await getCurrentUserId();
+    
+    if (!userId) {
+      return { success: false, error: "Vous devez être connecté pour changer votre mot de passe." };
+    }
+    // 1. Récupérer l'utilisateur actuel en BDD
+    const user = await prisma.user.findUnique({ 
+      where: { userId: BigInt(userId) } 
+    });
+
+    if (!user) return { success: false, error: "Utilisateur non trouvé." };
+
+    // 2. Utilisation de TA logique de vérification
+    // On compare le mdp actuel fourni avec le hash stocké
+    if (!(await verifyPassword(currentPassword, user.password))) {
+      return { success: false, error: "Le mot de passe actuel est incorrect." };
+    }
+
+    // 3. Hash du nouveau mot de passe
+    const hashedNewPassword = await hashPassword(newPassword);
+    
+    // 4. Mise à jour en base
+    await prisma.user.update({
+      where: { userId: BigInt(userId) },
+      data: { password: hashedNewPassword }
+    });
+
+    await writeLogAction(`Mot de passe modifié pour l'utilisateur ${userId}`, userId);
+    return { success: true };
+    
+  } catch (error) {
+    console.error("Erreur lors du changement de mdp:", error);
+    return { success: false, error: "Une erreur est survenue lors de la modification." };
+  }
+}
+
+
+/**
+ * Chercher les professeurs par nom, prénom ou email pour les ajouter en tant que référent de promotion
+ */
+export async function searchTeachers(query: string) {
+  if (!query) return [];
+  return await prisma.user.findMany({
+    where: {
+      level: 0,
+      OR: [
+        { firstname: { contains: query, mode: 'insensitive' } },
+        { surname: { contains: query, mode: 'insensitive' } },
+        { mail: { contains: query, mode: 'insensitive' } }
+      ]
+    },
+    take: 5,
+    select: { userId: true, firstname: true, surname: true }
+  });
+}
+
+export async function updateClassReferent(classId: number, teacherId: bigint | null) {
+  try {
+    await prisma.class.update({
+      where: { classId },
+      data: { responsableId: teacherId } // On met à jour le champ dans la table Class
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du référent :", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+
+// Garde en mémoire chez l'utilisateur le type de thème utilisé
+export async function updateThemeAction(newTheme: "light" | "dark") {
+  try {
+    const userId = await getCurrentUserId();
+    
+    if (!userId) {
+      return { success: false, error: "Vous devez être connecté pour changer le thème." };
+    }
+    await prisma.user.update({
+      where: { userId: BigInt(userId)},
+      data: { theme: newTheme }
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Erreur lors de la sauvegarde du thème" };
+  }
+}
+
+/**
  * Action serveur pour la page de gestion des notes
  * Récupère les matières et les tables d'évaluation
  */
 export async function getDropdownData() {
   try {
+    // Récupérer l'ID de l'utilisateur connecté
+    const userId = await getCurrentUserId();
+
+    if (!userId) {
+      console.warn("Tentative de récupération de données sans utilisateur connecté.");
+      return []; // Retourne une liste vide au lieu de planter
+    }
+
+    // Récupérer l'utilisateur pour connaître son niveau
+    const user = await prisma.user.findUnique({
+      where: { userId: BigInt(userId) },
+      select: { userId: true, level: true }
+    });
+
+    if (!user) throw new Error("Utilisateur non trouvé");
+
+    // Déterminer si on doit filtrer (si level 0 = prof)
+    const isTeacher = user.level === 0;
+
     // Récupère toutes les matières
     const subjects = await prisma.subject.findMany({
+      where: isTeacher ? {
+        teacherAssignments: {
+          some: {
+            teacherId: user.userId
+          }
+        }
+      } : {},
       orderBy: { label: 'asc' }
     });
 
     // Récupère toutes les tables de notes
     const assessments = await prisma.assessment.findMany({
+      where: isTeacher ? {
+        userId: user.userId
+      } : {},
       orderBy: { date: 'desc' }
     });
 
@@ -669,6 +798,8 @@ export async function getDropdownData() {
     const formattedAssessments = assessments.map((assessment) => ({
       ...assessment,
       assessmentId: assessment.assessmentId.toString(),
+      userId: assessment.userId.toString(), // Important de convertir le userId aussi
+      subjectId: assessment.subjectId,
     }));
 
     return { subjects, assessments: formattedAssessments };
@@ -922,7 +1053,7 @@ export async function saveGrade(assessmentIdStr: string, studentIdStr: string, v
     if (!currentAssessment) return { success: true };
     const subjectId = currentAssessment.subjectId;
 
-    // 3. Récupérer TOUTES les notes de cet élève pour cette matière
+    // Récupérer TOUTES les notes de cet élève pour cette matière
     const allGrades = await prisma.grade.findMany({
       where: {
         studentId: studentId,
@@ -935,7 +1066,7 @@ export async function saveGrade(assessmentIdStr: string, studentIdStr: string, v
       }
     });
 
-    // 4. Calcul de la moyenne sur 20 (en utilisant "weight" et "maxGrade" de ton schéma)
+    // Calcul de la moyenne sur 20 
     let totalPoints = 0;
     let totalWeights = 0;
 
@@ -955,19 +1086,19 @@ export async function saveGrade(assessmentIdStr: string, studentIdStr: string, v
 
     const average = totalWeights > 0 ? (totalPoints / totalWeights) : null;
 
-    // 5. Si la moyenne passe en dessous de 8, on envoie les notifications
+    // Si la moyenne passe en dessous de 8, on envoie les notifications
     if (average !== null && average < 8) {
       const student = await prisma.student.findUnique({
         where: { studentId: studentId }
       });
 
       if (student) {
-        // A. Trouver les responsables pédagogiques (level = 1)
+        // Trouver les responsables pédagogiques (level = 1)
         const responsables = await prisma.user.findMany({
           where: { level: 1 }
         });
 
-        // B. Trouver les profs assignés à cette matière
+        // Trouver les profs assignés à cette matière
         const profs = await prisma.teacherAssignments.findMany({
           where: { subjectId: subjectId }
         });
@@ -981,11 +1112,11 @@ export async function saveGrade(assessmentIdStr: string, studentIdStr: string, v
         const titleNotification = `Alerte de niveau`;
         const messageNotification = `La moyenne de ${student.firstname} ${student.surname} est de ${average.toFixed(2)}/20 en ${subjectLabel}.`;
         
-        // J'imagine que le champ "returns" sert à rediriger l'utilisateur vers une page spécifique au clic ?
-        // Je mets une chaîne ou une route par défaut, tu pourras l'adapter
+        // champ "returns" sert à rediriger l'utilisateur vers une page spécifique au clic
+        // route par défaut, à adapter
         const linkPath = "/grades"; 
 
-        // C. Préparer les données pour l'insertion multiple
+        // Préparer les données pour l'insertion multiple
         const notificationsData = Array.from(targetUserIds).map(userId => ({
           userId: userId,
           title: titleNotification,
@@ -1321,9 +1452,11 @@ export async function writeLogAction(label: string, userIdStr?: string | null) {
 }
 
 export async function updateUserAction(
+  
   userIdStr: string, 
-  data: { firstname: string; surname: string; mail: string; password?: string }
+  data: { firstname: string; surname: string; mail: string; password?: string; level?: number; }
 ) {
+  console.log("Reçu par le serveur - Data:", data);
   try {
     const currentAdminId = await getCurrentUserId();
 
@@ -1332,10 +1465,12 @@ export async function updateUserAction(
       surname: string;
       mail: string;
       password?: string;
+      level?: number;
     } = {
       firstname: data.firstname,
       surname: data.surname,
       mail: data.mail,
+      level: data.level,
     };
 
     if (data.password && data.password.trim() !== "") {
@@ -1368,7 +1503,7 @@ export async function deleteUserAction(userIdStr: string) {
       where: { userId: BigInt(userIdStr) },
     });
 
-    await writeLogAction(`User ${userIdStr} deleted`, currentAdminId);
+    await writeLogAction(`Utilisateur ${userIdStr} supprimé`, currentAdminId);
     return { success: true };
   } catch (error: any) {
     console.error("Erreur suppression utilisateur:", error);
@@ -1381,6 +1516,7 @@ export async function createUserAction(data: {
   surname: string;
   mail: string;
   password: string;
+  level?: number;
 }) {
   try {
     const currentAdminId = await getCurrentUserId();
@@ -1392,7 +1528,7 @@ export async function createUserAction(data: {
         surname: data.surname,
         mail: data.mail,
         password: hashedPassword,
-        level: 0, // Par défaut enseignant (0 = prof, 1 = resp, 2 = admin)
+        level: data.level ?? 0, // Par défaut enseignant (0 = prof, 1 = resp, 2 = admin)
       },
     });
 

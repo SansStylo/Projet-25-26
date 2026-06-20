@@ -1,14 +1,11 @@
 /**
  * app/html-js/page.tsx
- * 
- * Page de développement/debug - Gestion des données
- * 
- * Rôle:
+ * * Page de développement/debug - Gestion des données
+ * * Rôle:
  * - Page de test et debug pour la gestion des données (sujets, utilisateurs, étudiants)
  * - Permet l'ajout manuel de données de test
  * - Affichage et gestion des données via l'interface
- * 
- * Fonctionnement:
+ * * Fonctionnement:
  * - Récupère les données via getSubjects(), getUsers(), getStudents()
  * - Permet l'ajout de données via addDebugSubject(), addDebugUser(), addDebugStudent()
  * - Interface interactive pour tester et visualiser les données
@@ -32,7 +29,6 @@ import { getSubjects,
   addDebugStudent,
   getStudentAssignments
  } from '../actions'
-import { Group, Student } from '@prisma/client';
 
 interface SubjectType {
   subjectId: number;
@@ -207,18 +203,18 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-b text-gray-800">
+    <div className="min-h-screen flex bg-[#F4F7F5] dark:bg-[#050A08] text-gray-800 dark:text-emerald-50 transition-colors duration-300">
 
-      <main className="p-6 md:p-10 flex-1 overflow-auto bg-[#F8FAFC]">
+      <main className="p-6 md:p-10 flex-1 overflow-auto bg-[#F8FAFC] dark:bg-[#050A08]">
         <div className="max-w-6xl mx-auto">
           
           {/* 1. En-tête de la page + Boutons d'actions alignés */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-2xl font-bold text-[#1E2E24] mb-1">
+              <h1 className="text-2xl font-bold text-[#1E2E24] dark:text-emerald-50 mb-1">
                 Gestion des Matières
               </h1>
-              <p className="text-sm text-[#53665A]">
+              <p className="text-sm text-[#53665A] dark:text-emerald-200/60">
                 Consultez, ajoutez et organisez les modules d'enseignement.
               </p>
             </div>
@@ -229,8 +225,8 @@ export default function DashboardPage() {
                 onClick={() => setSortOrder(prev => prev === null ? 'asc' : prev === 'asc' ? 'desc' : null)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs flex items-center gap-2 h-9 w-23 ${
                   sortOrder
-                    ? 'bg-[#F4F7F5] text-[#0F5E3D] border-[#0F5E3D]'
-                    : 'bg-white text-[#53665A] border-[#E2EAE5] hover:bg-[#F4F7F5]'
+                    ? 'bg-[#F4F7F5] dark:bg-emerald-900/30 text-[#0F5E3D] dark:text-emerald-300 border-[#0F5E3D] dark:border-emerald-700'
+                    : 'bg-white dark:bg-[#0E1B16] text-[#53665A] dark:text-emerald-200 border-[#E2EAE5] dark:border-emerald-900/50 hover:bg-[#F4F7F5] dark:hover:bg-emerald-900/20'
                 }`}>
                 {/* Icône qui change de sens selon le tri en cours */}
                 <svg 
@@ -248,7 +244,7 @@ export default function DashboardPage() {
               </button>
               <button 
                 onClick={() => setActiveBloc({ subjectId: 0, label: "" })}
-                className="px-4 py-2 rounded-xl bg-white hover:bg-[#F4F7F5] text-[#0F5E3D] font-bold text-sm transition-colors shadow-xs border border-[#E2EAE5] cursor-pointer h-9"
+                className="px-4 py-2 rounded-xl bg-white dark:bg-[#0E1B16] hover:bg-[#F4F7F5] dark:hover:bg-emerald-900/20 text-[#0F5E3D] dark:text-emerald-400 font-bold text-sm transition-colors shadow-xs border border-[#E2EAE5] dark:border-emerald-900/50 cursor-pointer h-9"
               >
                 + Ajouter une matière
               </button>
@@ -266,16 +262,16 @@ export default function DashboardPage() {
                 <div 
                   key={subject.subjectId}
                   onClick={() => setActiveBloc(subject)}
-                  className="bg-white p-5 rounded-2xl border border-[#E2EAE5] shadow-[0_4px_20px_rgba(18,38,30,0.02)] hover:shadow-[0_8px_30px_rgba(18,38,30,0.05)] transition-all flex flex-col justify-between min-h-36 group cursor-pointer"
+                  className="bg-white dark:bg-[#0B1511] p-5 rounded-2xl border border-[#E2EAE5] dark:border-emerald-900/30 shadow-[0_4px_20px_rgba(18,38,30,0.02)] hover:shadow-[0_8px_30px_rgba(18,38,30,0.05)] transition-all flex flex-col justify-between min-h-36 group cursor-pointer"
                 >
                   {/* Petit carré icône : prend automatiquement les 2 premières lettres de la matière */}
-                  <div className="w-10 h-10 bg-[#F4F7F5] rounded-xl flex items-center justify-center text-[#0F5E3D] mb-3 font-bold group-hover:bg-[#0F5E3D] group-hover:text-white transition-colors">
+                  <div className="w-10 h-10 bg-[#F4F7F5] dark:bg-emerald-900/20 rounded-xl flex items-center justify-center text-[#0F5E3D] dark:text-emerald-400 mb-3 font-bold group-hover:bg-[#0F5E3D] dark:group-hover:bg-emerald-800 group-hover:text-white transition-colors">
                     {subject.label.substring(0, 2).toUpperCase()}
                   </div>
                   
                   <div>
                     {/* Nom de la matière dynamique */}
-                    <h3 className="font-bold text-[#1E2E24] text-sm leading-snug mb-1 line-clamp-2">
+                    <h3 className="font-bold text-[#1E2E24] dark:text-emerald-50 text-sm leading-snug mb-1 line-clamp-2">
                       {subject.label}
                     </h3>
                   </div>
@@ -287,18 +283,18 @@ export default function DashboardPage() {
         </div>
       </main>
       {showSubjectCreator && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in">
-          <div className="bg-[#F8FAFC] w-full max-w-md rounded-2xl shadow-2xl border border-[#E2EAE5] flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-[#F8FAFC] dark:bg-[#0B1511] w-full max-w-md rounded-2xl shadow-2xl border border-[#E2EAE5] dark:border-emerald-900/50 flex flex-col max-h-[90vh] overflow-hidden">
             
             {/* Header */}
-            <div className="p-5 border-b border-[#E2EAE5] flex justify-between items-center bg-white rounded-t-xl">
+            <div className="p-5 border-b border-[#E2EAE5] dark:border-emerald-900/30 flex justify-between items-center bg-white dark:bg-[#0E1B16] rounded-t-xl">
               <div>
-                <h3 className="text-lg font-bold text-[#1E2E24]">Créer une matière</h3>
-                <p className="text-xs text-[#53665A]">Ajouter une nouvelle matière au catalogue</p>
+                <h3 className="text-lg font-bold text-[#1E2E24] dark:text-white">Créer une matière</h3>
+                <p className="text-xs text-[#53665A] dark:text-emerald-200/70">Ajouter une nouvelle matière au catalogue</p>
               </div>
               <button 
                 onClick={() => { setShowSubjectCreator(false); setNewSubjectName(""); }} 
-                className="w-8 h-8 flex items-center justify-center bg-[#F4F7F5] border border-[#E2EAE5] text-[#53665A] hover:text-red-600 hover:bg-red-50 hover:border-red-100 rounded-xl font-bold cursor-pointer transition-all"
+                className="w-8 h-8 flex items-center justify-center bg-[#F4F7F5] dark:bg-emerald-900/20 border border-[#E2EAE5] dark:border-emerald-800 text-[#53665A] dark:text-emerald-200 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-100 dark:hover:border-red-900/30 rounded-xl font-bold cursor-pointer transition-all"
               >
               <svg 
                   xmlns="http://www.w3.org/2000/svg" 
@@ -317,24 +313,24 @@ export default function DashboardPage() {
             <form onSubmit={handleCreateSubject}>
               <div className="p-6 flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-[#1E2E24] uppercase tracking-wider">Nom de la nouvelle matière</label>
+                  <label className="text-xs font-bold text-[#1E2E24] dark:text-emerald-100 uppercase tracking-wider">Nom de la nouvelle matière</label>
                   <input 
                     type="text" 
                     placeholder="Ex: Intelligence Artificielle, Big Data..." 
                     value={newSubjectName}
                     onChange={(e) => setNewSubjectName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-[#E2EAE5] rounded-xl bg-white mb-1 focus:outline-none focus:ring-2 focus:ring-[#0F5E3D]/20 focus:border-[#0F5E3D]"
+                    className="w-full px-3 py-2 text-sm border border-[#E2EAE5] dark:border-emerald-900/50 rounded-xl bg-white dark:bg-[#0E1B16] dark:text-white mb-1 focus:outline-none focus:ring-2 focus:ring-[#0F5E3D]/20 focus:border-[#0F5E3D]"
                     disabled={isSubmitting}
                   />
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t border-[#E2EAE5] bg-white flex justify-center rounded-b-xl">
+              <div className="p-4 border-t border-[#E2EAE5] dark:border-emerald-900/30 bg-white dark:bg-[#0E1B16] flex justify-center rounded-b-xl">
                 <button 
                   type="submit"
                   disabled={isSubmitting || !newSubjectName.trim()}
-                  className="w-full px-6 py-2.5 bg-[#0F5E3D] hover:bg-[#0A4A31] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl shadow-md transition-colors cursor-pointer"
+                  className="w-full px-6 py-2.5 bg-[#0F5E3D] dark:bg-emerald-800 hover:bg-[#0A4A31] dark:hover:bg-emerald-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl shadow-md transition-colors cursor-pointer"
                 >
                   {isSubmitting ? "Création..." : "Créer la Matière"}
                 </button>

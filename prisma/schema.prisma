@@ -13,8 +13,10 @@ model User {
   firstname String @db.VarChar(100)
   surname   String @db.VarChar(100)
   level     Int    @db.SmallInt // 0 = enseignant, 1 = responsable, 2 = admin
+  theme String  @default("light")  // thème clair ou sombre
 
   // Relations
+  managedClasses Class[] @relation("ClassResponsable")
   subjectAddingCaches SubjectAddingCache[]
   teacherAssignments  TeacherAssignments[]
   sessions            Session[]
@@ -55,7 +57,8 @@ model Student {
 model Class {
   classId Int    @id @default(autoincrement()) @map("class_id") @db.SmallInt
   label   String @db.VarChar(100)
-
+  responsableId BigInt? @map("responsable_id")
+  responsable   User?   @relation("ClassResponsable", fields: [responsableId], references: [userId], onDelete: SetNull)
   // Relations
   students Student[]
 
@@ -189,7 +192,7 @@ model Notification {
   userId         BigInt @map("user_id")
   title          String @db.VarChar(255)
   message        String @db.Text
-  returns        String @db.VarChar(255)
+  returns        String? @db.VarChar(255)
 
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 

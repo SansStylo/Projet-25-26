@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState, useEffect } from "react";
+import { changePasswordAction, updateThemeAction } from '../actions';
 
 interface ThemeProps {
   primaryBtn: string;
@@ -11,36 +11,77 @@ interface ThemeProps {
 }
 
 export default function ParametresContentWrapper({ theme }: { theme: ThemeProps }) {
-  const [activeTab, setActiveTab] = useState<"accessibilite" | "affichage" | "notifications" | "securite">("accessibilite");
+  const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
+  const [mounted, setMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState<"theme" | "securite">("theme");
+
+  // On attend que le composant soit monté côté client pour afficher le thème
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") as "light" | "dark" || "light";
+    setThemeMode(saved);
+  }, []);
+
+  const handleThemeChange = async (newTheme: "light" | "dark") => {
+    // 1. Mise à jour visuelle immédiate
+    setThemeMode(newTheme);
+    localStorage.setItem("theme", newTheme);
+    
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    await updateThemeAction(newTheme);
+  };
+
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+    
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+  };
+
+  const [passData, setPassData] = useState({ current: "", new: "", confirm: "" });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passData.new !== passData.confirm) {
+      showToast("Les nouveaux mots de passe ne correspondent pas.", "error");
+      return;
+    }
+    setIsSaving(true);
+    const res = await changePasswordAction(passData.current, passData.new);
+    if (res.success) {
+      showToast("Mot de passe modifié avec succès !", "success");
+      setPassData({ current: "", new: "", confirm: "" });
+    } else {
+      showToast(res.error || "Erreur lors de la modification.", "error");
+    }
+    setIsSaving(false);
+  };
 
   return (
-    <div className="p-6 md:p-10 flex-1 overflow-y-auto bg-[#F8FAFC] min-h-screen">
-      <div className="max-w-5xl bg-white rounded-2xl border border-[#E2EAE5] shadow-[0_4px_20px_rgba(0,0,0,0.015)] mx-auto flex flex-col md:flex-row overflow-hidden min-h-[600px]">
+    <div className="p-6 md:p-10 flex-1 overflow-y-auto bg-[#F8FAFC] dark:bg-[#050A08] min-h-screen transition-colors duration-300">
+      <div className="max-w-5xl bg-white dark:bg-[#0B1511] rounded-2xl border border-[#E2EAE5] dark:border-emerald-900/30 shadow-[0_4px_20px_rgba(0,0,0,0.015)] mx-auto flex flex-col md:flex-row overflow-hidden min-h-[600px]">
         
-        {/* COLONNE GAUCHE : Menu des onglets (Reproduit l'image_889881.png) */}
-        <div className="w-full md:w-64 bg-slate-50/50 border-r border-[#E2EAE5] p-4 space-y-1 shrink-0">
-          
-          <button
-            onClick={() => setActiveTab("accessibilite")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all border-l-4 text-left ${
-              activeTab === "accessibilite" ? theme.activeTab : "border-transparent text-slate-600 hover:bg-slate-100/80"
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-                <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-                <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-                <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-                <path d="M22 12c-2.5 4-6.5 4-10 4s-7.5 0-10-4c2.5-4 6.5-4 10-4s7.5 0 10 4Z" />
-                <circle cx="12" cy="12" r="3" />
-            </svg>
-            Accessibilité
-          </button>
+        {/* COLONNE GAUCHE : Menu des onglets */}
+        <div className="w-full md:w-64 bg-slate-50/50 dark:bg-[#0A120F] border-r border-[#E2EAE5] dark:border-emerald-900/30 p-4 space-y-1 shrink-0">
 
           <button
-            onClick={() => setActiveTab("affichage")}
+            onClick={() => setActiveTab("theme")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all border-l-4 text-left ${
-                activeTab === "affichage" ? theme.activeTab : "border-transparent text-slate-600 hover:bg-slate-100/80"
+                activeTab === "theme" ? theme.activeTab : "border-transparent text-slate-600 dark:text-emerald-200/60 hover:bg-slate-100/80 dark:hover:bg-emerald-900/30"
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
@@ -48,23 +89,13 @@ export default function ParametresContentWrapper({ theme }: { theme: ThemeProps 
                 <line x1="8" y1="21" x2="16" y2="21" />
                 <line x1="12" y1="17" x2="12" y2="21" />
             </svg>
-            Affichage
-          </button>
-
-          <button
-            onClick={() => setActiveTab("notifications")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all border-l-4 text-left ${
-              activeTab === "notifications" ? theme.activeTab : "border-transparent text-slate-600 hover:bg-slate-100/80"
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-            Notifications
+            Thèmes
           </button>
 
           <button
             onClick={() => setActiveTab("securite")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all border-l-4 text-left ${
-              activeTab === "securite" ? theme.activeTab : "border-transparent text-slate-600 hover:bg-slate-100/80"
+              activeTab === "securite" ? theme.activeTab : "border-transparent text-slate-600 dark:text-emerald-200/60 hover:bg-slate-100/80 dark:hover:bg-emerald-900/30"
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
@@ -74,179 +105,137 @@ export default function ParametresContentWrapper({ theme }: { theme: ThemeProps 
 
         {/* COLONNE DROITE : Zone de formulaire adaptative */}
         <div className="flex-1 p-6 md:p-10">
-          
-          {/* ONGLET 1 : ACCESSIBILITÉ */}
-          {activeTab === "accessibilite" && (
+
+          {/* ONGLET 2 : Thèmes */}
+          {activeTab === "theme" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-[#1E2E24] mb-1">Accessibilité</h2>
-                <p className="text-sm text-slate-500">Options d'assistance visuelle pour l'adaptation des tableaux et graphes.</p>
+                <h2 className="text-2xl font-bold text-[#1E2E24] dark:text-emerald-50 mb-1">Thèmes</h2>
+                <p className="text-sm text-slate-500 dark:text-emerald-200/60">Personnalisez l'espace de travail et les styles visuels de la plateforme.</p>
               </div>
               <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="mode-daltonisme" className="text-sm font-semibold text-[#1E2E24]">Filtre d'accessibilité (Daltonisme)</label>
-                  <select id="mode-daltonisme" className="w-full max-w-xl bg-white border border-[#E2EAE5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
-                    <option value="desactive" defaultValue="desactive">Désactivé (Couleurs par défaut)</option>
-                    <option value="deuteranopie">Deutéranopie (Déficit vert)</option>
-                    <option value="protanopie">Protanopie (Déficit rouge)</option>
-                    <option value="tritanopie">Tritanopie (Déficit bleu)</option>
-                  </select>
-                  <span className="text-xs text-slate-400">Adapte les couleurs des graphiques complexes (radar, heatmaps, histogrammes).</span>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="taille-texte" className="text-sm font-semibold text-[#1E2E24]">Échelle du texte (Zoom de police)</label>
-                  <select id="taille-texte" className="w-full max-w-xl bg-white border border-[#E2EAE5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
-                    <option value="90">Petite (90%)</option>
-                    <option value="100" defaultValue="100">Standard (100%)</option>
-                    <option value="115">Grande (115%)</option>
-                    <option value="130">Très grande (130%)</option>
-                  </select>
-                  <span className="text-xs text-slate-400">Facilite la lecture des grands tableaux de notes sans déformer l'interface.</span>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="flex items-center gap-3 cursor-pointer select-none">
-                    <input type="checkbox" id="contrastes-eleves" className="w-4 h-4 text-emerald-600 border-[#E2EAE5] rounded-sm focus:ring-emerald-500/20" />
-                    <span className="text-sm font-semibold text-[#1E2E24]">Activer le mode contrastes élevés</span>
-                  </label>
-                  <p className="text-xs text-slate-400 pl-7">Force un affichage ultra-contrasté (textes noirs profonds sur fonds blancs purs).</p>
-                </div>
-
-                <button type="submit" className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer ${theme.primaryBtn}`}>
-                  Appliquer les filtres
-                </button>
-              </form>
-            </div>
-          )}
-
-          {/* ONGLET 2 : AFFICHAGE */}
-          {activeTab === "affichage" && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-[#1E2E24] mb-1">Affichage</h2>
-                <p className="text-sm text-slate-500">Personnalisez l'espace de travail et les styles visuels de la plateforme.</p>
-              </div>
-              <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-[#1E2E24]">Thème global de l'interface</label>
+                  <label className="text-sm font-semibold text-[#1E2E24] dark:text-emerald-50">Thème global de l'interface</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl">
-                    {["clair", "sombre", "auto"].map((t) => (
-                      <label key={t} className="flex items-center gap-3 border border-[#E2EAE5] p-3 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
-                        <input type="radio" name="theme" value={t} defaultChecked={t === "clair"} className="text-emerald-600 focus:ring-emerald-500/20" />
-                        <span className="text-sm font-medium capitalize">{t === "auto" ? "Automatique" : `Mode ${t}`}</span>
+                    {[
+                    { label: "Clair", value: "light" },
+                    { label: "Sombre", value: "dark" }
+                  ].map((t) => (
+                    <label 
+                      key={t.value} 
+                      className={`flex items-center gap-3 border p-3 rounded-xl cursor-pointer transition-colors ${
+                        themeMode === t.value 
+                          ? "border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-500" 
+                          : "border-[#E2EAE5] dark:border-emerald-900/50 hover:bg-slate-50 dark:hover:bg-[#0E1B16]"
+                      }`}
+                      >
+                        <input 
+                          type="radio" 
+                          name="theme" 
+                          value={t.value} 
+                          checked={themeMode === t.value} 
+                          onChange={() => handleThemeChange(t.value as "light" | "dark")}
+                          className="text-emerald-600 focus:ring-emerald-500/20" 
+                        />
+                        <span className="text-sm font-medium capitalize dark:text-emerald-50">
+                          {t.label}
+                        </span>
                       </label>
                     ))}
                   </div>
                 </div>
-
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="densite-tableaux" className="text-sm font-semibold text-[#1E2E24]">Densité des tableaux de données</label>
-                  <select id="densite-tableaux" className="w-full max-w-xl bg-white border border-[#E2EAE5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
-                    <option value="aere" defaultValue="aere">Aéré (Design par défaut)</option>
-                    <option value="compact">Compact (Lignes resserrées)</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="style-police" className="text-sm font-semibold text-[#1E2E24]">Style de police de caractères</label>
-                  <select id="style-police" className="w-full max-w-xl bg-white border border-[#E2EAE5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
-                    <option value="sans" defaultValue="sans">Sans-Serif (Police moderne épurée)</option>
-                    <option value="serif">Serif (Reposant pour longs textes)</option>
-                  </select>
-                </div>
-
-                <button type="submit" className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer ${theme.primaryBtn}`}>
-                  Appliquer le thème
-                </button>
               </form>
             </div>
           )}
 
-          {/* ONGLET 3 : NOTIFICATIONS */}
-          {activeTab === "notifications" && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-[#1E2E24] mb-1">Configuration des notifications d'alertes</h2>
-                <p className="text-sm text-slate-500">Ajustez les canaux de communication et les déclencheurs d'alertes pédagogiques.</p>
-              </div>
-              <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-[#1E2E24]">Gestion des canaux de réception</label>
-                  <div className="flex flex-col gap-2.5 mt-1">
-                    {["Dans l'application", "Par email"].map((label, idx) => (
-                      <label key={idx} className="flex items-center gap-2.5 text-sm font-medium text-[#1E2E24] cursor-pointer">
-                        <input type="checkbox" defaultChecked={idx < 2} className="w-4 h-4 text-emerald-600 border-[#E2EAE5] rounded-sm" />
-                        {label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
 
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="frequence-rapports" className="text-sm font-semibold text-[#1E2E24]">Fréquence des rapports d'alertes</label>
-                  <select id="frequence-rapports" className="w-full max-w-xl bg-white border border-[#E2EAE5] rounded-xl px-4 py-2.5 text-sm">
-                    <option value="imm">Immédiate (À chaque événement)</option>
-                    <option value="soir" defaultValue="soir">Quotidiennement chaque soir</option>
-                    <option value="vendredi">Bilan hebdomadaire le vendredi après-midi</option>
-                  </select>
-                </div>
-
-                <button type="submit" className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer ${theme.primaryBtn}`}>
-                  Enregistrer les alertes
-                </button>
-              </form>
-            </div>
-          )}
-
-          {/* ONGLET 4 : SÉCURITÉ */}
+          {/* ONGLET 3 : SÉCURITÉ */}
           {activeTab === "securite" && (
             <div className="space-y-8 max-h-[650px] overflow-y-auto pr-2">
               <div>
-                <h2 className="text-2xl font-bold text-[#1E2E24] mb-1">Configuration de la sécurité</h2>
-                <p className="text-sm text-slate-500">Protégez votre compte, suivez vos connexions et gérez les doubles accès.</p>
+                <h2 className="text-2xl font-bold text-[#1E2E24] dark:text-emerald-50 mb-1">Configuration de la sécurité</h2>
+                <p className="text-sm text-slate-500 dark:text-emerald-200/60">Protégez votre compte.</p>
               </div>
-              <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-                
-                {/* Bloc MDP */}
-                <div className="border-b border-slate-100 pb-6 space-y-4">
-                  <h3 className="text-base font-bold text-[#1E2E24]">Changement de mot de passe</h3>
-                  {["Mot de passe actuel", "Nouveau mot de passe", "Confirmation du mot de passe"].map((label, idx) => (
-                    <div key={idx} className="flex flex-col gap-1.5 max-w-xl">
-                      <label className="text-xs font-semibold text-slate-500">{label}</label>
-                      <input type="password" placeholder="••••••••" className="w-full bg-white border border-[#E2EAE5] rounded-xl px-4 py-2 text-sm" />
-                    </div>
-                  ))}
-                </div>
+              
+              <form className="space-y-6" onSubmit={handlePasswordChange}>
+                <div className="border-b border-slate-100 dark:border-emerald-900/30 pb-6 space-y-4">
+                  <h3 className="text-base font-bold text-[#1E2E24] dark:text-emerald-50">Changement de mot de passe</h3>
+                  
+                  {/* Mot de passe actuel */}
+                  <div className="flex flex-col gap-1.5 max-w-xl">
+                    <label className="text-xs font-semibold text-slate-500 dark:text-emerald-200/60">Mot de passe actuel</label>
+                    <input 
+                      type="password" 
+                      required
+                      value={passData.current}
+                      onChange={(e) => setPassData({...passData, current: e.target.value})}
+                      placeholder="••••••••" 
+                      className="w-full bg-white dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-900/50 text-slate-900 dark:text-emerald-50 rounded-xl px-4 py-2 text-sm" 
+                    />
+                  </div>
 
-                {/* Bloc Sessions actives */}
-                <div className="border-b border-slate-100 pb-6 space-y-3">
-                  <h3 className="text-base font-bold text-[#1E2E24]">Sessions actives</h3>
-                  <div className="space-y-2.5 max-w-xl">
-                    <div className="flex justify-between items-center bg-slate-50 p-3 border border-[#E2EAE5] rounded-xl">
-                      <div className="text-xs font-medium text-slate-700">
-                        <strong>Chrome sur Windows</strong> – Lille 
-                        <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold ml-2">Session actuelle</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center bg-slate-50 p-3 border border-[#E2EAE5] rounded-xl">
-                      <div className="text-xs font-medium text-slate-700">
-                        <strong>Safari sur iPhone</strong> – Paris <span className="text-slate-400 ml-2">Il y a 2 heures</span>
-                      </div>
-                      <button type="button" className="text-red-500 bg-transparent border-none text-xs font-bold cursor-pointer hover:underline">Déconnecter</button>
-                    </div>
+                  {/* Nouveau mot de passe */}
+                  <div className="flex flex-col gap-1.5 max-w-xl">
+                    <label className="text-xs font-semibold text-slate-500 dark:text-emerald-200/60">Nouveau mot de passe</label>
+                    <input 
+                      type="password" 
+                      required
+                      value={passData.new}
+                      onChange={(e) => setPassData({...passData, new: e.target.value})}
+                      placeholder="••••••••" 
+                      className="w-full bg-white dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-900/50 text-slate-900 dark:text-emerald-50 rounded-xl px-4 py-2 text-sm" 
+                    />
+                  </div>
+
+                  {/* Confirmation */}
+                  <div className="flex flex-col gap-1.5 max-w-xl">
+                    <label className="text-xs font-semibold text-slate-500 dark:text-emerald-200/60">Confirmation du mot de passe</label>
+                    <input 
+                      type="password" 
+                      required
+                      value={passData.confirm}
+                      onChange={(e) => setPassData({...passData, confirm: e.target.value})}
+                      placeholder="••••••••" 
+                      className="w-full bg-white dark:bg-[#0E1B16] border border-[#E2EAE5] dark:border-emerald-900/50 text-slate-900 dark:text-emerald-50 rounded-xl px-4 py-2 text-sm" 
+                    />
                   </div>
                 </div>
-
-                <button type="submit" className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer ${theme.primaryBtn}`}>
-                  Enregistrer la sécurité
+                
+                <button 
+                  type="submit" 
+                  disabled={isSaving}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer ${theme.primaryBtn} ${isSaving ? 'opacity-50' : ''}`}
+                >
+                  {isSaving ? "Enregistrement..." : "Enregistrer la modification"}
                 </button>
               </form>
             </div>
           )}
-
         </div>
       </div>
+      
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-10 right-10 border-l-4 p-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] flex items-center gap-3 z-[20000] animate-fadeIn transition-all bg-white dark:bg-[#0E1B16] cursor-pointer ${
+          toast.type === "error" ? "border-red-500" : toast.type === "success" ? "border-[#10B981]" : "border-[#F97316]"
+        }`} onClick={() => setToast(null)}>
+          <div className={`p-2 rounded-full ${
+              toast.type === "error" ? "bg-red-50 dark:bg-red-900/20 text-red-500" : toast.type === "success" ? "bg-[#E6F4EE] dark:bg-emerald-900/20 text-[#10B981]" : "bg-[#F97316]/10 text-[#F97316]"
+            }`}>
+            {toast.type === "error" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            ) : toast.type === "success" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            )}
+            </div>
+          <div>
+            <h4 className="text-sm font-bold text-[#1E2E24] dark:text-emerald-50">{toast.type === "success" ? "Succès" : "Erreur"}</h4>
+            <p className="text-xs text-[#53665A] dark:text-emerald-200/60 mt-0.5">{toast.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

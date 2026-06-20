@@ -82,6 +82,18 @@ pour configurer l'adresse qui enverra les mails automatiques de récupération d
 ```env
 GMAIL_PASS=dlbdzqwgpcdkweeh
 ```
+
+Pour ajouter le hachage des mots de passe :
+```bash
+npm install bcryptjs
+npm install -D @types/bcryptjs
+```
+
+Pour ajouter la modulation des thèmes
+```bash
+npm install next-themes
+```
+
 ---
 
 ## 📊 Comprendre Prisma, SQL et PostgreSQL

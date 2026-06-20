@@ -1,13 +1,10 @@
 /**
  * app/components/LogoutButton.tsx
- * 
- * Composant bouton de déconnexion
- * 
- * Rôle:
+ * * Composant bouton de déconnexion
+ * * Rôle:
  * - Fournit un bouton de déconnexion sécurisé pour tous les utilisateurs
  * - Supprime la session et le cookie de l'utilisateur
- * 
- * Fonctionnement:
+ * * Fonctionnement:
  * - Utilise la Server Action logoutAction pour gérer la déconnexion
  * - Affiche un bouton styled au design de l'application
  * - Redirige vers la page de connexion après déconnexion
@@ -22,7 +19,7 @@ export function LogoutButton() {
     <li>
       <button
         onClick={() => logoutAction()}
-        className="w-full flex items-center gap-2.5 px-4 py-3 text-stone-600 hover:text-red-600 hover:bg-red-50 font-medium text-sm transition-colors text-left bg-transparent border-none outline-none cursor-pointer"
+        className="w-full flex items-center gap-2.5 px-4 py-3 text-stone-600 dark:text-emerald-200/60 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium text-sm transition-colors text-left bg-transparent border-none outline-none cursor-pointer"
       >
         <svg 
           xmlns="http://www.w3.org/2000/svg" 

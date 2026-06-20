@@ -46,7 +46,7 @@ async function main() {
   await prisma.session.deleteMany({});
   await prisma.user.deleteMany({});
 
-  console.log('🚀 Injection des données de test...');
+  console.log('Injection des données de test...');
 
   // ═══════════════════════════════════════════════════════════════════
   // STEP 1 : CRÉATION DES UTILISATEURS (COMPTES APPLICATIFS)
@@ -277,10 +277,10 @@ async function main() {
   await prisma.grade.createMany({ data: gradesBuffer });
 
   console.log(`   └─ ${gradesBuffer.length} notes d'évaluations calculées et injectées !`);
-  console.log('\n✨ Base de données initialisée avec succès !');
-  console.log(`👉 Enseignant : ${profJean.mail} / password123`);
-  console.log(`👉 Responsable : ${responsable.mail} / resp123`);
-  console.log(`👉 Admin : ${admin.mail} / admin123`);
+  console.log('\nBase de données initialisée avec succès !');
+  console.log(`Enseignant : ${profJean.mail} / password123`);
+  console.log(`Responsable : ${responsable.mail} / resp123`);
+  console.log(`Admin : ${admin.mail} / admin123`);
 }
 
 main()

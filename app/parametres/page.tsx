@@ -1,7 +1,6 @@
 import { requireAuth } from "@/app/lib/auth";
 import React from "react";
 
-// Import de TES layouts pour inclure la sidebar principale
 import EnseignantClientLayout from "@/app/components/enseignant/EnseignantLayout";
 import ResponsableClientLayout from "@/app/components/responsable/ResponsableLayout"; 
 import AdminClientLayout from "@/app/components/admin/AdminLayout";

@@ -1,3 +1,16 @@
+/**
+ * app/components/responsable/RattrapagesContent.tsx
+ * * Composant d'affichage des rattrapages - Responsables
+ * * Rôle:
+ * - Affiche la liste des étudiants en échec pour simuler un rattrapage
+ * - Permet de filtrer et sélectionner des promotions/évaluations
+ * - Sidebar et header pour responsables avec navigation appropriée
+ * * Fonctionnement:
+ * - Récupère les données via les props
+ * - Calcule les moyennes pondérées et simulées
+ * - Permet l'export PDF via une fonction d'impression
+ */
+
 "use client";
 
 import { useState } from 'react';
@@ -64,6 +77,18 @@ function computeSimulatedAverage(
   return wt > 0 ? tw / wt : null;
 }
 
+const RISK_COLORS: Record<string, string> = {
+  FAIBLE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  MODERE: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  CRITIQUE: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+};
+
+const RISK_BAR: Record<string, string> = {
+  FAIBLE: 'bg-emerald-400',
+  MODERE: 'bg-orange-400',
+  CRITIQUE: 'bg-red-500',
+};
+
 export default function RattrapagesContent({ classes }: { classes: ClassOption[] }) {
   const [threshold, setThreshold] = useState(10);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
@@ -99,7 +124,7 @@ export default function RattrapagesContent({ classes }: { classes: ClassOption[]
     style.innerHTML = `@media print {
       body * { visibility: hidden !important; }
       #rattrapage-print, #rattrapage-print * { visibility: visible !important; }
-      #rattrapage-print { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; }
+      #rattrapage-print { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; background: white !important; color: black !important; }
     }`;
     document.head.appendChild(style);
     window.addEventListener('afterprint', () => {
@@ -145,12 +170,12 @@ export default function RattrapagesContent({ classes }: { classes: ClassOption[]
   const admisAfterRattrapage = failingRows.filter(r => r.simulatedAvg !== null && r.simulatedAvg >= threshold).length;
 
   return (
-    <main className="flex-1 overflow-y-auto bg-[#F4F7F5] p-10 space-y-6">
+    <main className="flex-1 overflow-y-auto bg-[#F4F7F5] dark:bg-[#050A08] p-10 space-y-6 transition-colors duration-300">
 
       {/* Étape 1 — Seuil d'échec */}
-      <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] p-6">
-        <h2 className="text-sm font-semibold text-[#718579] uppercase tracking-wide mb-1">Étape 1 — Seuil d'échec</h2>
-        <p className="text-xs text-[#718579] mb-4">Les étudiants dont la moyenne générale est inférieure à ce seuil seront considérés comme en échec.</p>
+      <div className="bg-white dark:bg-[#0B1511] rounded-lg shadow-sm border border-[#EAEFEA] dark:border-emerald-900/30 p-6">
+        <h2 className="text-sm font-semibold text-[#718579] dark:text-emerald-200/70 uppercase tracking-wide mb-1">Étape 1 — Seuil d'échec</h2>
+        <p className="text-xs text-[#718579] dark:text-emerald-200/60 mb-4">Les étudiants dont la moyenne générale est inférieure à ce seuil seront considérés comme en échec.</p>
         <div className="flex items-center gap-3">
           <input
             type="number"
@@ -159,20 +184,20 @@ export default function RattrapagesContent({ classes }: { classes: ClassOption[]
             step={0.5}
             value={threshold}
             onChange={e => { setThreshold(parseFloat(e.target.value) || 10); setRattrapageNotes({}); }}
-            className="w-24 px-3 py-2 border border-[#E2EAE5] rounded-lg text-lg font-bold text-[#1E2E24] focus:outline-none focus:border-[#10B981] text-center"
+            className="w-24 px-3 py-2 border border-[#E2EAE5] dark:border-emerald-800 rounded-lg text-lg font-bold text-[#1E2E24] dark:text-emerald-50 dark:bg-[#0E1B16] focus:outline-none focus:border-[#10B981] text-center"
           />
-          <span className="text-base text-[#718579] font-medium">/ 20</span>
+          <span className="text-base text-[#718579] dark:text-emerald-200 font-medium">/ 20</span>
           {classData && (
-            <span className="ml-2 text-sm text-[#718579]">
-              → <span className="font-semibold text-red-500">{echeccCount}</span> étudiant(s) en échec sur {classData.students.length}
+            <span className="ml-2 text-sm text-[#718579] dark:text-emerald-200/60">
+              → <span className="font-semibold text-red-500 dark:text-red-400">{echeccCount}</span> étudiant(s) en échec sur {classData.students.length}
             </span>
           )}
         </div>
       </div>
 
       {/* Étape 2 — Sélectionner une promotion */}
-      <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] p-6">
-        <h2 className="text-sm font-semibold text-[#718579] uppercase tracking-wide mb-3">Étape 2 — Sélectionner une promotion</h2>
+      <div className="bg-white dark:bg-[#0B1511] rounded-lg shadow-sm border border-[#EAEFEA] dark:border-emerald-900/30 p-6">
+        <h2 className="text-sm font-semibold text-[#718579] dark:text-emerald-200/70 uppercase tracking-wide mb-3">Étape 2 — Sélectionner une promotion</h2>
         <div className="flex flex-wrap gap-3">
           {classes.map(cls => (
             <button
@@ -180,8 +205,8 @@ export default function RattrapagesContent({ classes }: { classes: ClassOption[]
               onClick={() => handleClassSelect(cls.classId)}
               className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all cursor-pointer ${
                 selectedClassId === cls.classId
-                  ? 'bg-[#0F5E3D] text-white border-[#0F5E3D]'
-                  : 'bg-white text-[#1E2E24] border-[#E2EAE5] hover:border-[#10B981] hover:text-[#0F5E3D]'
+                  ? 'bg-[#0F5E3D] dark:bg-emerald-700 text-white border-[#0F5E3D] dark:border-emerald-600'
+                  : 'bg-white dark:bg-[#0E1B16] text-[#1E2E24] dark:text-emerald-50 border-[#E2EAE5] dark:border-emerald-800 hover:border-[#10B981] hover:text-[#0F5E3D] dark:hover:text-emerald-400'
               }`}
             >
               {cls.label}
@@ -191,22 +216,22 @@ export default function RattrapagesContent({ classes }: { classes: ClassOption[]
       </div>
 
       {isLoadingClass && (
-        <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] p-10 text-center text-[#718579]">
+        <div className="bg-white dark:bg-[#0B1511] rounded-lg shadow-sm border border-[#EAEFEA] dark:border-emerald-900/30 p-10 text-center text-[#718579] dark:text-emerald-200/60">
           Chargement des données...
         </div>
       )}
 
       {/* Étape 3 — Sélectionner l'évaluation */}
       {!isLoadingClass && classData && (
-        <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] p-6">
-          <h2 className="text-sm font-semibold text-[#718579] uppercase tracking-wide mb-4">Étape 3 — Sélectionner l'évaluation à rattraper</h2>
+        <div className="bg-white dark:bg-[#0B1511] rounded-lg shadow-sm border border-[#EAEFEA] dark:border-emerald-900/30 p-6">
+          <h2 className="text-sm font-semibold text-[#718579] dark:text-emerald-200/70 uppercase tracking-wide mb-4">Étape 3 — Sélectionner l'évaluation à rattraper</h2>
           {Object.keys(assessmentsBySubject).length === 0 ? (
-            <p className="text-sm text-[#718579]">Aucune évaluation trouvée pour cette promotion.</p>
+            <p className="text-sm text-[#718579] dark:text-emerald-200/60">Aucune évaluation trouvée pour cette promotion.</p>
           ) : (
             <div className="space-y-4">
               {Object.entries(assessmentsBySubject).map(([subjectName, assessments]) => (
                 <div key={subjectName}>
-                  <p className="text-xs font-semibold text-[#718579] uppercase tracking-wide mb-2">{subjectName}</p>
+                  <p className="text-xs font-semibold text-[#718579] dark:text-emerald-200/50 uppercase tracking-wide mb-2">{subjectName}</p>
                   <div className="flex flex-wrap gap-2">
                     {assessments.map(a => (
                       <button
@@ -214,8 +239,8 @@ export default function RattrapagesContent({ classes }: { classes: ClassOption[]
                         onClick={() => handleAssessmentSelect(a)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                           selectedAssessment?.assessmentId === a.assessmentId
-                            ? 'bg-[#0F5E3D] text-white border-[#0F5E3D]'
-                            : 'bg-white text-[#1E2E24] border-[#E2EAE5] hover:border-[#10B981] hover:text-[#0F5E3D]'
+                            ? 'bg-[#0F5E3D] dark:bg-emerald-700 text-white border-[#0F5E3D] dark:border-emerald-600'
+                            : 'bg-white dark:bg-[#0E1B16] text-[#1E2E24] dark:text-emerald-50 border-[#E2EAE5] dark:border-emerald-800 hover:border-[#10B981] hover:text-[#0F5E3D] dark:hover:text-emerald-400'
                         }`}
                       >
                         {a.label} <span className="opacity-60">/{a.maxGrade}</span>
@@ -232,26 +257,26 @@ export default function RattrapagesContent({ classes }: { classes: ClassOption[]
       {/* Étape 4 — Tableau de simulation */}
       {!isLoadingClass && classData && selectedAssessment && (
         <div>
-          <div id="rattrapage-print" className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] p-6">
+          <div id="rattrapage-print" className="bg-white dark:bg-[#0B1511] rounded-lg shadow-sm border border-[#EAEFEA] dark:border-emerald-900/30 p-6">
             <div className="flex items-start justify-between mb-5">
               <div>
-                <h2 className="text-base font-semibold text-[#1E2E24]">
+                <h2 className="text-base font-semibold text-[#1E2E24] dark:text-emerald-50">
                   {selectedAssessment.subjectName} — {selectedAssessment.label}
                 </h2>
-                <p className="text-xs text-[#718579] mt-0.5">
+                <p className="text-xs text-[#718579] dark:text-emerald-200/60 mt-0.5">
                   Noté sur {selectedAssessment.maxGrade} · Coefficient {selectedAssessment.weight} · La meilleure note est retenue
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 {admisAfterRattrapage > 0 && (
-                  <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                  <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/40 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
                     {admisAfterRattrapage} admis après rattrapage
                   </span>
                 )}
                 {Object.values(rattrapageNotes).some(v => v !== '') && (
                   <button
                     onClick={() => setRattrapageNotes({})}
-                    className="px-3 py-1.5 text-xs font-medium text-[#718579] border border-[#E2EAE5] rounded-lg hover:bg-[#F4F7F5] transition-colors cursor-pointer"
+                    className="px-3 py-1.5 text-xs font-medium text-[#718579] dark:text-emerald-200 border border-[#E2EAE5] dark:border-emerald-800 rounded-lg hover:bg-[#F4F7F5] dark:hover:bg-emerald-900/30 transition-colors cursor-pointer"
                   >
                     Réinitialiser
                   </button>
@@ -260,7 +285,7 @@ export default function RattrapagesContent({ classes }: { classes: ClassOption[]
             </div>
 
             {failingRows.length === 0 ? (
-              <div className="py-10 text-center text-[#718579]">
+              <div className="py-10 text-center text-[#718579] dark:text-emerald-200/60">
                 <p className="font-medium">Aucun étudiant en échec avec ce seuil ({threshold}/20).</p>
                 <p className="text-xs mt-1">Modifiez le seuil à l'étape 1 pour en voir apparaître.</p>
               </div>
@@ -268,28 +293,28 @@ export default function RattrapagesContent({ classes }: { classes: ClassOption[]
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[#E2EAE5]">
-                      <th className="text-left py-2 pr-4 text-xs font-semibold text-[#718579] uppercase tracking-wide">Étudiant</th>
-                      <th className="text-center py-2 px-4 text-xs font-semibold text-[#718579] uppercase tracking-wide">Moy. actuelle</th>
-                      <th className="text-center py-2 px-4 text-xs font-semibold text-[#718579] uppercase tracking-wide">Note actuelle</th>
-                      <th className="text-center py-2 px-4 text-xs font-semibold text-[#718579] uppercase tracking-wide">Note rattrapage</th>
-                      <th className="text-center py-2 px-4 text-xs font-semibold text-[#718579] uppercase tracking-wide">Moy. simulée</th>
-                      <th className="text-center py-2 pl-4 text-xs font-semibold text-[#718579] uppercase tracking-wide">Résultat</th>
+                    <tr className="border-b border-[#E2EAE5] dark:border-emerald-900/30">
+                      <th className="text-left py-2 pr-4 text-xs font-semibold text-[#718579] dark:text-emerald-200/60 uppercase tracking-wide">Étudiant</th>
+                      <th className="text-center py-2 px-4 text-xs font-semibold text-[#718579] dark:text-emerald-200/60 uppercase tracking-wide">Moy. actuelle</th>
+                      <th className="text-center py-2 px-4 text-xs font-semibold text-[#718579] dark:text-emerald-200/60 uppercase tracking-wide">Note actuelle</th>
+                      <th className="text-center py-2 px-4 text-xs font-semibold text-[#718579] dark:text-emerald-200/60 uppercase tracking-wide">Note rattrapage</th>
+                      <th className="text-center py-2 px-4 text-xs font-semibold text-[#718579] dark:text-emerald-200/60 uppercase tracking-wide">Moy. simulée</th>
+                      <th className="text-center py-2 pl-4 text-xs font-semibold text-[#718579] dark:text-emerald-200/60 uppercase tracking-wide">Résultat</th>
                     </tr>
                   </thead>
                   <tbody>
                     {failingRows.map(row => (
-                      <tr key={row.studentId} className="border-b border-[#F4F7F5] hover:bg-[#F4F7F5]/60">
-                        <td className="py-3 pr-4 font-medium text-[#1E2E24]">{row.surname} {row.firstname}</td>
+                      <tr key={row.studentId} className="border-b border-[#F4F7F5] dark:border-emerald-900/20 hover:bg-[#F4F7F5]/60 dark:hover:bg-emerald-900/10">
+                        <td className="py-3 pr-4 font-medium text-[#1E2E24] dark:text-emerald-50">{row.surname} {row.firstname}</td>
                         <td className="py-3 px-4 text-center">
-                          <span className="font-semibold text-red-500">
+                          <span className="font-semibold text-red-500 dark:text-red-400">
                             {row.currentAvg !== null ? `${row.currentAvg.toFixed(2)}/20` : '—'}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-center text-[#53665A]">
+                        <td className="py-3 px-4 text-center text-[#53665A] dark:text-emerald-200/70">
                           {row.existingGradeRaw !== null
                             ? `${row.existingGradeRaw}/${row.existingGradeMax}`
-                            : <span className="text-[#A3B8AC]">—</span>
+                            : <span className="text-[#A3B8AC] dark:text-emerald-800">—</span>
                           }
                         </td>
                         <td className="py-3 px-4 text-center">
@@ -302,29 +327,29 @@ export default function RattrapagesContent({ classes }: { classes: ClassOption[]
                               placeholder="—"
                               value={rattrapageNotes[row.studentId] ?? ''}
                               onChange={e => setRattrapageNotes(prev => ({ ...prev, [row.studentId]: e.target.value }))}
-                              className="w-16 px-2 py-1 border border-[#E2EAE5] rounded text-sm text-center focus:outline-none focus:border-[#10B981]"
+                              className="w-16 px-2 py-1 border border-[#E2EAE5] dark:border-emerald-800 dark:bg-[#0E1B16] rounded text-sm text-center text-[#1E2E24] dark:text-emerald-50 focus:outline-none focus:border-[#10B981]"
                             />
-                            <span className="text-xs text-[#718579]">/{selectedAssessment.maxGrade}</span>
+                            <span className="text-xs text-[#718579] dark:text-emerald-200/60">/{selectedAssessment.maxGrade}</span>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-center">
                           {row.simulatedAvg !== null ? (
-                            <span className={`font-semibold ${row.simulatedAvg >= threshold ? 'text-[#0F5E3D]' : 'text-red-500'}`}>
+                            <span className={`font-semibold ${row.simulatedAvg >= threshold ? 'text-[#0F5E3D] dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
                               {row.simulatedAvg.toFixed(2)}/20
                             </span>
                           ) : (
-                            <span className="text-[#A3B8AC]">—</span>
+                            <span className="text-[#A3B8AC] dark:text-emerald-800">—</span>
                           )}
                         </td>
                         <td className="py-3 pl-4 text-center">
                           {row.simulatedAvg !== null ? (
                             row.simulatedAvg >= threshold ? (
-                              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Admis</span>
+                              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">Admis</span>
                             ) : (
-                              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-600">Échec</span>
+                              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">Échec</span>
                             )
                           ) : (
-                            <span className="text-[#A3B8AC]">—</span>
+                            <span className="text-[#A3B8AC] dark:text-emerald-800">—</span>
                           )}
                         </td>
                       </tr>
@@ -338,7 +363,7 @@ export default function RattrapagesContent({ classes }: { classes: ClassOption[]
           <div className="mt-4 flex justify-end">
             <button
               onClick={exportPdf}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#0F5E3D] hover:bg-[#10B981] text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#0F5E3D] dark:bg-emerald-700 hover:bg-[#10B981] dark:hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -352,7 +377,7 @@ export default function RattrapagesContent({ classes }: { classes: ClassOption[]
       )}
 
       {!isLoadingClass && !classData && selectedClassId === null && (
-        <div className="bg-white rounded-lg shadow-sm border border-[#EAEFEA] p-12 text-center text-[#718579]">
+        <div className="bg-white dark:bg-[#0B1511] rounded-lg shadow-sm border border-[#EAEFEA] dark:border-emerald-900/30 p-12 text-center text-[#718579] dark:text-emerald-200/60">
           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#A3B8AC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3">
             <polyline points="23 4 23 10 17 10"></polyline>
             <polyline points="1 20 1 14 7 14"></polyline>
