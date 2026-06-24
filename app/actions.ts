@@ -1328,7 +1328,7 @@ export async function sendResetCodeEmail(targetEmail: string) {
   };
     await transporter.sendMail(mailOptions);
 
-    writeLogAction(`Reset code sent`, user.userId.toString());
+    writeLogAction(`Code de récupération envoyé`, user.userId.toString());
 
     return { success: true };
 
